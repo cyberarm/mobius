@@ -1,0 +1,13 @@
+{
+  "mobius": {
+    "renrem": {
+      "address":"127.0.0.1",
+      "port":7846,
+      "password":"password"
+    },
+    "ssgm": {
+      "address":"127.0.0.1",
+      "port":7847
+    }
+  }
+}
