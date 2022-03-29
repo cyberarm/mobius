@@ -4,12 +4,16 @@ module Mobius
   def self.init
     modules = [
       Config,
-      # SSGM,
       RenRem,
+      SSGM,
+      GameLog,
+      RenLog,
       PluginManager
     ]
 
     modules.each(&:init)
+
+    log("INIT", "Successfully initialized Mobius v#{Mobius::VERSION}")
 
     # TODO: start sane main loop
     loop do

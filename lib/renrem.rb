@@ -3,7 +3,7 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Connecting to RenRem...")
+      log("INIT", "Enabling RenRem access...")
 
       new(
         address: Config.renrem_address,
@@ -17,7 +17,6 @@ module Mobius
 
       @@instance&.teardown
     end
-
 
     def self.cmd(data, delay = nil)
       raise "RenRem not running!" unless @@instance
@@ -47,8 +46,8 @@ module Mobius
     end
 
     def encode_data(data)
-      length_with_chksum = data.length + 5
-      length = data.length
+      length_with_checksum = data.length + 5
+      length = length_with_checksum - 4
       checksum = 0
 
       password_array = @password.bytes
@@ -57,7 +56,7 @@ module Mobius
       msgbuf = [data].pack("x8 a#{length} x").unpack("C8 C#{length}")
 
       # Encrypt message
-      length.times do |i|
+      length_with_checksum.times do |i|
         password_array[i % 8] ^= (msgbuf[i + 4] = (((((0xff << 8) | (msgbuf[i + 4] + i)) - 0x32) & 0xff) ^ password_array[i % 8]))
       end
 
@@ -66,11 +65,10 @@ module Mobius
 
       # Calculate checksum
       i = 0
-      while(i < length) do
+      while(i < length_with_checksum)
         checksum = (checksum >> 0x1f) + checksum * 2
 
-        if i + 4 > length
-          bl = length % 4 # Unused?
+        if i + 4 > length_with_checksum
           buflen = msgbuf.length
           tempbuf = [msgbuf.unpack("C#{buflen}"), 0, 0, 0].flatten.pack("C#{buflen + 3}")
           checksum += tempbuf.unpack1("x4 x#{i} I")
@@ -85,17 +83,7 @@ module Mobius
         i += 4
       end
 
-      # $msgbuf = pack (" C4 C$length", unpack("C4", pack('I', $chksum)), unpack("x4 C$length", $msgbuf));
-      puts
-      pp msgbuf.unpack("x4 C*").pack("C*"), msgbuf.unpack("x4 C*").length, length
-      puts
-      c = [[checksum].pack("I").unpack("C*"), msgbuf.unpack("x4 C#{length}")].flatten
-      pp c, c.length, length
-      p c.pack("C*")
-      puts
-
-      # FIXME: MISSING last 4 characters!
-      [[checksum].pack("I").unpack("C*"), msgbuf.unpack("x4 C#{length}")].flatten.pack("C*")
+      [[checksum].pack("I").unpack("C*"), msgbuf.unpack("x4 C#{length_with_checksum}")].flatten.pack("C*")
     end
 
     def decode_data(data)
@@ -118,12 +106,8 @@ module Mobius
     def cmd(data)
       # TODO: Limit data length
 
-      d = encode_data(data)
-      pp decode_data(d)
-
-      # @socket.send(encode_data(@password), 0)
-      # @socket.send(encode_data(data), 0)
-      # @socket.recv
+      @socket.send(encode_data(@password), 0)
+      @socket.send(encode_data(data), 0)
     end
 
     def cmd_delayed(data, seconds)
