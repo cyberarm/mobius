@@ -3,12 +3,24 @@ class PlayerInfoPlugin < Mobius::Plugin
   end
 
   def tick
-    # log(self.class, "Requesting player_info via RenRem...")
-    # renrem_cmd("player_info")
-    # renrem_cmd("game_info")
+    @last_time ||= Time.new(2000)
+    return unless Time.now - @last_time >= 10
+
+    log(self.class, "Requesting data via RenRem...")
+    renrem_cmd("game_info")
+    renrem_cmd("player_info")
+    renrem_cmd("listgamedefs")
+    # renrem_cmd("quit")
+    # renrem_cmd("mapnum")
+    # renrem_cmd("sversion")
+    # renrem_cmd("version #{id}")
+    # renrem_cmd("help")
+    # renrem_cmd("botcount 32")
+
+    @last_time = Time.now
   end
 
   def teardown
-    log
+    log(self.class, "Shutting down.")
   end
 end

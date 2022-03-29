@@ -58,6 +58,8 @@ module Mobius
             when 2 # RenLog
               RenLog.feed(event)
             # when 3 # IGNORE
+            else
+              pp [:unhandled_event, type, event]
             end
           end
         end
