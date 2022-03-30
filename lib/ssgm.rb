@@ -17,7 +17,6 @@ module Mobius
       @@instance&.teardown
     end
 
-
     def self.cmd(data, delay = nil)
       raise "RenRem not running!" unless @@instance
 
@@ -50,7 +49,14 @@ module Mobius
 
             event.sub!(type, "")
 
-            case Integer(type)
+            id = -1
+            begin
+              id = Integer(type)
+            rescue ArgumentError # Unexpected line starter, game_info data?
+              id = -1
+            end
+
+            case id
             when 0 # SSGMLog
               feed(event)
             when 1 # GameLog

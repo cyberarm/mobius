@@ -6,10 +6,10 @@ class PlayerInfoPlugin < Mobius::Plugin
     @last_time ||= Time.new(2000)
     return unless Time.now - @last_time >= 10
 
-    log(self.class, "Requesting data via RenRem...")
-    renrem_cmd("game_info")
-    renrem_cmd("player_info")
-    renrem_cmd("listgamedefs")
+    # log(self.class, "Requesting data via RenRem...")
+    # renrem_cmd("game_info")
+    # renrem_cmd("player_info")
+    # renrem_cmd("listgamedefs")
     # renrem_cmd("quit")
     # renrem_cmd("mapnum")
     # renrem_cmd("sversion")
