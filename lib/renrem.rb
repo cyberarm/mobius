@@ -111,6 +111,9 @@ module Mobius
     end
 
     def cmd_delayed(data, seconds)
+      # FIXME: Wait for delay then issue command
+
+      cmd(data)
     end
 
     def teardown
