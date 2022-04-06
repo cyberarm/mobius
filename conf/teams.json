@@ -1,0 +1,20 @@
+[
+  {
+    "id": 0,
+    "name": "Nod",
+    "abbreviation": "Nod",
+    "color": "04"
+  },
+  {
+    "id": 1,
+    "name": "GDI",
+    "abbreviation": "GDI",
+    "color": "08,15"
+  },
+  {
+    "id": 2,
+    "name": "Neutral",
+    "abbreviation": "Neu",
+    "color": "09"
+  }
+]
