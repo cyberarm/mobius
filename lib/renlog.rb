@@ -182,6 +182,28 @@ module Mobius
       return if handle_player_left(line)
 
       return if handle_player_joined(line)
+
+      return if handle_level_loaded(line)
+
+      return if handle_fds_messages(line)
+
+      return if handle_server_crash(line)
+
+      return if handle_player_scripts_version(line)
+
+      return if handle_server_version(line)
+
+      return if handle_player_bandwidth(line) # TODO
+
+      return if handle_bhs_required(line) # TODO: Maybe? IDK what that is...
+
+      return if handle_loading_level(line) # TODO: Don't we already skip these?
+
+      return if handle_vehicle_purchased(line) # TODO
+
+      return if handle_player_lost_connection(line) # TODO
+
+      return if handle_player_was_kicked(line) # TODO
     end
 
     def handle_list_game_defs(line)
@@ -272,6 +294,109 @@ module Mobius
       time     = split_data[7]
 
       # TODO: Update player data
+    end
+
+    def handle_level_loaded(line)
+      if line == "Level loaded OK"
+        # TODO: Send message to IRC/mod tool
+        # TODO: Read/update server settings
+        # TODO: Apply map rules (without setting map time?)
+
+        # TODO: Publish :map_changed/:map_load event for to plugins
+
+        # TODO: Auto balance teams, if enabled.
+
+        RenRem.cmd("game_info")
+        RenRem.cmd("player_info")
+
+        return true
+      end
+    end
+
+    def handle_fds_messages(line)
+      case line
+      when /^\w+ not found$/,
+           "Logging on....",
+           /^Logging onto .+ Server$/,
+           "Failed to log in",
+           "Creating game channel",
+           "Channel created OK",
+           "Terminating game"
+        # TODO: Send message to admin channel of IRC/mod tool
+
+        return true
+      end
+    end
+
+    def handle_server_crash(line)
+      if line =~ /^Initializing .+ Mode$/
+        # TODO: Send message to IRC/mod tool
+        # PlayerData.clear
+        RenRem.cmd("sversion")
+        # Config.get_available_maps
+
+        return true
+      end
+    end
+
+    def handle_player_scripts_version(line)
+      if line.match?(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
+        match_data = line.match(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
+
+        username         = match_data[1]
+        scripts_version  = match_data[2]
+        scripts_revision = match_data[3]
+
+        log "#{username} has scripts #{scripts_version} (revision: #{scripts_revision})"
+
+        return true
+      end
+    end
+
+    def handle_server_version(line)
+      if line =~ /^The Version of the server is (.+)/ || line =~ /^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r\d+)?/
+        match_data = line.match(/^The Version of the server is (.+)/) if line =~ /^The Version of the server is (.+)/
+        match_data ||= line.match(/^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r\d+)?/)
+
+        # Config.server_scripts_version  = match_data[1]
+        # Config.server_scripts_revision = match_data[2].strip
+
+        return true
+      end
+    end
+
+    def handle_player_bandwidth(line)
+    end
+
+    # NOTE: Remove? Only planning on supporting Scripts/SSGM 4.x+
+    def handle_bhs_required(line)
+      if line =~ /is required for this map/
+        # Config.force_bhs_dll_map = true
+
+        # TODO: Kick players who have been in-game more then 4 seconds and have a scripts version that is to low
+
+        return true
+      end
+    end
+
+    def handle_loading_level(line)
+      if line =~ /Loading level (.+)/
+        # Send message to IRC/mod tool
+        # TODO: Update server status map
+        # TODO: reset Config.force_bhs_dll_map to false # REMOVE?
+        # TODO: The last game has completed, process game results
+
+        return true
+      end
+    end
+
+    def handle_vehicle_purchased(line)
+    end
+
+    def handle_player_lost_connection(line)
+    end
+
+    def handle_player_was_kicked(line)
     end
   end
 end
