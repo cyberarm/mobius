@@ -17,6 +17,8 @@ module Mobius
 
     def self.find_plugins
       Dir.glob("#{ROOT_PATH}/plugins/*.rb").each do |plugin|
+        next # REMOVE ME
+
         begin
           load plugin
         rescue => e

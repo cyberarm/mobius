@@ -8,7 +8,7 @@ module Mobius
     end
 
     def self.teardown
-      log("INIT", "Shutdown GameLog...")
+      log("TEARDOWN", "Shutdown GameLog...")
     end
 
     def self.feed(line)
