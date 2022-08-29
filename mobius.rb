@@ -10,6 +10,7 @@ require_relative "lib/renrem"
 require_relative "lib/ssgm"
 require_relative "lib/gamelog"
 require_relative "lib/renlog"
+require_relative "lib/player_data"
 require_relative "lib/version"
 
 Mobius.init

@@ -1,4 +1,4 @@
-class Mobius
+module Mobius
   class PlayerData
 
     attr_reader :origin
@@ -39,6 +39,16 @@ class Mobius
         @data[key]
       end
 
+      def reset
+        @data.delete("stats_kills")
+        @data.delete("stats_deaths")
+        @data.delete("stats_building_kills")
+        @data.delete("stats_building_kills_building_a") # ???
+        @data.delete("stats_building_repairs")
+        @data.delete("stats_vehicle_kills")
+        @data.delete("stats_vehicle_repairs")
+      end
+
       def remote_moderation?
         @origin == :w3d_server_moderation_tool
       end
@@ -64,31 +74,67 @@ class Mobius
       end
     end
 
-    def initialize
-      @player_data = {}
+    @player_data = {}
+
+    def self.update(origin:, id:, name:, score:, team:, ping:, ip:, kbps:, time:, last_updated:)
+      if (player = @player_data[id])
+        if player.team != team
+          process_team_change(id, player.team, team)
+        end
+
+        player.score = score
+        player.team = team
+        player.ping = ping
+        player.kbps = kbps
+        player.time = time
+        player.last_updated = Time.now.utc
+      else
+        # TODO: Check bans, kicks, etc.
+
+        @player_data[id] = Player.new(
+          origin: origin,
+          id: id,
+          name: name,
+          join_time: Time.now.utc,
+          score: score,
+          team: team,
+          ping: ping,
+          kbps: kbps,
+          time: time,
+          last_updated: Time.now.utc
+        )
+      end
     end
 
-    def delete(player)
+    def self.delete(player)
+      # TODO: Check if player is a moderator
+
       @player_data.delete(player.id)
     end
 
-    def clear
+    def self.clear
       @player_data.clear
     end
 
-    def name_to_id(playername, exact_match)
-      raise NotImplementedError
+    def self.name_to_id(name, exact_match: true)
+      if exact_match
+        player = @player_data.find { |_, data| data.name.downcase == name.downcase }
+        player ? player.id : -1
+      else
+        players = @player_data.select { |_, data| data.name.downcase == /^#{name.downcase}/ }
+        players.size == 1 ? players.first.id : -1
+      end
     end
 
-    def player(player_id, exact_match)
-      raise NotImplementedError
+    def self.player(player_id)
+      @player_data[player_id]
     end
 
-    def player_list
+    def self.player_list
       @player_data.map { |_, value| value }
     end
 
-    def players_by_team(team)
+    def self.players_by_team(team)
       if team.is_a?(Integer)
         player_list.select { |ply| ply.team == team }
       elsif team.is_a?(String)
@@ -99,7 +145,7 @@ class Mobius
       end
     end
 
-    def process_team_change(player, old_team, new_team)
+    def self.process_team_change(player, old_team, new_team)
       PluginManager.publish_event(:team_changed, player, old_team, new_team)
     end
   end

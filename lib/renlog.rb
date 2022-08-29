@@ -63,7 +63,7 @@ module Mobius
         return
       end
 
-      player = PlayerData.player(username, true)
+      player = nil # PlayerData.player(username, true)
       return unless player
 
       # TODO: Detect if player is mod or admin and format their name as such
