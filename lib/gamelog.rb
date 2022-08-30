@@ -294,12 +294,12 @@ module Mobius
       end
 
       # If the damage is less than 0 it's actually being repaired
-      if (damager = @game_objects[object[:damager_object]]) && object[:damage] < 0 && (player = PlayerData.player_data(damager[:name]))
+      if (damager = @game_objects[object[:damager_object]]) && object[:damage].negative? && (player = PlayerData.player(PlayerData.name_to_id(damager[:name])))
         case object[:type].downcase.strip
         when "building"
-          player.increment_value("stats_building_repair", -object[:damage])
+          player.increment_value(:stats_building_repair, -object[:damage])
         when "vehicle"
-          player.increment_value("stats_vehicle_repair", -object[:damage]) if obj[:drivers] > 0
+          player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj[:drivers].positive?
         end
       end
 
@@ -348,7 +348,7 @@ module Mobius
 
       case object[:type].downcase
       when "vehicle"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased #{object[:name]}!")
+        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased a #{object[:name]}!")
       end
 
       pp object

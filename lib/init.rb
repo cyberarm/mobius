@@ -8,6 +8,7 @@ module Mobius
       SSGM,
       GameLog,
       RenLog,
+      ServerStatus,
       PluginManager
     ]
 

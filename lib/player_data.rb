@@ -1,11 +1,10 @@
 module Mobius
   class PlayerData
-
-    attr_reader :origin
-    attr_accessor :id, :name, :join_time, :score, :team, :ping, :ip, :kbps, :time, :last_updated
-
     class Player
-      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, ip:, kbps:, time:, last_updated:)
+      attr_reader :origin
+      attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :time, :last_updated
+
+      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, time:, last_updated:)
         # Connection method
         @origin = origin
 
@@ -15,12 +14,12 @@ module Mobius
         @score        = score # Integer
         @team         = team # Integer
         @ping         = ping # Integer
-        @ip           = ip # String
+        @address      = address # String
         @kbps         = kbps # Integer
         @time         = time # Time
         @last_updated = last_updated # Time
 
-        @data = {} # Hash
+        @data = { banned: false } # Hash
       end
 
       def value(key)
@@ -39,14 +38,18 @@ module Mobius
         @data[key]
       end
 
+      def banned?
+        @data[:banned]
+      end
+
       def reset
-        @data.delete("stats_kills")
-        @data.delete("stats_deaths")
-        @data.delete("stats_building_kills")
-        @data.delete("stats_building_kills_building_a") # ???
-        @data.delete("stats_building_repairs")
-        @data.delete("stats_vehicle_kills")
-        @data.delete("stats_vehicle_repairs")
+        @data.delete(:stats_kills)
+        @data.delete(:stats_deaths)
+        @data.delete(:stats_building_kills)
+        @data.delete(:stats_building_kills_building_a) # ???
+        @data.delete(:stats_building_repairs)
+        @data.delete(:stats_vehicle_kills)
+        @data.delete(:stats_vehicle_repairs)
       end
 
       def remote_moderation?
@@ -76,7 +79,7 @@ module Mobius
 
     @player_data = {}
 
-    def self.update(origin:, id:, name:, score:, team:, ping:, ip:, kbps:, time:, last_updated:)
+    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, time:, last_updated:)
       if (player = @player_data[id])
         if player.team != team
           process_team_change(id, player.team, team)
@@ -99,6 +102,7 @@ module Mobius
           score: score,
           team: team,
           ping: ping,
+          address: address,
           kbps: kbps,
           time: time,
           last_updated: Time.now.utc
@@ -118,11 +122,11 @@ module Mobius
 
     def self.name_to_id(name, exact_match: true)
       if exact_match
-        player = @player_data.find { |_, data| data.name.downcase == name.downcase }
+        player = @player_data.find { |_, data| data.name.downcase == name.downcase }&.last
         player ? player.id : -1
       else
         players = @player_data.select { |_, data| data.name.downcase == /^#{name.downcase}/ }
-        players.size == 1 ? players.first.id : -1
+        players.size == 1 ? players.first.last.id : -1
       end
     end
 

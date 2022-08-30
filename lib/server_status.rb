@@ -1,158 +1,169 @@
-class Mobius
+module Mobius
   class ServerStatus
-    attr_reader :server_mode, :current_map, :current_map_number, :map_start_time, :last_map, :max_players,
-                :team_0_players, :team_0_points, :team_1_players, :team_1_points, :time_remaining, :sfps, :radar_mode,
-                :default_max_players, :has_password, :start_map
+    @data = {}
 
-    def initialize
-      @server_mode         = "WOL"
-      @current_map         = "last round"
-      @current_map_number  = -1
-      @map_start_time      = 0
-      @last_map            = "last round"
-      @max_players         = 0
-      @team_0_players      = 0
-      @team_0_points       = 0
-      @team_1_players      = 0
-      @team_1_points       = 0
-      @time_remaining      = 0
-      @sfps                = 0
-      @radar_mode          = 0
+    @data[:server_mode]         = "WOL"
+    @data[:current_map]         = "last round"
+    @data[:current_map_number]  = -1
+    @data[:map_start_time]      = 0
+    @data[:last_map]            = "last round"
+    @data[:max_players]         = 0
+    @data[:team_0_players]      = 0
+    @data[:team_0_points]       = 0
+    @data[:team_1_players]      = 0
+    @data[:team_1_points]       = 0
+    @data[:time_remaining]      = 0
+    @data[:sfps]                = 0
+    @data[:radar_mode]          = 0
 
-      @last_request_time   = 0
-      @last_response_time  = 0
-      @fds_responding      = true
+    @data[:last_request_time]   = 0
+    @data[:last_response_time]  = 0
+    @data[:fds_responding]      = true
 
-      @default_max_players = 0
-      @has_password        = false
-      @start_map           = "N/A"
+    @data[:default_max_players] = 0
+    @data[:has_password]        = false
+    @data[:start_map]           = "N/A"
 
-      @update_interval = 30.0 # seconds
+    @data[:update_interval] = 30.0 # seconds
 
+    def self.get(key)
+      @data.fetch(key)
+    end
+
+    def self.init
+      log "INIT", "Enabling ServerStatus..."
       monitor
     end
 
-    def monitor
+    def self.teardown
+      log "TEARDOWN", "Shutdown ServerStatus..."
+      @monitor_thread&.kill
+    end
+
+    def self.monitor
       # Starting game status refresh thread...
 
-      Thread.new do
+      @monitor_thread = Thread.new do
         loop do
           probe_fds
 
-          sleep @update_interval
+          sleep @data[:update_interval]
         end
       end
     end
 
-    def probe_fds
-      if @last_response_time < @last_request_time - @update_interval && @fds_responding
+    def self.probe_fds
+      if @data[:last_response_time] < @data[:last_request_time] - @data[:update_interval] && @data[:fds_responding]
         # ISSUE warning to IRC/mod tool
-        @fds_responding = false
-      elsif @last_response_time > @last_request_time && !@fds_responding
+        @data[:fds_responding] = false
+
+      elsif @data[:last_response_time] > @data[:last_request_time] && !@data[:fds_responding]
         # Connection to FDS restored
         # ISSUE notice to IRC/mod tool
 
-        @fds_responding = true
+        @data[:fds_responding] = true
 
         RenRem.cmd("mapnum")
         RenRem.cmd("sversion")
-
-        # TODO: get available maps
-        # Config.get_available_maps
+        ServerConfig.fetch_available_maps
       end
 
-      @last_request_time = Time.now # FIXME: Use monotonic time!
+      @data[:last_request_time] = Time.now.to_i # FIXME: Use monotonic time!
 
-      RenRem.cmd("mapnum") if @current_map_number == -1
+      RenRem.cmd("mapnum") if @data[:current_map_number] == -1
 
-      # TODO: handle receiving server scripts version
       RenRem.cmd("sversion")
 
       RenRem.cmd("player_info")
       RenRem.cmd("game_info")
     end
 
-    def update_mode(mode)
+    def self.update_mode(mode)
       case mode.downcase.strip
       when /westwood/
-        @server_mode = "WOL"
+        @data[:server_mode] = "WOL"
       when /gamespy/
-        @server_mode = "GSA"
+        @data[:server_mode] = "GSA"
       else
         # TODO: Warn about invalid mode?
       end
 
-      @last_response_time = Time.now
+      @data[:last_response_time] = Time.now.to_i
     end
 
-    def update_radar_mode(mode)
-      @radar_mode = mode
+    def self.update_radar_mode(mode)
+      @data[:radar_mode] = mode
     end
 
-    def update_map(map_name)
-      @last_response_time = Time.now
+    def self.update_map(map_name)
+      @data[:last_response_time] = Time.now.to_i
 
-      return if @current_map == map_name
+      return if @data[:current_map] == map_name
 
-      @last_map = @current_map
-      @current_map = map_name
-      @map_start_time = Time.now
+      @data[:last_map] = @current_map
+      @data[:current_map] = map_name
+
+      @data[:map_start_time] = Time.now.to_i
 
       # TODO: Only apply map settings if we just loaded otherwise let the level Loaded ok event process it
       # Modules.apply_map_settings(0)
     end
 
-    def update_map_number(number)
-      @current_map_number = number
-      @last_response_time = Time.now
+    def self.update_map_number(number)
+      @data[:current_map_number] = number
+
+      @data[:last_response_time] = Time.now.to_i
     end
 
-    def update_time_remaining(remaining)
-      @time_remaining = remaining
-      @last_response_time = Time.now
+    def self.update_time_remaining(remaining)
+      @data[:time_remaining] = remaining
+
+      @data[:last_response_time] = Time.now.to_i
     end
 
-    def update_sfps(sfps)
-      @sfps = sfps
-      @last_response_time = Time.now
+    def self.update_sfps(sfps)
+      @data[:sfps] = sfps
+
+      @data[:last_response_time] = Time.now.to_i
     end
 
-    def update_team_status(team, players, points, max_players)
-      instance_variable_set(:"@team_#{team}_players", players)
-      instance_variable_set(:"@team_#{team}_points", points)
-      @max_players = max_players
-      @last_response_time = Time.now
+    def self.update_team_status(team, player_count, max_player_count, points)
+      @data[:"@team_#{team}_players"] = player_count
+      @data[:max_players] = max_player_count
+      @data[:"@team_#{team}_points"] = points
+
+      @data[:last_response_time] = Time.now.to_i
     end
 
-    def update_default_map_players(max_players)
-      @default_max_players = max_players
+    def self.update_default_map_players(max_players)
+      @data[:default_max_players] = max_players
     end
 
-    def update_has_password(bool)
-      @has_password = bool
+    def self.update_has_password(bool)
+      @data[:has_password] = bool
     end
 
-    def update_start_map(start_map)
-      @start_map = start_map
+    def self.update_start_map(start_map)
+      @data[:start_map] = start_map
     end
 
-    def game_status
+    def self.game_status
       [
-        @server_mode,
-        @current_map,
-        @team_0_players,
-        @team_0_points,
-        @team_1_players,
-        @team_1_points,
-        total_players,
-        @max_players,
-        @time_remaining,
-        @sfps
+        @data[:server_mode],
+        @data[:current_map],
+        @data[:team_0_players],
+        @data[:team_0_points],
+        @data[:team_1_players],
+        @data[:team_1_points],
+        tdata[:otal_players],
+        @data[:max_players],
+        @data[:time_remaining],
+        @data[:sfps]
       ]
     end
 
-    def total_players
-      @team_0_players + team_1_players
+    def self.total_players
+      @data[:team_0_players] + @data[:team_1_players]
     end
   end
 end

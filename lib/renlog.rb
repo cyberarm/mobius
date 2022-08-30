@@ -24,6 +24,8 @@ module Mobius
       @renew_ssgm = false
       @log_player_info = false
       @read_game_defs = false
+
+      ServerConfig.fetch_available_maps
     end
 
     def parse_line(line)
@@ -63,7 +65,7 @@ module Mobius
         return
       end
 
-      player = nil # PlayerData.player(username, true)
+      player = PlayerData.player(username)
       return unless player
 
       # TODO: Detect if player is mod or admin and format their name as such
@@ -109,9 +111,9 @@ module Mobius
 
       if line.start_with?("The Current Map Number is ")
         match_data = line.match(/The Current Map Number is (\d+)/)
-        map_number = match_data[1]
+        map_number = match_data[1].to_i
 
-        # TODO: Set server status map number
+        ServerStatus.update_map_number(map_number)
         return
       end
 
@@ -119,35 +121,29 @@ module Mobius
         match_data = line.match(/(.+?) mode active/)
 
         mode = match_data[1]
-        # TODO: Set server status mode
+
+        ServerStatus.update_mode(mode)
         return
       end
 
       if line.start_with?("Map : ")
         _, map_name = line.split(":")
 
-        # TODO: Set server status map
-        return
-      end
-
-      if line.start_with?("Map : ")
-        _, map_name = line.split(":")
-
-        # TODO: Set server status map
+        ServerStatus.update_map(map_name.strip)
         return
       end
 
       if line.start_with?("Time : ")
         _, time = line.split(":")
 
-        # TODO: Set server status time
+        ServerStatus.update_time_remaining(time)
         return
       end
 
       if line.start_with?("Fps : ")
         _, sfps = line.split(":")
 
-        # TODO: Set server status sfps
+        ServerStatus.update_sfps(sfps.to_i)
         return
       end
 
@@ -156,11 +152,11 @@ module Mobius
       if line.start_with?("#{team_0_abbrev} : ")
         match_data = line.match(/#{team_0_abbrev} : (.+?)\/(.+?) players\s+ (.+?) points/)
 
-        player_count     = match_data[1]
-        max_player_count = match_data[2]
-        team_points      = match_data[3]
+        player_count     = match_data[1].to_i
+        max_player_count = match_data[2].to_i
+        team_points      = match_data[3].to_i
 
-        # TODO: Set team zero's status
+        ServerStatus.update_team_status(0, player_count, max_player_count, team_points)
         return
       end
 
@@ -169,11 +165,11 @@ module Mobius
       if line.start_with?("#{team_1_abbrev} : ")
         match_data = line.match(/#{team_1_abbrev} : (.+?)\/(.+?) players\s+ (.+?) points/)
 
-        player_count     = match_data[1]
-        max_player_count = match_data[2]
-        team_points      = match_data[3]
+        player_count     = match_data[1].to_i
+        max_player_count = match_data[2].to_i
+        team_points      = match_data[3].to_i
 
-        # TODO: Set team ones's status
+        ServerStatus.update_team_status(1, player_count, max_player_count, team_points)
         return
       end
 
@@ -193,7 +189,7 @@ module Mobius
 
       return if handle_server_version(line)
 
-      return if handle_player_bandwidth(line) # TODO
+      return if handle_player_bandwidth(line)
 
       return if handle_bhs_required(line) # TODO: Maybe? IDK what that is...
 
@@ -211,7 +207,7 @@ module Mobius
         if line.empty?
           @read_game_defs = false
         else
-          # TODO: Add to list of maps
+          ServerConfig.installed_maps << line
         end
 
         return true
@@ -219,7 +215,7 @@ module Mobius
 
       if line.start_with?("Available game definitions:")
         @read_game_defs = true
-        # TODO: Clear list of maps
+        ServerConfig.installed_maps.clear
 
         return true
       end
@@ -241,7 +237,8 @@ module Mobius
       if line =~ /Total current bandwidth/
         @log_player_info = false
 
-        # TODO: Check player list for kicked or invalid player names
+        # Check player list for invalid player names
+        check_player_list
 
         return true
       end
@@ -257,9 +254,14 @@ module Mobius
       if line =~ /^Player (.+?) left the game$/
         match_data = line.match(/^Player (.+?) left the game$/)
 
-        username = match_data[1]
+        name = match_data[1]
 
-        # player = PlayerData.player(username)
+        player = PlayerData.player(PlayerData.name_to_id(name))
+
+        RenRem.cmd("game_info")
+        RenRem.cmd("player_info")
+
+        PlayerData.delete(player)
 
         # TODO: More work needed
 
@@ -275,6 +277,9 @@ module Mobius
 
         # player = PlayerData.player(username)
 
+        RenRem.cmd("game_info")
+        RenRem.cmd("player_info")
+
         # TODO: More work needed
 
         return true
@@ -285,15 +290,28 @@ module Mobius
       split_data = line.split(" ")
 
       id       = split_data[0].to_i
-      username = split_data[1]
+      name     = split_data[1]
       score    = split_data[2].to_i
-      side     = split_data[3]
+      team     = split_data[3]
       ping     = split_data[4].to_i
       address  = split_data[5]
-      kbits    = split_data[6].to_i
+      kbps     = split_data[6].to_i
       time     = split_data[7]
 
-      # TODO: Update player data
+      PlayerData.update(
+        origin: :game,
+        id: id,
+        name: name,
+        score: score,
+        team: team,
+        ping: ping,
+        address: address,
+        kbps: kbps,
+        time: time,
+        last_updated: Time.now.utc
+      )
+
+      check_username(id, name, address)
     end
 
     def handle_level_loaded(line)
@@ -322,6 +340,7 @@ module Mobius
            "Creating game channel",
            "Channel created OK",
            "Terminating game"
+
         # TODO: Send message to admin channel of IRC/mod tool
 
         return true
@@ -331,9 +350,9 @@ module Mobius
     def handle_server_crash(line)
       if line =~ /^Initializing .+ Mode$/
         # TODO: Send message to IRC/mod tool
-        # PlayerData.clear
+        PlayerData.clear
         RenRem.cmd("sversion")
-        # Config.get_available_maps
+        ServerConfig.fetch_available_maps
 
         return true
       end
@@ -343,11 +362,16 @@ module Mobius
       if line.match?(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
         match_data = line.match(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
 
-        username         = match_data[1]
+        id               = match_data[1].to_i
         scripts_version  = match_data[2]
-        scripts_revision = match_data[3]
+        scripts_revision = match_data[3].to_s.strip
 
-        log "#{username} has scripts #{scripts_version} (revision: #{scripts_revision})"
+        if (player = PlayerData.player(id))
+          player.set_value(:scripts_version, scripts_version)
+          player.set_value(:scripts_reversion, scripts_revision)
+
+          log "#{player.name} has scripts #{scripts_version} (revision: #{scripts_revision})"
+        end
 
         return true
       end
@@ -358,20 +382,32 @@ module Mobius
         match_data = line.match(/^The Version of the server is (.+)/) if line =~ /^The Version of the server is (.+)/
         match_data ||= line.match(/^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r\d+)?/)
 
-        # Config.server_scripts_version  = match_data[1]
-        # Config.server_scripts_revision = match_data[2].strip
+        log "The server is running scripts: #{match_data[1]} r#{match_data[2]}"
+
+        ServerConfig.scripts_version  = match_data[1]
+        ServerConfig.scripts_revision = match_data[2].to_s.strip
 
         return true
       end
     end
 
     def handle_player_bandwidth(line)
+      if line =~ /Current Bandwidth for player (.*?) is (.+)/
+        match_data = line.match(/Current Bandwidth for player (.*?) is (.+)/)
+
+        name = match_data[1]
+        bandwidth = match_data[2].to_i
+
+        if (player = PlayerData.player(PlayerData.name_to_id(name)))
+          player.set_value(:bandwidth, bandwidth)
+        end
+      end
     end
 
     # NOTE: Remove? Only planning on supporting Scripts/SSGM 4.x+
     def handle_bhs_required(line)
       if line =~ /is required for this map/
-        # Config.force_bhs_dll_map = true
+        ServerConfig.force_bhs_dll_map = true
 
         # TODO: Kick players who have been in-game more then 4 seconds and have a scripts version that is to low
 
@@ -381,22 +417,64 @@ module Mobius
 
     def handle_loading_level(line)
       if line =~ /Loading level (.+)/
+        match_data = line.match(/Loading level (.+)/)
         # Send message to IRC/mod tool
-        # TODO: Update server status map
-        # TODO: reset Config.force_bhs_dll_map to false # REMOVE?
+
+        pp match_data[1]
+        ServerStatus.update_map(match_data[1])
+        ServerConfig.force_bhs_dll_map = false # REMOVE?
         # TODO: The last game has completed, process game results
+
+        RenRem.cmd("mapnum")
 
         return true
       end
     end
 
     def handle_vehicle_purchased(line)
+      # NOTE: No OP? This is handled in GameLog atm... 🤔
     end
 
     def handle_player_lost_connection(line)
+      # TODO: send raw line to IRC/mod tool
     end
 
     def handle_player_was_kicked(line)
+      # TODO: send raw line to IRC/mod tool
+    end
+
+    def check_player_list
+      PlayerData.player_list.reverse.each do |player|
+        if Time.now.utc - player.last_updated > 40
+          log "Deleting data for player #{player.name} (ID: #{player.id})"
+          PlayerData.delete(player)
+        end
+
+        RenRem.cmd("kick #{player.id}") if player.banned?
+      end
+    end
+
+    def check_username(id, name, address)
+      if name =~ /(:|\!|\&|\s)/
+        RenRem.cmd("kick #{id} disallowed characters in nickname")
+        RenRem.cmd("msg [MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name")
+
+      elsif name.length <= 1 || name =~ /[\001\002\037]/
+        RenRem.cmd("kick #{id} non-ascii characters detected in nickname")
+        RenRem.cmd("msg [MOBIUS] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!")
+
+      elsif name.length > 30
+        RenRem.cmd("kick #{id} nickname may only be 30 characters long")
+        # TODO: Send message on IRC/mod tool
+
+      elsif name.include?("\\")
+        RenRem.cmd("kick #{id} you have backslashes in your name. Please remove them, and reconnect.")
+        # TODO: Send message on IRC/mod tool
+      end
+    end
+
+    # TODO
+    def check_ban_list(player)
     end
   end
 end
