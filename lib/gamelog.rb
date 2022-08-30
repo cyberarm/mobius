@@ -220,7 +220,8 @@ module Mobius
           # Vehicle has been stolen
           if vehicle_obj[:last_team] != player_obj[:team]
             if vehicle_obj[:last_team] != 2
-              vehicle_name = translate_preset(vehicle_obj[:preset])
+              # FIXME: implement translate_preset
+              vehicle_name = vehicle_obj[:preset] # translate_preset(vehicle_obj[:preset])
 
               # FIXME: Add a mobius annnouncement method to simplify these sorts of broadcasts
               RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!")
