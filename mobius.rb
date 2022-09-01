@@ -1,6 +1,10 @@
 require "json"
 require "socket"
 
+# require "lmdb"
+require "sqlite3"
+require "bcrypt"
+
 require_relative "lib/log"
 require_relative "lib/config"
 require_relative "lib/server_config"
@@ -11,6 +15,7 @@ require_relative "lib/renrem"
 require_relative "lib/ssgm"
 require_relative "lib/gamelog"
 require_relative "lib/renlog"
+require_relative "lib/database"
 require_relative "lib/player_data"
 require_relative "lib/server_status"
 require_relative "lib/version"

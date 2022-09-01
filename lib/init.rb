@@ -4,6 +4,7 @@ module Mobius
   def self.init
     modules = [
       Config,
+      Database,
       RenRem,
       SSGM,
       GameLog,

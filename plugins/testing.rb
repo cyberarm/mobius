@@ -1,4 +1,4 @@
-Mobius::Plugin.create(name: "testing", version: "0.1.0") do
+mobius_plugin(name: "testing", version: "0.1.0") do
   def valid_tag_value?(value)
     true
   end
@@ -22,20 +22,22 @@ Mobius::Plugin.create(name: "testing", version: "0.1.0") do
   end
 
   on(:tick) do
-    log("1 second since last time!")
+    # log("1 second since last time!")
   end
 
-  on(:player_join) do |player|
+  on(:player_joined) do |player|
     if player.name.downcase.strip == "jeff"
       kick_player!(player, "No jeff's here!")
     else
-      broadcast_message "#{player.name} has join the game!"
+      broadcast_message "#{player.name} has joined the game!"
 
-      renrem_cmd("tag, #{player.name} #{tag}") if (tag = perm_store(player.name))
+      # after(5) { kick_player!(player.name) }
+
+      # renrem_cmd("tag #{player.name} #{tag}") if (tag = perm_store(player.name))
     end
   end
 
-  on(:player_leave) do |player|
+  on(:player_left) do |player|
     broadcast_message "#{player.name} has left!"
   end
 
@@ -46,7 +48,7 @@ Mobius::Plugin.create(name: "testing", version: "0.1.0") do
   # If issued command doesn't have the correct number of arguments than this block won't be called
   # instead the commands help will be pm'd to the issuer
   # NOTE: Last argument will be treated as endless, i.e. "!report jeff team hampering" -> ["jeff", "team hampering"]
-  command(:report, argmuments: 2, help: "!report <playername> <reason>") do |command|
+  command(:report, arguments: 2, help: "!report <playername> <reason>") do |command|
     playername = command.arguments.first
     reason = command.argument.last
 
@@ -74,7 +76,7 @@ Mobius::Plugin.create(name: "testing", version: "0.1.0") do
     end
   end
 
-  command(:help, optional_arguments: 1, help: "!help [command]") do |command|
+  command(:help, arguments: 1, help: "!help [command]") do |command|
     # Automatically detect where issuer is sending from
     # i.e. ingame, W3D Server Moderation Tool or IRC
     if (cmd = command.arguments.first)
@@ -84,12 +86,13 @@ Mobius::Plugin.create(name: "testing", version: "0.1.0") do
     end
   end
 
-  command(:tag, arguments: 1) do |command|
+  command(:tag, arguments: 1, help: "!tag your tag") do |command|
     if command.issuer.admin? || command.issuer.ingame?
       if valid_tag_value?(command.arguments.first)
         perm_store(command.issuer.name, command.arguments.first)
 
         renrem_cmd("tag #{command.issuer.name} #{command.arguments.first}")
+      end
     else
       message_player(command.issuer, "Not allowed to use !tag")
     end

@@ -54,6 +54,8 @@ module Mobius
       else
         handle_input(line)
       end
+
+      PluginManager.publish_event(:renlog, line)
     end
 
     def handle_chat(team_chat, username, message)
@@ -65,7 +67,7 @@ module Mobius
         return
       end
 
-      player = PlayerData.player(username)
+      player = PlayerData.player(PlayerData.name_to_id(username))
       return unless player
 
       # TODO: Detect if player is mod or admin and format their name as such
@@ -77,10 +79,14 @@ module Mobius
       end
 
       if message.start_with?("!")
-        # TODO: Handle Command
+        PluginManager.handle_command(player, message)
+      else
+        PluginManager.publish_event(
+          team_chat ? :team_chat : :chat,
+          player,
+          message
+        )
       end
-
-      # TODO: Send message to subscribed plugins
     end
 
     def handle_host_message(message)
@@ -88,12 +94,13 @@ module Mobius
         match_data = message.match(/^(.+?) changed teams.$/)
 
         username = match_data[1]
+        puts "USERNAME: #{username}"
 
         # TODO: Deliver message to IRC/mod tool
         # PlayerData.player(username).set_value(:changed_team, true)
 
-        # RenRem.cmd("game_info")
-        # RenRem.cmd("player_info")
+        RenRem.cmd("game_info")
+        RenRem.cmd("player_info")
       else
         # TODO: Deliver message to IRC/mod tool
       end
@@ -258,6 +265,11 @@ module Mobius
 
         player = PlayerData.player(PlayerData.name_to_id(name))
 
+        PluginManager.publish_event(
+          :player_left,
+          player
+        )
+
         RenRem.cmd("game_info")
         RenRem.cmd("player_info")
 
@@ -273,12 +285,23 @@ module Mobius
       if line =~ /^Player (.+?) joined the game$/
         match_data = line.match(/^Player (.+?) joined the game$/)
 
-        username = match_data[1]
-
-        # player = PlayerData.player(username)
+        name = match_data[1]
 
         RenRem.cmd("game_info")
         RenRem.cmd("player_info")
+
+        PluginManager.defer(1) do
+          player = PlayerData.player(PlayerData.name_to_id(name))
+
+          log "TESTING"
+          pp [player, PlayerData.name_to_id(name)]
+          log "END TESTING"
+
+          PluginManager.publish_event(
+            :player_joined,
+            player
+          )
+        end
 
         # TODO: More work needed
 
@@ -320,7 +343,10 @@ module Mobius
         # TODO: Read/update server settings
         # TODO: Apply map rules (without setting map time?)
 
-        # TODO: Publish :map_changed/:map_load event for to plugins
+        PluginManager.publish_event(
+          :map_loaded,
+          ServerStatus.get(:current_map)
+        )
 
         # TODO: Auto balance teams, if enabled.
 
