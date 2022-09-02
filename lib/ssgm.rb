@@ -46,7 +46,7 @@ module Mobius
 
           log("SSGM", "Connected to SSGM.")
 
-          while (event = @socket.gets("\0").strip)
+          while (event = @socket.gets("\0")&.strip)
             type = event[0..2]
 
             event.sub!(type, "")
@@ -70,13 +70,18 @@ module Mobius
               # pp [:unhandled_event, type, event]
             end
           end
+
+          raise "Lost connection to SSGM."
         rescue SystemCallError, StandardError => e
           log("SSGM", "An error occurred while attempting to communicate with SSGM. Retrying in 10s...")
           log("SSGM", e.to_s)
 
+          @socket&.close unless @socket&.closed?
+          @socket = nil
+
           sleep 10
 
-          monitor_stream # Recursive... Probably fine.
+          monitor_stream
         end
       end
     end

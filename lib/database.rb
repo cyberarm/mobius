@@ -9,8 +9,8 @@ module Mobius
       create_default_tables!
     end
 
-    def self.execute(query)
-      @db.execute(query)
+    def self.execute(query, *args)
+      @db.execute(query, *args)
     end
 
     def self.transaction(&block)

@@ -106,8 +106,12 @@ module Mobius
     def cmd(data)
       # TODO: Limit data length
 
-      @socket.send(encode_data(@password), 0)
-      @socket.send(encode_data(data), 0)
+      begin
+        @socket.send(encode_data(@password), 0)
+        @socket.send(encode_data(data), 0)
+      rescue Errno::ECONNREFUSED
+        log "RENREM", "Failed to send command '#{data}' to RenRem!"
+      end
     end
 
     def cmd_delayed(data, seconds)

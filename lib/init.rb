@@ -20,10 +20,9 @@ module Mobius
     # TODO: start sane main loop
     loop do
       PluginManager.publish_event(:tick)
+
       sleep 1
     end
-
-
   ensure
     modules.reverse.each(&:teardown)
   end
