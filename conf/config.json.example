@@ -11,7 +11,21 @@
       "address":"127.0.0.1",
       "port":7847
     },
-    "gamespy":{},
+    "gamespy":{
+      "master_servers":[
+        "renmaster.cncnet.org:27900",
+        "176.31.21.190:27900"
+      ],
+      "game_type":"AoW",
+      "custom_info":[
+        {
+          "website":"",
+          "irc":"",
+          "w3dhubgame":"apb",
+          "w3dhubchannel":"release"
+        }
+      ]
+    },
     "staff":{
       "admin": [
         {

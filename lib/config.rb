@@ -21,7 +21,7 @@ module Mobius
       end
     end
 
-    attr_reader :fds_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :staff, :debug_verbose
+    attr_reader :fds_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
@@ -37,6 +37,8 @@ module Mobius
 
       @ssgm_address = @data.dig(:mobius, :ssgm, :address)
       @ssgm_port = @data.dig(:mobius, :ssgm, :port)
+
+      @gamespy = @data.dig(:mobius, :gamespy)
 
       @staff = @data.dig(:mobius, :staff)
 
