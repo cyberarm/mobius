@@ -1,4 +1,4 @@
-class Mobius
+module Mobius
   class Results
     def initialize
       # Find lastest results file

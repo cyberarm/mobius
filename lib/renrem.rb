@@ -108,10 +108,12 @@ module Mobius
 
       begin
         @socket.send(encode_data(@password), 0)
-        @socket.send(encode_data(data), 0)
+        @socket.send(encode_data(data[0..249]), 0)
       rescue Errno::ECONNREFUSED
         log "RENREM", "Failed to send command '#{data}' to RenRem!"
       end
+
+      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless data.length <= 249
     end
 
     def cmd_delayed(data, seconds)

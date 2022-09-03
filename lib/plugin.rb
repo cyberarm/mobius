@@ -33,8 +33,8 @@ module Mobius
 
         case timer.type
         when :every
-          timer.block&.call
           timer.ticks = 0
+          timer.block&.call
         when :after
           timer.block&.call
 
@@ -73,6 +73,12 @@ module Mobius
       return unless (player_id = PlayerData.name_to_id(name))
 
       renrem_cmd("cmsgp #{player_id} #{red},#{green},#{blue} #{message}")
+    end
+
+    def page_player(name, message, red: 255, green: 255, blue: 255)
+      return unless (player_id = PlayerData.name_to_id(name))
+
+      renrem_cmd("ppage #{player_id} #{message}")
     end
 
     def renrem_cmd(data, delay = nil)

@@ -4,7 +4,17 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
   end
 
   def query(name)
-    Database.execute("select tag from tags where lower(name) = '#{name.downcase}' limit 1")
+    Database.execute("select tag from tags where name = ?", name.downcase)
+  end
+
+  def insert(player, tagger, tag)
+    if query(player.name.downcase).count.positive?
+      # Attempt to update first
+      Database.execute("update tags set tagger=?, tag=? where name = ?", tagger.name.downcase, tag, player.name.downcase)
+    else
+      # Then fall back to inserting
+      Database.execute("insert into tags (name, tagger, tag) values (?, ?, ?)", player.name.downcase, tagger.name.downcase, tag)
+    end
   end
 
   on(:start) do
@@ -21,18 +31,33 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
       log "Set #{player.name}'s TAG: #{tag}"
 
       RenRem.cmd("tag #{player.id} #{tag}")
-    else
-      log "Did not find a tag for player: #{player.name}"
     end
   end
 
   command(:tag, arguments: 2, help: "!tag <nickname> <tag>", groups: [:admin, :mod]) do |command|
-    pp command
+    tag = command.arguments.last
+
+    if tag.length > 32
+      page_player(command.issuer.id, "The specified tag is too long, please use 32 characters or less.")
+    else
+      player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+      if player
+        insert(player, command.issuer, tag)
+        RenRem.cmd("tag #{player.id} #{tag}")
+      else
+        page_player(command.issuer.id, "Player #{command.arguments.first} was not found ingame, or is not unique.")
+      end
+    end
   end
 
   command(:tagself, arguments: 1, help: "!tagself <tag>") do |command|
-    # TODO: Save to DB, or only do that for !tag?
+    tag = command.arguments.first
 
-    RenRem.cmd("tag #{command.issuer.id} #{command.arguments.first}")
+    if tag.length > 32
+      page_player(command.issuer.name, "The specified tag is too long, please use 32 characters or less.")
+    else
+      RenRem.cmd("tag #{command.issuer.id} #{tag}")
+    end
   end
 end

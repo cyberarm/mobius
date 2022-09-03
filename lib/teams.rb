@@ -1,34 +1,37 @@
-class Mobius
+module Mobius
   class Teams
-    def initialize
-      @teams = [
-        {
-          id: 0,
-          name: "Nod",
-          abbreviation: "Nod",
-          color: "04"
-        },
-        {
-          id: 1,
-          name: "GDI",
-          abbreviation: "GDI",
-          color: "08,15"
-        },
-        {
-          id: 2,
-          name: "Neutral",
-          abbreviation: "Neu",
-          color: "09"
-        }
-      ]
+    @teams = [
+      {
+        id: 0,
+        name: "Nod",
+        abbreviation: "Nod",
+        color: "04"
+      },
+      {
+        id: 1,
+        name: "GDI",
+        abbreviation: "GDI",
+        color: "08,15"
+      },
+      {
+        id: 2,
+        name: "Neutral",
+        abbreviation: "Neu",
+        color: "09"
+      }
+    ]
+
+    def self.init
+      log "INIT", "Loading Teams..."
 
       read_config
     end
 
-    def read_config
-      path = "#{ROOT_PATH}/conf/teams.json"
+    def self.teardown
+    end
 
-      return unless File.exist?(path)
+    def self.read_config(path: "#{ROOT_PATH}/conf/teams.json")
+      raise "Teams config file not found at: #{path}" unless File.exist?(path)
 
       json = File.read(path)
 
@@ -42,20 +45,22 @@ class Mobius
       end
     end
 
-    def config_valid?(array)
+    def self.config_valid?(array)
       return false unless array.is_a?(Array)
 
       array
     end
 
-    def id_from_name(team)
+    def self.id_from_name(team)
       return team if team.is_a?(Integer)
 
       @teams.find { |hash| hash[:name] == team || hash[:abbreviation] == team }
     end
 
-    def name(team)
-      hash = id_from_name(team)
+    def self.name(team)
+      hash = nil
+      hash = id_from_name(team) if team.is_a?(String)
+      hash = @teams.find { |h| h[:id] == team } if team.is_a?(Integer)
 
       if hash
         hash[:name]
@@ -64,8 +69,10 @@ class Mobius
       end
     end
 
-    def abbreviation(team)
-      hash = id_from_name(team)
+    def self.abbreviation(team)
+      hash = nil
+      hash = id_from_name(team) if team.is_a?(String)
+      hash = @teams.find { |h| h[:id] == team } if team.is_a?(Integer)
 
       if hash
         hash[:abbreviation]
@@ -74,7 +81,7 @@ class Mobius
       end
     end
 
-    def color(team)
+    def self.color(team)
       hash = id_from_name(team)
 
       if hash
@@ -84,11 +91,11 @@ class Mobius
       end
     end
 
-    def colorize_name(team)
+    def self.colorize_name(team)
       IRC.colorize(color(team), name(team))
     end
 
-    def colorize_abbreviation(team)
+    def self.colorize_abbreviation(team)
       IRC.colorize(color(team), abbreviation(team))
     end
   end

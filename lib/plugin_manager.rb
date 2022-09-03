@@ -32,6 +32,7 @@ module Mobius
         rescue => e
           puts "Failed to load plugin: #{File.basename(plugin)}"
           raise
+          puts e.backtrace
         end
       end
     end
@@ -97,7 +98,8 @@ module Mobius
         command.block&.call(CommandResult.new(player, arguments))
       rescue StandardError => e
         log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
-        log "ERROR", e
+        log "ERROR", "#{e.class}: #{e}"
+        puts e.backtrace
       end
     end
 
@@ -134,7 +136,8 @@ module Mobius
         plugin.___tick if event == :tick
       rescue StandardError => e
         log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
-        log "ERROR", e
+        log "ERROR", "#{e.class}: #{e}"
+        puts e.backtrace
       end
 
       handlers = plugin.___event_handlers[event]
@@ -146,7 +149,8 @@ module Mobius
           handler.call(*args)
         rescue StandardError => e
           log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
-          log "ERROR", e
+          log "ERROR", "#{e.class}: #{e}"
+          puts e.backtrace
         end
       end
     end

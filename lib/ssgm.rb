@@ -35,7 +35,30 @@ module Mobius
       @address = address
       @port = port
 
+      parse_tt_rotation
+
       monitor_stream
+    end
+
+    def parse_tt_rotation
+      ServerConfig.rotation.clear
+
+      reading_rotation = false
+      File.open("#{Config.fds_path}/tt.cfg") do |f|
+        f.each_line do |line|
+          line = line.strip
+
+          if line.start_with?("rotation:")
+            reading_rotation = true
+          elsif reading_rotation
+            break if line.start_with?("];")
+            next unless line.start_with?("\"")
+
+            _, name = line.split('"')
+            ServerConfig.rotation << name
+          end
+        end
+      end
     end
 
     def monitor_stream
@@ -74,7 +97,8 @@ module Mobius
           raise "Lost connection to SSGM."
         rescue SystemCallError, StandardError => e
           log("SSGM", "An error occurred while attempting to communicate with SSGM. Retrying in 10s...")
-          log("SSGM", e.to_s)
+          log "SSGM", "#{e.class}: #{e}"
+          puts e.backtrace
 
           @socket&.close unless @socket&.closed?
           @socket = nil

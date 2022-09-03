@@ -154,8 +154,7 @@ module Mobius
         return
       end
 
-      # FIXME: Get actual team abbrev from Teams helper class
-      team_0_abbrev = "Sov"
+      team_0_abbrev = Teams.abbreviation(0)
       if line.start_with?("#{team_0_abbrev} : ")
         match_data = line.match(/#{team_0_abbrev} : (.+?)\/(.+?) players\s+ (.+?) points/)
 
@@ -167,8 +166,7 @@ module Mobius
         return
       end
 
-      # FIXME: Get actual team abbrev from Teams helper class
-      team_1_abbrev = "All"
+      team_1_abbrev = Teams.abbreviation(1)
       if line.start_with?("#{team_1_abbrev} : ")
         match_data = line.match(/#{team_1_abbrev} : (.+?)\/(.+?) players\s+ (.+?) points/)
 
@@ -290,7 +288,7 @@ module Mobius
         RenRem.cmd("game_info")
         RenRem.cmd("player_info")
 
-        PluginManager.defer(1) do
+        PluginManager.defer(2) do
           player = PlayerData.player(PlayerData.name_to_id(name))
 
           PluginManager.publish_event(

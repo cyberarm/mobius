@@ -1,5 +1,7 @@
 {
   "mobius": {
+    "fds_path":"C:/GameServers/a-path-beyond-fds",
+    "database_path":"./conf/database.db",
     "renrem": {
       "address":"127.0.0.1",
       "port":7846,
@@ -8,6 +10,17 @@
     "ssgm": {
       "address":"127.0.0.1",
       "port":7847
+    },
+    "gamespy":{},
+    "staff":{
+      "admin": [
+        {
+          "name":"player",
+          "hostnames":[
+            "192.168.1.117",
+          ]
+        }
+      ]
     }
   }
 }

@@ -2,6 +2,7 @@ module Mobius
   class ServerConfig
     @data = {}
     @installed_maps = []
+    @rotation = []
 
     def self.fetch_available_maps
       RenRem.cmd("listgamedefs", 2)
@@ -9,6 +10,10 @@ module Mobius
 
     def self.installed_maps
       @installed_maps
+    end
+
+    def self.rotation
+      @rotation
     end
 
     def self.scripts_version

@@ -1,14 +1,14 @@
 [
   {
     "id": 0,
-    "name": "Nod",
-    "abbreviation": "Nod",
+    "name": "Soviets",
+    "abbreviation": "Sov",
     "color": "04"
   },
   {
     "id": 1,
-    "name": "GDI",
-    "abbreviation": "GDI",
+    "name": "Allies",
+    "abbreviation": "All",
     "color": "08,15"
   },
   {

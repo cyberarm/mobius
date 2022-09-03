@@ -21,13 +21,14 @@ module Mobius
       end
     end
 
-    attr_reader :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :debug_verbose
+    attr_reader :fds_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :staff, :debug_verbose
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
 
       @data = JSON.parse(File.read(path), symbolize_names: true)
 
+      @fds_path = @data.dig(:mobius, :fds_path)
       @database_path = @data.dig(:mobius, :database_path)
 
       @renrem_address = @data.dig(:mobius, :renrem, :address)
@@ -36,6 +37,8 @@ module Mobius
 
       @ssgm_address = @data.dig(:mobius, :ssgm, :address)
       @ssgm_port = @data.dig(:mobius, :ssgm, :port)
+
+      @staff = @data.dig(:mobius, :staff)
 
       @debug_verbose = false
     end
