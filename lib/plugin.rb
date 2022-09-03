@@ -1,7 +1,7 @@
 module Mobius
   class Plugin
     Timer = Struct.new(:type, :ticks, :delay, :block)
-    Command = Struct.new(:name, :argmuments, :help, :groups, :block)
+    Command = Struct.new(:plugin, :name, :arguments, :help, :groups, :block)
 
     attr_reader :___name, :___version, :___event_handlers, :___timers, :___data
 
@@ -53,7 +53,7 @@ module Mobius
     # register command
     def command(name, arguments:, help:, groups: [:ingame], &block)
       PluginManager.register_command(
-        Command.new(name, arguments, help, groups, block)
+        Command.new(self, name, arguments, help, groups, block)
       )
     end
 
@@ -69,7 +69,7 @@ module Mobius
       renrem_cmd("cmsg #{red},#{green},#{blue} #{message}")
     end
 
-    def message_player(name, message)
+    def message_player(name, message, red: 255, green: 255, blue: 255)
       return unless (player_id = PlayerData.name_to_id(name))
 
       renrem_cmd("cmsgp #{player_id} #{red},#{green},#{blue} #{message}")

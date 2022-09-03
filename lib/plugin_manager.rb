@@ -1,5 +1,7 @@
 module Mobius
   class PluginManager
+    CommandResult = Struct.new(:issuer, :arguments)
+
     @plugins = []
     @commands = {}
     @deferred = []
@@ -12,12 +14,18 @@ module Mobius
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown plugins...")
+      log("TEARDOWN", "Shutdown Plugins...")
+
+      @plugins.each do |plugin|
+        deliver_event(plugin, :shutdown, nil)
+      end
+
+      @deferred.clear
     end
 
     def self.find_plugins
       Dir.glob("#{ROOT_PATH}/plugins/*.rb").each do |plugin|
-        # next # REMOVE ME
+        next if File.basename(plugin).start_with?("_")
 
         begin
           register_plugin(plugin)
@@ -43,7 +51,65 @@ module Mobius
     end
 
     def self.register_command(command)
-      pp command
+      existing_command = @commands[command.name]
+
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it is reserved" if command.name == :help
+
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
+
+      @commands[command.name] = command
+    end
+
+    def self.handle_command(player, message)
+      return unless message.start_with?("!")
+
+      parts = message.split(" ")
+      cmd = parts.shift.sub("!", "")
+
+      if cmd.downcase.to_sym == :help
+        handle_help_command(player)
+
+        return
+      end
+
+      command = @commands[cmd.downcase.to_sym]
+
+      return unless command
+      return unless player.in_group?(command.groups)
+
+      arguments = []
+
+      if parts.count >= command.arguments
+        (command.arguments - 1).times do
+          arguments << parts.shift
+        end
+
+        arguments << parts.join(" ")
+      else
+        # TODO: Send error and help
+        RenRem.cmd("cmsgp #{player.id} 255,255,255 wrong number of arguments provided.")
+        RenRem.cmd("cmsgp #{player.id} 255,255,255 #{command.help}")
+        return
+      end
+
+
+      begin
+        command.block&.call(CommandResult.new(player, arguments))
+      rescue StandardError => e
+        log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
+        log "ERROR", e
+      end
+    end
+
+    def self.handle_help_command(player)
+      cmds = @commands.select do |name, cmd|
+        player.in_group?(cmd.groups)
+      end
+
+      cmds = cmds.map { |a| a.last }
+
+      RenRem.cmd("cmsg 255,127,0 [MOBIUS] Available Commands:")
+      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{cmds.map { |c| "!#{c.name}" }.join(', ')}")
     end
 
     def self.publish_event(event, *args)
@@ -64,7 +130,12 @@ module Mobius
     end
 
     def self.deliver_event(plugin, event, *args)
-      plugin.___tick if event == :tick
+      begin
+        plugin.___tick if event == :tick
+      rescue StandardError => e
+        log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
+        log "ERROR", e
+      end
 
       handlers = plugin.___event_handlers[event]
 

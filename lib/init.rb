@@ -18,6 +18,9 @@ module Mobius
     log("INIT", "Successfully initialized Mobius v#{Mobius::VERSION}")
 
     # TODO: start sane main loop
+
+    RenRem.cmd("rehash_ban_list")
+
     loop do
       PluginManager.publish_event(:tick)
 

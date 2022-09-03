@@ -37,7 +37,7 @@ module Mobius
       if line.match?(/^(\[Team\]\s)?([^\s:]+):\s(.+)/)
         match_data = line.match(/^(\[Team\]\s)?([^\s:]+):\s(.+)/)
 
-        pp match_data.to_a
+        pp match_data.to_a if Config.debug_verbose
 
         team_chat = match_data[1]
         username  = match_data[2]
@@ -59,7 +59,7 @@ module Mobius
     end
 
     def handle_chat(team_chat, username, message)
-      pp [:renlog_chat, team_chat, username, message]
+      pp [:renlog_chat, team_chat, username, message] if Config.debug_verbose
 
       if username == "Host"
         handle_host_message(message)
@@ -108,11 +108,11 @@ module Mobius
 
     # NO OP?
     def handle_page(username, message)
-      pp [:renlog_page, message, username]
+      pp [:renlog_page, message, username] if Config.debug_verbose
     end
 
     def handle_input(line)
-      pp [:renlog_input, line]
+      pp [:renlog_input, line] if Config.debug_verbose
 
       return if handle_list_game_defs(line)
 
@@ -293,10 +293,6 @@ module Mobius
         PluginManager.defer(1) do
           player = PlayerData.player(PlayerData.name_to_id(name))
 
-          log "TESTING"
-          pp [player, PlayerData.name_to_id(name)]
-          log "END TESTING"
-
           PluginManager.publish_event(
             :player_joined,
             player
@@ -408,7 +404,7 @@ module Mobius
         match_data = line.match(/^The Version of the server is (.+)/) if line =~ /^The Version of the server is (.+)/
         match_data ||= line.match(/^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r\d+)?/)
 
-        log "The server is running scripts: #{match_data[1]} r#{match_data[2]}"
+        log "The server is running scripts: #{match_data[1]} r#{match_data[2]}" if Config.debug_verbose
 
         ServerConfig.scripts_version  = match_data[1]
         ServerConfig.scripts_revision = match_data[2].to_s.strip
@@ -446,7 +442,8 @@ module Mobius
         match_data = line.match(/Loading level (.+)/)
         # Send message to IRC/mod tool
 
-        pp match_data[1]
+        pp match_data[1] if Config.debug_verbose
+
         ServerStatus.update_map(match_data[1])
         ServerConfig.force_bhs_dll_map = false # REMOVE?
         # TODO: The last game has completed, process game results

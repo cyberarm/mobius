@@ -35,7 +35,7 @@ module Mobius
       end
 
       def delete_value(key)
-        @data[key]
+        @data.delete(key)
       end
 
       def banned?
@@ -64,16 +64,23 @@ module Mobius
         @origin == :game
       end
 
-      def admin?
-        false
+      def administrator?
+        @data[:administrator]
       end
 
-      def mod?
-        false
+      def moderator?
+        @data[:moderator]
       end
 
-      def temp_mod?
-        false
+      def director?
+        @data[:director]
+      end
+
+      def in_group?(groups)
+        return true if groups.include?(:admin) && administrator?
+        return true if groups.include?(:mod) && moderator?
+        return true if groups.include?(:director) && director?
+        return true if groups.include?(:ingame) && ingame?
       end
     end
 
@@ -90,7 +97,7 @@ module Mobius
         player.ping = ping
         player.kbps = kbps
         player.time = time
-        player.last_updated = Time.now.utc
+        player.last_updated = last_updated
       else
         # TODO: Check bans, kicks, etc.
 
@@ -105,7 +112,7 @@ module Mobius
           address: address,
           kbps: kbps,
           time: time,
-          last_updated: Time.now.utc
+          last_updated: last_updated
         )
       end
     end
@@ -122,11 +129,11 @@ module Mobius
 
     def self.name_to_id(name, exact_match: true)
       if exact_match
-        player = @player_data.find { |_, data| data.name.downcase == name.downcase }&.last
+        player = @player_data.find { |_, data| data.name.downcase == name&.downcase }&.last
         player ? player.id : -1
       else
-        players = @player_data.select { |_, data| data.name.downcase == /^#{name.downcase}/ }
-        players.size == 1 ? players.first.last.id : -1
+        players = player_list.select { |ply| ply.name.downcase.start_with?(name&.downcase) }
+        players.size == 1 ? players.first&.id : -1
       end
     end
 

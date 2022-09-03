@@ -43,43 +43,43 @@ module Mobius
 
       case line
       when /\[(.+?)\] CRATE/
-        log("GameLog", "CRATE")
+        log("GameLog", "CRATE") if Config.debug_verbose
         crate(line)
       when /\[(.+?)\] CREATED/
-        log("GameLog", "CREATED")
+        log("GameLog", "CREATED") if Config.debug_verbose
         created(line)
       when /\[(.+?)\] DESTROYED/
-        log("GameLog", "DESTROYED")
+        log("GameLog", "DESTROYED") if Config.debug_verbose
         destroyed(line)
       when /\[(.+?)\] POS/
-        log("GameLog", "POS")
+        log("GameLog", "POS") if Config.debug_verbose
         position(line)
       when /\[(.+?)\] ENTER/
-        log("GameLog", "ENTER")
+        log("GameLog", "ENTER") if Config.debug_verbose
         enter_vehicle(line)
       when /\[(.+?)\] EXIT/
-        log("GameLog", "EXIT") # exit is a reserved keyword
+        log("GameLog", "EXIT") if Config.debug_verbose # exit is a reserved keyword
         exit_vehicle(line)
       when /\[(.+?)\] DAMAGED/
-        log("GameLog", "DAMAGED")
+        log("GameLog", "DAMAGED") if Config.debug_verbose
         damaged(line)
       when /\[(.+?)\] KILLED/
-        log("GameLog", "KILLED")
+        log("GameLog", "KILLED") if Config.debug_verbose
         killed(line)
       when /\[(.+?)\] PURCHASED/
-        log("GameLog", "PURCHASED")
+        log("GameLog", "PURCHASED") if Config.debug_verbose
         purchased(line)
       when /\[(.+?)\] SCORE/
-        log("GameLog", "SCORE")
+        log("GameLog", "SCORE") if Config.debug_verbose
         score(line)
       when /\[(.+?)\] WIN/
-        log("GameLog", "WIN")
+        log("GameLog", "WIN") if Config.debug_verbose
         win(line)
       when /\[(.+?)\] CONFIG/
-        log("GameLog", "CONFIG")
+        log("GameLog", "CONFIG") if Config.debug_verbose
         config(line)
       else
-        log("GameLog", "UNHANDLED LINE: #{line}")
+        log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
       end
     end
 
@@ -99,7 +99,7 @@ module Mobius
       object[:armor]  = data[10].to_f
       object[:team]   = data[11].to_i
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def created(line)
@@ -138,7 +138,7 @@ module Mobius
 
       # FIXME: Emit event to plugins
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def destroyed(line)
@@ -162,7 +162,7 @@ module Mobius
         @game_objects[object[:object]][:destroyed] = true
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def position(line)
@@ -189,7 +189,7 @@ module Mobius
         obj[:facing] = object[:facing]
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def enter_vehicle(line)
@@ -232,7 +232,7 @@ module Mobius
         end
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def exit_vehicle(line)
@@ -261,7 +261,7 @@ module Mobius
         end
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def damaged(line)
@@ -304,7 +304,7 @@ module Mobius
         end
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def killed(line)
@@ -331,7 +331,7 @@ module Mobius
 
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     # PURCHASED;CHARACTER;cyberarm;Soviet_Technician;Technician
@@ -352,7 +352,7 @@ module Mobius
         RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased a #{object[:name]}!")
       end
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     # APB seems to be reporting player credits here: SCORE;1500000729;0;1648
@@ -365,7 +365,7 @@ module Mobius
       object[:score]   = data[2]
       object[:credits] = data[3]
 
-      pp object
+      pp object if Config.debug_verbose
     end
 
     def win(line)

@@ -87,7 +87,7 @@ module Mobius
     end
 
     def feed(line)
-      pp [:ssgm, line]
+      pp [:ssgm, line] if Config.debug_verbose
     end
 
     def teardown
