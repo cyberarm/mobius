@@ -75,8 +75,11 @@ module Mobius
 
       command = @commands[cmd.downcase.to_sym]
 
-      return unless command
-      return unless player.in_group?(command.groups)
+      if command.nil? || !player.in_group?(command&.groups)
+        RenRem.cmd("cmsgp #{player.id} 255,255,255, command: #{cmd} not found.")
+
+        return
+      end
 
       arguments = []
 
@@ -92,7 +95,6 @@ module Mobius
         RenRem.cmd("cmsgp #{player.id} 255,255,255 #{command.help}")
         return
       end
-
 
       begin
         command.block&.call(CommandResult.new(player, arguments))
@@ -110,8 +112,10 @@ module Mobius
 
       cmds = cmds.map { |a| a.last }
 
-      RenRem.cmd("cmsg 255,127,0 [MOBIUS] Available Commands:")
-      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{cmds.map { |c| "!#{c.name}" }.join(', ')}")
+      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Commands:")
+      cmds.map { |c| "!#{c.name}" }.each_slice(10) do |slice|
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+      end
     end
 
     def self.publish_event(event, *args)

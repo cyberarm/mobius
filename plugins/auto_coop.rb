@@ -54,6 +54,30 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
   end
 
+  def check_votes(silent:)
+    missing = []
+
+    return if PlayerData.player_list.count.zero?
+
+    PlayerData.player_list.each do |player|
+      next if @coop_votes[player.name]
+
+      missing << player
+    end
+
+    if missing.size.zero?
+      @coop_started = true
+
+      count = configure_bots
+      move_players_to_coop_team
+
+      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team") unless silent
+      log("Coop has started by player vote") unless silent
+    else
+      broadcast_message("[AutoCoop] Still need #{missing.count} to vote!") unless silent
+    end
+  end
+
   on(:start) do
     @current_side = 0
     @bot_difficulty = 2
@@ -62,11 +86,14 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     @coop_started = false
     @manual_bot_count = false
+    @coop_votes = {}
 
     every(5) do
       if @coop_started
         configure_bots
         move_players_to_coop_team
+      else
+        check_votes(silent: true)
       end
     end
   end
@@ -74,6 +101,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   on(:map_loaded) do |map|
     @current_side += 1
     @current_side %= 2
+
+    @coop_votes.clear
 
     check_map(map)
 
@@ -83,10 +112,13 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
         count = configure_bots
 
+        log("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
         broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
 
         move_players_to_coop_team
       else
+        log("No one is in game after 5 seconds, disabling coop this round.")
+
         @coop_started = false
       end
     end
@@ -98,11 +130,25 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
       message_player(player.name, "[AutoCoop] Running coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
       RenRem.cmd("team2 #{player.id} #{@current_side}")
+    else
+      broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
+      broadcast_message("[AutoCoop] Vote to start now with !request_coop, 100% of players must request it.")
     end
   end
 
   on(:player_left) do |player|
     configure_bots
+
+    @coop_votes.delete(player.name)
+  end
+
+  command(:request_coop, arguments: 0, help: "!request_coop") do |command|
+    if @coop_started
+      page_player(command.issuer.name, "Coop is already active!")
+    else
+      @coop_votes[command.issuer.name] = true
+      check_votes(silent: false)
+    end
   end
 
   command(:coop, arguments: 1, help: "!coop <team>", groups: [:admin, :mod, :director]) do |command|
@@ -122,7 +168,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       count = configure_bots
       move_players_to_coop_team
 
-      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+      broadcast_message("[AutoCoop] #{command.issuer.name} has started coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
     else
       page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
     end
