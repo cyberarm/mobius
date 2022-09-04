@@ -54,7 +54,7 @@ module Mobius
     def self.id_from_name(team)
       return team if team.is_a?(Integer)
 
-      @teams.find { |hash| hash[:name] == team || hash[:abbreviation] == team }
+      @teams.find { |hash| hash[:name].downcase == team.to_s.downcase || hash[:abbreviation].downcase == team.to_s.downcase }
     end
 
     def self.name(team)
