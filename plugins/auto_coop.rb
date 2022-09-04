@@ -112,7 +112,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       team = Integer(team)
     rescue ArgumentError
       team = Teams.id_from_name(team)
-      team = team[:id] unless team
+      team = team[:id] if team
     end
 
     if team.is_a?(Integer)
