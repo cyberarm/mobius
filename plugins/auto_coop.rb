@@ -50,7 +50,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def check_map(map)
     case map
     when "RA_AS_Seamist", "RA_AS_Seamist.mix"
-      @current_side = 1
+      @current_side = 1 # Force players to Allied team as that is how the map is designed
     end
   end
 
@@ -61,6 +61,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @last_bot_count = -1
 
     @coop_started = false
+    @manual_bot_count = false
 
     every(5) do
       if @coop_started
@@ -92,13 +93,37 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   on(:player_joined) do |player|
-    count = configure_bots
+    if @coop_started
+      count = configure_bots
 
-    message_player(player.name, "[AutoCoop] running coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
-    RenRem.cmd("team2 #{player.id} #{@current_side}")
+      message_player(player.name, "[AutoCoop] Running coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+      RenRem.cmd("team2 #{player.id} #{@current_side}")
+    end
   end
 
   on(:player_left) do |player|
     configure_bots
+  end
+
+  command(:coop, arguments: 1, help: "!coop <team>", groups: [:admin, :mod, :director]) do |command|
+    team = command.arguments.first
+
+    begin
+      team = Integer(team)
+    rescue ArgumentError
+      team = Teams.id_from_name(team)
+    end
+
+    if team.is_a?(Integer)
+      @current_side = team
+      @coop_started = true
+
+      count = configure_bots
+      move_players_to_coop_team
+
+      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+    else
+      page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
+    end
   end
 end
