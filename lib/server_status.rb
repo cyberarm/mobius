@@ -155,7 +155,7 @@ module Mobius
         @data[:team_0_points],
         @data[:team_1_players],
         @data[:team_1_points],
-        tdata[:otal_players],
+        @data[:total_players],
         @data[:max_players],
         @data[:time_remaining],
         @data[:sfps]

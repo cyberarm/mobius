@@ -20,19 +20,22 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     master_server.socket.send("\\\\heartbeat\\\\#{@query_port}\\\\gamename\\\\cncrenegade")
   end
 
+  def query_server_receive
+  end
+
   def generate_basic
     "\\\\hostname\\\\#{HOSTNAME}" \
     "\\\\hostport\\\\#{HOSTNAME}" \
-    "\\\\mapname\\\\#{HOSTNAME}" \
+    "\\\\mapname\\\\#{ServerStatus.get(:current_map)}" \
     "\\\\gametype\\\\#{HOSTNAME}" \
-    "\\\\numplayers\\\\#{HOSTNAME}" \
-    "\\\\maxplayers\\\\#{HOSTNAME}"
+    "\\\\numplayers\\\\#{ServerStatus.total_players}" \
+    "\\\\maxplayers\\\\#{ServerStatus.get(:max_players)}"
   end
 
   def generate_rules
     string = "\\\\CSVR\\\\1" \
              "\\\\DED\\\\1" \
-             "\\\\password\\\\#{HAS_PASSWORD}" \
+             "\\\\password\\\\#{ServerStatus.get(:has_password)}" \
              "\\\\DG\\\\#{DRIVER_GUNNER}" \
              "\\\\TC\\\\#{TEAM_CHANGE}" \
              "\\\\FF\\\\#{FRIENDLY_FIRE}" \
@@ -64,6 +67,6 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
       end
     end
 
-    [fragments, "\\\\team_t0\\\\#{Teams.name(0)}\\\\score_t0\\\\#{TEAM0_SCORE}\\\\team_t1\\\\#{Teams.name(1)}\\\\score_t0\\\\#{TEAM1_SCORE}"]
+    [fragments, "\\\\team_t0\\\\#{Teams.name(0)}\\\\score_t0\\\\#{TEAM0_SCORE}\\\\team_t1\\\\#{Teams.name(1)}\\\\score_t1\\\\#{TEAM1_SCORE}"]
   end
 end
