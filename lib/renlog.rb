@@ -64,6 +64,27 @@ module Mobius
       if username == "Host"
         handle_host_message(message)
       end
+
+      player = PlayerData.player(PlayerData.name_to_id(username))
+      return unless player
+
+      # TODO: Detect if player is mod or admin and format their name as such
+
+      if team_chat && true # TODO: Add option for whether team chat is published to IRC
+        # TODO: Publish formatted message to IRC
+      else
+        # TODO: Publish formatted message to IRC
+      end
+
+      if message.start_with?("!")
+        PluginManager.handle_command(player, message)
+      else
+        PluginManager.publish_event(
+          team_chat ? :team_chat : :chat,
+          player,
+          message
+        )
+      end
     end
 
     def handle_host_message(message)
@@ -424,6 +445,17 @@ module Mobius
         # TODO: The last game has completed, process game results
 
         RenRem.cmd("mapnum")
+
+        if ServerConfig.data[:nextmap_changed_id]
+          log "Restoring map at index #{ServerConfig.data[:nextmap_changed_id]} to #{ServerConfig.data[:nextmap_changed_mapname]}"
+          RenRem.cmd("mlistc #{ServerConfig.data[:nextmap_changed_id]} #{ServerConfig.data[:nextmap_changed_mapname]}")
+
+          # Update rotation
+          ServerConfig.rotation[ServerConfig.data[:nextmap_changed_id]] = ServerConfig.data[:nextmap_changed_mapname]
+
+          ServerConfig.data.delete(:nextmap_changed_id)
+          ServerConfig.data.delete(:nextmap_changed_mapname)
+        end
 
         return true
       end

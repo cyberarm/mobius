@@ -104,8 +104,6 @@ module Mobius
     end
 
     def cmd(data)
-      # TODO: Limit data length
-
       begin
         @socket.send(encode_data(@password), 0)
         @socket.send(encode_data(data[0..249]), 0)

@@ -4,6 +4,10 @@ module Mobius
     @installed_maps = []
     @rotation = []
 
+    def self.data
+      @data
+    end
+
     def self.fetch_available_maps
       RenRem.cmd("listgamedefs", 2)
     end

@@ -17,13 +17,7 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
     end
   end
 
-  on(:start) do
-    create_db_table
-
-    log "Tags online"
-  end
-
-  on(:player_joined) do |player|
+  def tag_player(player)
     result = query(player.name)
 
     if result.count.positive?
@@ -32,6 +26,22 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
 
       RenRem.cmd("tag #{player.id} #{tag}")
     end
+  end
+
+  on(:start) do
+    create_db_table
+
+    log "Tags online"
+
+    after(5) do
+      PlayerData.player_list.each do |player|
+        tag_player(player)
+      end
+    end
+  end
+
+  on(:player_joined) do |player|
+    tag_player(player)
   end
 
   command(:tag, arguments: 2, help: "!tag <nickname> <tag>", groups: [:admin, :mod]) do |command|

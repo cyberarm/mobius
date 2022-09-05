@@ -14,7 +14,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     #   RenRem.cmd("botcount #{bot_count} 0")
     # end
 
-    return bot_count unless @last_bot_count != bot_count
+    # return bot_count unless @last_bot_count != bot_count
 
     if PlayerData.player_list.count > base_bot_count
       if @current_side == 0
@@ -27,8 +27,6 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     else
       RenRem.cmd("botcount #{bot_count}")
     end
-
-    RenRem.cmd("player_info")
 
     @last_bot_count = bot_count
 

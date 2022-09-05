@@ -91,6 +91,8 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
 
         player.set_value(:given_moderator_power_from, command.issuer.name)
         player.set_value(:moderator, true)
+
+        broadcast_message("[MOBIUS] #{player.name} is a temporary Server Moderator", red: 127, green: 255, blue: 127)
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
       end
@@ -109,6 +111,8 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
 
         player.set_value(:given_director_power_from, command.issuer.name)
         player.set_value(:director, true)
+
+        broadcast_message("[MOBIUS] #{player.name} has been made a temporary Game Director", red: 127, green: 255, blue: 127)
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
       end
@@ -125,10 +129,12 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to remove your Moderator power!")
         RenRem.cmd("ppage #{command.issuer.id} you may not remove power from your benefactor!")
       else
-        log "Rmoving #{player.name} Moderator powers."
+        log "Removing #{player.name} Moderator powers."
 
         player.delete_value(:given_moderator_power_from)
         player.delete_value(:moderator)
+
+        broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Server Moderator", red: 127, green: 255, blue: 127)
       end
     end
   end
@@ -143,8 +149,12 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to remove your Director power!")
         RenRem.cmd("ppage #{command.issuer.id} you may not remove power from your benefactor!")
       else
+        log "Removing #{player.name} Director powers."
+
         player.delete_value(:given_director_power_from)
         player.delete_value(:director)
+
+        broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Game Director", red: 127, green: 255, blue: 127)
       end
     end
   end

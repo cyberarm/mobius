@@ -13,7 +13,6 @@ mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
     end
   end
 
-  # TODO: Store map index and name to restore later if needed
   on(:start) do
     @index = 0
     @sayings = [
