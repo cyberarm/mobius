@@ -163,7 +163,11 @@ module Mobius
     end
 
     def self.total_players
-      @data[:team_0_players] + @data[:team_1_players]
+      # HOTFIX:
+      PlayerData.player_list.count
+
+      # FIXME: populate team_0/1_players
+      # @data[:team_0_players] + @data[:team_1_players]
     end
   end
 end
