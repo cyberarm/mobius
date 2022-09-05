@@ -12,34 +12,39 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
 
     failure = false
 
-    begin
-      @query_socket.bind("0.0.0.0", @query_port)
-    rescue Errno::EADDRINUSE
-      failure = true
-      log "Failed to start query server, address already in use!"
-    end
+    after(5) do
+      log "Started Announcer"
 
-    unless failure
-      Config.gamespy[:master_servers].each do |address|
-        host, port = address.split(":")
-        socket = UDPSocket.new
-
-        socket.connect(host, port)
-
-        @master_servers << socket
-
-        send_heartbeat_to_master(socket)
-      end
-    end
-
-    unless failure
-      every(1) do
-        handle_sockets
+      begin
+        @query_socket.bind("0.0.0.0", @query_port)
+      rescue Errno::EADDRINUSE
+        failure = true
+        log "Failed to start query server, address already in use!"
       end
 
-      after(300) do
-        @master_servers.each do |ms|
-          send_heartbeat_to_master(ms)
+      unless failure
+        Config.gamespy[:master_servers].each do |address|
+          host, port = address.split(":")
+          socket = UDPSocket.new
+
+          socket.connect(host, port)
+
+          @master_servers << socket
+
+          send_heartbeat_to_master(socket)
+        end
+      end
+
+      unless failure
+        every(1) do
+          handle_sockets
+        end
+
+        every(300) do
+          log "Sending heartbeat..."
+          @master_servers.each do |ms|
+            send_heartbeat_to_master(ms)
+          end
         end
       end
     end

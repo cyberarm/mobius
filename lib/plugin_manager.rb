@@ -68,6 +68,7 @@ module Mobius
       cmd = parts.shift.sub("!", "")
 
       if cmd.downcase.to_sym == :help
+        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
         handle_help_command(player)
 
         return
@@ -76,6 +77,8 @@ module Mobius
       command = @commands[cmd.downcase.to_sym]
 
       if command.nil? || !player.in_group?(command&.groups)
+        log "PLUGIN MANAGER", "Player #{player.name} tried to use command !#{cmd}"
+
         RenRem.cmd("cmsgp #{player.id} 255,255,255, command: #{cmd} not found.")
 
         return
@@ -97,6 +100,8 @@ module Mobius
       end
 
       begin
+        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+
         command.block&.call(CommandResult.new(player, arguments))
       rescue StandardError => e
         log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"

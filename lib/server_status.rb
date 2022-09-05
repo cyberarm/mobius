@@ -116,7 +116,7 @@ module Mobius
     end
 
     def self.update_time_remaining(remaining)
-      @data[:time_remaining] = remaining
+      @data[:time_remaining] = remaining.strip
 
       @data[:last_response_time] = Time.now.to_i
     end

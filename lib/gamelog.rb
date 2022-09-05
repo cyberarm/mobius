@@ -348,7 +348,11 @@ module Mobius
       object[:preset] = data[3]
       object[:name]   = data[4]
 
-      player_team = @game_objects[@current_players[object[:object]]][:team]
+      game_obj = @game_objects[@current_players[object[:object]]]
+
+      return unless game_obj
+
+      player_team = game_obj[:team]
 
       case object[:type].downcase
       when "vehicle"
