@@ -49,6 +49,10 @@ module Mobius
       @data[:server_name]
     end
 
+    def self.server_port
+      @data[:server_port]
+    end
+
     def self.driver_gunner
       @data[:driver_gunner]
     end

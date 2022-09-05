@@ -27,6 +27,8 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
         socket.connect(host, port)
 
         @master_servers << socket
+
+        send_heartbeat_to_master(socket)
       end
     end
 
@@ -44,6 +46,8 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
   end
 
   on(:shutdown) do
+    log "SHUTTING DOWN MASTER SERVERS..."
+
     @query_socket&.close
 
     @master_servers.each do |s|
@@ -57,21 +61,36 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
   end
 
   def handle_sockets
-    loop do
-      message, addrinfo = @query_socket.recvfrom_nonblock(2048)
+    begin
+      loop do
+        message, addrinfo = @query_socket.recvfrom_nonblock(2048)
 
-      query_server_receive(message, addrinfo)
+        query_server_receive(message, addrinfo)
+      end
+    rescue IO::WaitReadable
+      # Nothing available to read
     end
-  rescue IO::WaitReadable
-    # Nothing available to read yet.
+
+    @master_servers.each do |socket|
+      begin
+        loop do
+          message, addrinfo = socket.recvfrom_nonblock(2048)
+
+          pp message, addrinfo
+          #query_server_receive(message, addrinfo)
+        end
+      rescue IO::WaitReadable
+        # Nothing available to read
+      end
+    end
   end
 
-  def send_heartbeat_to_master(master_server)
-    master_server.socket.send("\\\\heartbeat\\\\#{@query_port}\\\\gamename\\\\cncrenegade", 0)
+  def send_heartbeat_to_master(socket)
+    socket.send("\\heartbeat\\#{@query_port}\\gamename\\cncrenegade", 0)
   end
 
-  def send_heartbeat_stop_to_master(master_server)
-    master_server.socket.send("\\\\heartbeat\\\\#{@query_port}\\\\gamename\\\\cncrenegade\\\\statechanged\\\\2", 0)
+  def send_heartbeat_stop_to_master(socket)
+    socket.send("\\heartbeat\\#{@query_port}\\gamename\\cncrenegade\\statechanged\\2", 0)
   end
 
   def query_server_receive(message, addrinfo)
@@ -80,15 +99,15 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     pp message, addrinfo
 
     reply = case message
-            when "\\\\basic\\\\"
+            when "\\basic\\"
               generate_basic
-            when "\\\\info\\\\"
+            when "\\info\\"
               generate_info
-            when "\\\\rules\\\\"
+            when "\\rules\\"
               generate_rules
             end
 
-    if message.start_with?("\\\\echo\\\\")
+    if message.start_with?("\\echo\\")
       # _, echo = message.split("\\echo\\")
 
       log "ECHO: #{message}"
@@ -99,15 +118,15 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     if reply
       @query_id += 1
 
-      @query_socket.send("#{reply}\\\\final\\\\queryid\\\\#{@query_id}.1", 0, addrinfo[2], addrinfo[1])
+      @query_socket.send("#{reply}\\final\\queryid\\#{@query_id}.1", 0, addrinfo[2], addrinfo[1])
     end
 
-    if message.start_with?("\\\\players\\\\") || message.start_with?("\\\\status\\\\")
+    if message.start_with?("\\players\\") || message.start_with?("\\status\\")
       @query_id += 1
       index = 1
 
-      if message.start_with?("\\\\status\\\\")
-        reply = "#{generate_basic}#{generate_info}#{generate_rules}\\\\queryid\\\\#{@query_id}.#{index}"
+      if message.start_with?("\\status\\")
+        reply = "#{generate_basic}#{generate_info}#{generate_rules}\\queryid\\#{@query_id}.#{index}"
         @query_socket.send(reply, 0, addrinfo[2], addrinfo[1])
 
         index += 1
@@ -116,40 +135,40 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
       player_fragments, team_fragment = generate_players
 
       player_fragments.each do |fragment|
-        @query_socket.send("#{fragment}queryid\\\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
+        @query_socket.send("#{fragment}queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
         index += 1
       end
 
-      @query_socket.send("#{team_fragment}\\\\final\\\\queryid\\\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
+      @query_socket.send("#{team_fragment}\\final\\queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
     end
   end
 
   def generate_basic
-    "\\\\gamename\\\\ccrenegade\\\\gamever\\\\838"
+    "\\gamename\\ccrenegade\\gamever\\838"
   end
 
   def generate_info
-    "\\\\hostname\\\\#{ServerConfig.server_name}" \
-    "\\\\hostport\\\\#{ServerConfig.server_port}" \
-    "\\\\mapname\\\\#{ServerStatus.get(:current_map)}" \
-    "\\\\gametype\\\\#{Config.gamespy[:game_type]}" \
-    "\\\\numplayers\\\\#{ServerStatus.total_players}" \
-    "\\\\maxplayers\\\\#{ServerStatus.get(:max_players)}"
+    "\\hostname\\#{ServerConfig.server_name}" \
+    "\\hostport\\#{ServerConfig.server_port}" \
+    "\\mapname\\#{ServerStatus.get(:current_map)}" \
+    "\\gametype\\#{Config.gamespy[:game_type]}" \
+    "\\numplayers\\#{ServerStatus.total_players}" \
+    "\\maxplayers\\#{ServerStatus.get(:max_players)}"
   end
 
   def generate_rules
-    string = "\\\\CSVR\\\\1" \
-             "\\\\DED\\\\1" \
-             "\\\\password\\\\#{ServerStatus.get(:has_password)}" \
-             "\\\\DG\\\\#{bool_to_int(ServerConfig.driver_gunner)}" \
-             "\\\\TC\\\\#{bool_to_int(ServerConfig.team_changing)}" \
-             "\\\\FF\\\\#{bool_to_int(ServerConfig.friendly_fire)}" \
-             "\\\\SC\\\\#{ServerConfig.starting_credits}" \
-             "\\\\SSC\\\\Mobius v#{Mobius::VERSION}" \
-             "\\\\timeleft\\\\#{ServerStatus.get(:time_remaining)}"
+    string = "\\CSVR\\1" \
+             "\\DED\\1" \
+             "\\password\\#{ServerStatus.get(:has_password)}" \
+             "\\DG\\#{bool_to_int(ServerConfig.driver_gunner)}" \
+             "\\TC\\#{bool_to_int(ServerConfig.team_changing)}" \
+             "\\FF\\#{bool_to_int(ServerConfig.friendly_fire)}" \
+             "\\SC\\#{ServerConfig.starting_credits}" \
+             "\\SSC\\Mobius v#{Mobius::VERSION}" \
+             "\\timeleft\\#{ServerStatus.get(:time_remaining)}"
 
     Config.gamespy[:custom_info].each do |key, value|
-      string += "\\\\#{key}\\\\#{value}"
+      string += "\\#{key}\\#{value}"
     end
 
     string
@@ -161,12 +180,12 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     PlayerData.player_list.each_slice(15) do |slice|
       slice.each_with_index do |player, i|
         string = ""
-        string += "\\\\player_#{i}\\\\#{player.name}"
-        string += "\\\\score_#{i}\\\\#{player.score}"
-        string += "\\\\ping_#{i}\\\\#{player.ping}"
-        string += "\\\\team_#{i}\\\\#{Teams.id_from_name(player.team)}"
-        string += "\\\\kills_#{i}\\\\#{player.value(:stats_kills) || 0}"
-        string += "\\\\deaths_#{i}\\\\#{player.value(:stats_deaths) || 0}"
+        string += "\\player_#{i}\\#{player.name}"
+        string += "\\score_#{i}\\#{player.score}"
+        string += "\\ping_#{i}\\#{player.ping}"
+        string += "\\team_#{i}\\#{Teams.id_from_name(player.team)}"
+        string += "\\kills_#{i}\\#{player.value(:stats_kills) || 0}"
+        string += "\\deaths_#{i}\\#{player.value(:stats_deaths) || 0}"
 
         fragments << string
       end
@@ -175,6 +194,6 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     team0_score = ServerStatus.get(:team_0_points)
     team1_score = ServerStatus.get(:team_1_points)
 
-    [fragments, "\\\\team_t0\\\\#{Teams.name(0)}\\\\score_t0\\\\#{team0_score}\\\\team_t1\\\\#{Teams.name(1)}\\\\score_t1\\\\#{team1_score}"]
+    [fragments, "\\team_t0\\#{Teams.name(0)}\\score_t0\\#{team0_score}\\team_t1\\#{Teams.name(1)}\\score_t1\\#{team1_score}"]
   end
 end
