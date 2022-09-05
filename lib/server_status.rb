@@ -135,7 +135,7 @@ module Mobius
       @data[:last_response_time] = Time.now.to_i
     end
 
-    def self.update_default_map_players(max_players)
+    def self.update_default_max_players(max_players)
       @data[:default_max_players] = max_players
     end
 

@@ -21,7 +21,7 @@ module Mobius
       end
     end
 
-    attr_reader :fds_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose
+    attr_reader :fds_path, :server_settings_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
@@ -29,14 +29,19 @@ module Mobius
       @data = JSON.parse(File.read(path), symbolize_names: true)
 
       @fds_path = @data.dig(:mobius, :fds_path)
+      @server_settings_path = @data.dig(:mobius, :server_settings_path)
       @database_path = @data.dig(:mobius, :database_path)
 
-      @renrem_address = @data.dig(:mobius, :renrem, :address)
-      @renrem_port = @data.dig(:mobius, :renrem, :port)
-      @renrem_password = @data.dig(:mobius, :renrem, :password)
+      ServerConfig.read_server_config
+      ServerConfig.read_server_settings
+      ServerConfig.read_ssgm_settings
 
-      @ssgm_address = @data.dig(:mobius, :ssgm, :address)
-      @ssgm_port = @data.dig(:mobius, :ssgm, :port)
+      @renrem_address = "127.0.0.1"
+      @renrem_port = ServerConfig.renrem_port
+      @renrem_password = ServerConfig.renrem_password
+
+      @ssgm_address = "127.0.0.1"
+      @ssgm_port = ServerConfig.ssgm_port
 
       @gamespy = @data.dig(:mobius, :gamespy)
 
