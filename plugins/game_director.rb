@@ -124,17 +124,37 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
 
   # FIXME:
   command(:donate, arguments: 2, help: "!donate <nickname> <amount>") do |command|
-    broadcast_message("Not implemented, yet.")
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    amount = command.arguments.last.to_i
+
+    if player
+      if amount.positive?
+        if command.issuer.team == player.team && command.issuer.name != player.name
+          RenRem.cmd("donate #{command.issuer.id} #{player.id} #{amount}")
+
+          page_player(command.issuer.name, "You have donated #{amount} credits to #{player.name}")
+          page_player(player.name, "#{command.issuer.name} has donated #{amount} credits to you")
+        elsif command.issuer.name == player.name
+          page_player(command.issuer.name, "You cannot donate to youself")
+        else
+          page_player(command.issuer.name, "Can only donate to players on your team")
+        end
+      else
+        page_player(command.issuer.name, "Cannot donate nothing!")
+      end
+    else
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
+    end
   end
 
   # FIXME:
-  command(:team_donate, arguments: 1, help: "!donate <amount>") do |command|
+  command(:team_donate, arguments: 1, help: "!teamdonate <amount>") do |command|
     broadcast_message("Not implemented, yet.")
   end
 
   # FIXME:
   command(:stuck, arguments: 0, help: "Become unstuck, maybe.") do |command|
-    broadcast_message("Not implemented, yet.")
+    broadcast_message("!stuck not available. Use !killme if needed.")
   end
 
   command(:killme, arguments: 0, help: "Kill yourself") do |command|
@@ -150,12 +170,12 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
   end
 
   command(:player_ping, arguments: 1, help: "!player_ping <nickname>") do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exect_match: false))
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
       broadcast_message("#{player.name}'s ping: #{player.ping}ms")
     else
-      broadcast_message("Player not in game or query is not unique!")
+      broadcast_message("Player not in game or name is not unique!")
     end
   end
 end

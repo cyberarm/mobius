@@ -128,9 +128,9 @@ module Mobius
     end
 
     def self.update_team_status(team, player_count, max_player_count, points)
-      @data[:"@team_#{team}_players"] = player_count
+      @data[:"team_#{team}_players"] = player_count
       @data[:max_players] = max_player_count
-      @data[:"@team_#{team}_points"] = points
+      @data[:"team_#{team}_points"] = points
 
       @data[:last_response_time] = Time.now.to_i
     end
@@ -163,11 +163,7 @@ module Mobius
     end
 
     def self.total_players
-      # HOTFIX:
-      PlayerData.player_list.count
-
-      # FIXME: populate team_0/1_players
-      # @data[:team_0_players] + @data[:team_1_players]
+      @data[:team_0_players] + @data[:team_1_players]
     end
   end
 end

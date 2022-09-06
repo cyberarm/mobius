@@ -1,6 +1,6 @@
 mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def configure_bots
-    player_count = PlayerData.player_list.count # ServerStatus.total_players
+    player_count = ServerStatus.total_players
     base_bot_count = 12
     bot_count = player_count * @bot_difficulty
     bot_count = base_bot_count if bot_count.zero? || bot_count < base_bot_count
@@ -16,7 +16,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     # return bot_count unless @last_bot_count != bot_count
 
-    if PlayerData.player_list.count > base_bot_count
+    if player_count > base_bot_count
       if @current_side == 0
         RenRem.cmd("botcount 0 0")
         RenRem.cmd("botcount #{bot_count} 1")
@@ -34,7 +34,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   def move_players_to_coop_team
-    return unless PlayerData.player_list.size.positive?
+    return unless ServerStatus.total_players.size.positive?
 
     PlayerData.player_list.each do |player|
       next unless Teams.id_from_name(player.team) != @current_side
@@ -55,7 +55,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def check_votes(silent:)
     missing = []
 
-    return if PlayerData.player_list.count.zero?
+    return if ServerStatus.total_players.count.zero?
 
     PlayerData.player_list.each do |player|
       next if @coop_votes[player.name]
@@ -105,7 +105,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     check_map(map)
 
     after(5) do
-      if PlayerData.player_list.size.positive?
+      if ServerStatus.total_players.size.positive?
         @coop_started = true
 
         count = configure_bots

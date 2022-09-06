@@ -30,7 +30,7 @@ module Mobius
         @data[key] = value
       end
 
-      def increment_value(key, value)
+      def increment_value(key, value = 1)
         @data[key] += value if @data[key]
       end
 
@@ -53,7 +53,7 @@ module Mobius
       end
 
       def remote_moderation?
-        @origin == :w3d_server_moderation_tool
+        @origin == :mobius_moderation_tool
       end
 
       def irc?

@@ -331,10 +331,40 @@ module Mobius
       object[:killer_weapon]    = data[14]
 
       if (killed_obj = @game_objects[object[:killed_object]]) && (killer_obj = @game_objects[object[:killer_object]])
-
+        case object[:killed_type].downcase
+        when "building"
+          killed_building(object, killed_obj, killer_obj)
+        when "vehicle"
+          killed_vehicle(object, killed_obj, killer_obj)
+        when "soldier"
+          killed_soldier(object, killed_obj, killer_obj)
+        end
       end
 
       pp object if Config.debug_verbose
+    end
+
+    def killed_building(object, killed_obj, killer_obj)
+      broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+    end
+
+    def killed_vehicle(object, killed_obj, killer_obj)
+      # broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+    end
+
+    def killed_soldier(object, killed_obj, killer_obj)
+      PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))&.increment_value(:stats_deaths)
+
+      case killer_obj[:type].downcase
+      when "soldier"
+        if killed_obj[:name] == killer_obj[:name]
+          broadcast_message("[MOBIUS] #{killer_obj[:name]} killed theirself.")
+        else
+          PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
+        end
+      when "vehicle"
+        broadcast_message("[MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.")
+      end
     end
 
     # PURCHASED;CHARACTER;cyberarm;Soviet_Technician;Technician
@@ -355,8 +385,10 @@ module Mobius
       player_team = game_obj[:team]
 
       case object[:type].downcase
+      when "character"
+        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} changed to #{object[:name]}")
       when "vehicle"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased a #{object[:name]}!")
+        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased a #{object[:name]}")
       end
 
       pp object if Config.debug_verbose
