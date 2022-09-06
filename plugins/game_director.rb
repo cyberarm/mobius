@@ -83,6 +83,29 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
+  command(:force_team_change, arguments: 2, help: "!force_team_change <nickname> <team name or id>", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    team = command.arguments.last
+
+    begin
+      team = Integer(team)
+    rescue ArgumentError
+      team = Teams.id_from_name(team)
+      team = team[:id] if team
+    end
+
+    if player
+      if team.is_a?(Integer)
+        broadcast_message("[GameDirector] Player #{player.name} has changed teams")
+        RenRem.cmd("team2 #{player.id} #{team}")
+      else
+        page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.last}, got #{team}, try again.")
+      end
+    else
+      page_player(command.issuer.name, "Player is not in game or name is not unique!")
+    end
+  end
+
   command(:nextmap, arguments: 0, help: "!nextmap") do |command|
     map = ServerConfig.rotation[ServerStatus.get(:current_map_number) + 1]
 
@@ -96,6 +119,43 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
       broadcast_message(
         slice.join(", ")
       )
+    end
+  end
+
+  # FIXME:
+  command(:donate, arguments: 2, help: "!donate <nickname> <amount>") do |command|
+    broadcast_message("Not implemented, yet.")
+  end
+
+  # FIXME:
+  command(:team_donate, arguments: 1, help: "!donate <amount>") do |command|
+    broadcast_message("Not implemented, yet.")
+  end
+
+  # FIXME:
+  command(:stuck, arguments: 0, help: "Become unstuck, maybe.") do |command|
+    broadcast_message("Not implemented, yet.")
+  end
+
+  command(:killme, arguments: 0, help: "Kill yourself") do |command|
+    RenRem.cmd("kill #{command.issuer.id}")
+
+    broadcast_message("#{command.issuer.name} has respawned")
+  end
+
+  command(:ping, arguments: 0, help: "!ping") do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.issuer.name))
+
+    broadcast_message("#{command.issuer.name}'s ping: #{player&.ping}ms")
+  end
+
+  command(:player_ping, arguments: 1, help: "!player_ping <nickname>") do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exect_match: false))
+
+    if player
+      broadcast_message("#{player.name}'s ping: #{player.ping}ms")
+    else
+      broadcast_message("Player not in game or query is not unique!")
     end
   end
 end

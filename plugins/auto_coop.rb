@@ -1,6 +1,6 @@
 mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def configure_bots
-    player_count = PlayerData.player_list.count # ServerStatus.get(:team_0_players) + ServerStatus.get(:team_1_players)
+    player_count = PlayerData.player_list.count # ServerStatus.total_players
     base_bot_count = 12
     bot_count = player_count * @bot_difficulty
     bot_count = base_bot_count if bot_count.zero? || bot_count < base_bot_count
@@ -78,7 +78,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
   on(:start) do
     @current_side = 0
-    @bot_difficulty = 3
+    @bot_difficulty = 2
     @support_bots = 4
     @last_bot_count = -1
 
@@ -140,6 +140,14 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @coop_votes.delete(player.name)
   end
 
+  command(:botcount, arguments: 0, help: "Reports number of bots configured") do |command|
+    broadcast_message("[AutoCoop] There are #{@last_bot_count / 2} bots per team")
+  end
+
+  command(:bot_diff, arguments: 0, help: "Reports bot difficulty (bots per player)") do |command|
+    broadcast_message("[AutoCoop] Bot difficulty is set to #{@bot_difficulty}")
+  end
+
   command(:request_coop, arguments: 0, help: "!request_coop") do |command|
     if @coop_started
       page_player(command.issuer.name, "Coop is already active!")
@@ -169,6 +177,21 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       broadcast_message("[AutoCoop] #{command.issuer.name} has started coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
     else
       page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
+    end
+  end
+
+  command(:set_bot_diff, arguments: 1, help: "!set_bot_diff <bots_per_player>", groups: [:admin, :mod, :director]) do |command|
+    diff = command.arguments.first.to_i
+
+    if diff <= 0
+      page_player(command.issuer.name, "Invalid bot difficulty, must be greater than 0!")
+    elsif diff >= 6
+      page_player(command.issuer.name, "Invalid bot difficulty, must be less than 6!")
+    else
+      @bot_difficulty = diff
+      configure_bots
+
+      broadcast_message("[AutoCoop] #{command.issuer.name} has changed the bot difficulty, set to #{@bot_difficulty}")
     end
   end
 end
