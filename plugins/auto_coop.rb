@@ -1,6 +1,6 @@
 mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def configure_bots
-    player_count = ServerStatus.get(:team_0_players) + ServerStatus.get(:team_1_players)
+    player_count = PlayerData.player_list.count # ServerStatus.get(:team_0_players) + ServerStatus.get(:team_1_players)
     base_bot_count = 12
     bot_count = player_count * @bot_difficulty
     bot_count = base_bot_count if bot_count.zero? || bot_count < base_bot_count
@@ -78,7 +78,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
   on(:start) do
     @current_side = 0
-    @bot_difficulty = 2
+    @bot_difficulty = 3
     @support_bots = 4
     @last_bot_count = -1
 
