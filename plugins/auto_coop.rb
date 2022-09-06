@@ -46,9 +46,15 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   def check_map(map)
-    case map
-    when "RA_AS_Seamist", "RA_AS_Seamist.mix"
+    case map.split(".", 2).first
+    when "RA_AS_Seamist"
+      @override_current_side = @current_side
       @current_side = 1 # Force players to Allied team as that is how the map is designed
+    when "RA_Volcano", "RA_RidgeWar", "RA_GuardDuty"
+      @override_current_side = @current_side
+      @current_side = 0 # Force players to Soviet team for aircraft maps
+    when "RA_PacificThreat"
+      # TODO: Murder ship yard and sub pen on map start
     end
   end
 
@@ -101,6 +107,14 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @current_side %= 2
 
     @coop_votes.clear
+
+    if @override_current_side
+      @current_side = @override_current_side
+
+      log "Restored coop team to #{Teams.name(@current_side)}, was overridden by map rule."
+
+      @override_current_side = nil
+    end
 
     check_map(map)
 

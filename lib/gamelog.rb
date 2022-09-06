@@ -345,11 +345,11 @@ module Mobius
     end
 
     def killed_building(object, killed_obj, killer_obj)
-      broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+      RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
     end
 
     def killed_vehicle(object, killed_obj, killer_obj)
-      # broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+      # RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
     end
 
     def killed_soldier(object, killed_obj, killer_obj)
@@ -358,12 +358,12 @@ module Mobius
       case killer_obj[:type].downcase
       when "soldier"
         if killed_obj[:name] == killer_obj[:name]
-          broadcast_message("[MOBIUS] #{killer_obj[:name]} killed theirself.")
+          RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} killed theirself.")
         else
           PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
         end
       when "vehicle"
-        broadcast_message("[MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.")
+        RenRem.cmd("msg [MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.")
       end
     end
 
