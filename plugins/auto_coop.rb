@@ -34,7 +34,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   def move_players_to_coop_team
-    return unless ServerStatus.total_players.size.positive?
+    return unless ServerStatus.total_players.positive?
 
     PlayerData.player_list.each do |player|
       next unless Teams.id_from_name(player.team) != @current_side
@@ -55,7 +55,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def check_votes(silent:)
     missing = []
 
-    return if ServerStatus.total_players.count.zero?
+    return if ServerStatus.total_players.zero?
 
     PlayerData.player_list.each do |player|
       next if @coop_votes[player.name]
@@ -105,7 +105,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     check_map(map)
 
     after(5) do
-      if ServerStatus.total_players.size.positive?
+      if ServerStatus.total_players.positive?
         @coop_started = true
 
         count = configure_bots
