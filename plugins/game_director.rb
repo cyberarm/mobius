@@ -9,6 +9,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
 
   command(:gameover, arguments: 1, help: "!gameover NOW", groups: [:admin, :mod, :director]) do |command|
     if command.arguments.first == "NOW"
+      log "#{command.issuer.name} ended the game"
       RenRem.cmd("gameover")
     else
       RenRem.cmd("ppage #{command.issuer.id} Use !gameover NOW to truely end the game")
@@ -50,6 +51,35 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
       broadcast_message(
         slice.join(", ")
       )
+    end
+  end
+
+  command(:time, arguments: 1, help: "!time 5m", groups: [:admin, :mod, :director]) do |command|
+    match_data = command.arguments.first.match(/(\d+)([smh])/)
+
+    time = match_data[1].to_i
+    unit = match_data[2]
+
+    hardcap = 2 * 60 * 60 # 2 hours
+
+    if time <= 0
+      page_player(command.issuer.name, "Time must be greater than 0!")
+    elsif (unit == "s" && time >= hardcap) || (unit == "m" && time * 60 >= hardcap)
+      log "Player #{command.issuer.name} attempted to set the game clock to #{match_data[0]}"
+      page_player(command.issuer.name, "Game clock may not be set greater than 2 hours!")
+    else
+      case unit
+      when "s"
+        RenRem.cmd("time #{time}")
+        log "#{command.issuer.name} has set the game clock to #{time} seconds"
+        broadcast_message("[GameDirector] #{command.issuer.name} has set the game clock to #{time} seconds")
+      when "m"
+        RenRem.cmd("time #{time * 60}")
+        log "#{command.issuer.name} has set the game clock to #{time} minutes"
+        broadcast_message("[GameDirector] #{command.issuer.name} has set the game clock to #{time} minutes")
+      else
+        page_player(command.issuer.name, "Time unit must be s for seconds and m for minutes. Example: !time 15m")
+      end
     end
   end
 
