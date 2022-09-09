@@ -6,9 +6,6 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
 
   on(:player_joined) do |player|
     announce_rules(player)
-
-    # ban_player!(player)
-    # RenRem.cmd("kick #{player.id} TESTING")
   end
 
   on(:player_left) do |player|
@@ -45,7 +42,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
     if player_id.negative?
       RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
     elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot ban yourself!")
+      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot kick yourself!")
     else
       RenRem.cmd("kick #{player_id} #{command.arguments.last}")
     end
@@ -77,7 +74,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
     end
   end
 
-  command(:add_tempmod, arguments: 1, help: "!add_tempmod <nickname>", groups: [:admin, :mod]) do |command|
+  command(:add_tempmod, aliases: [:atm], arguments: 1, help: "!add_tempmod <nickname>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     log "Found player: #{player&.name} (from: #{command.arguments.first})"
@@ -96,10 +93,12 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
       end
+    else
+      broadcast_message("Player not in game or name is not unique!")
     end
   end
 
-  command(:add_tempdirector, arguments: 1, help: "!add_tempdirector <nickname>", groups: [:admin, :mod, :director]) do |command|
+  command(:add_tempdirector, aliases: [:atd], arguments: 1, help: "!add_tempdirector <nickname>", groups: [:admin, :mod, :director]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -116,10 +115,12 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
       end
+    else
+      broadcast_message("Player not in game or name is not unique!")
     end
   end
 
-  command(:remove_tempmod, arguments: 1, help: "!remove_tempmod <nickname>", groups: [:admin, :mod, :director]) do |command|
+  command(:remove_tempmod, aliases: [:rtm], arguments: 1, help: "!remove_tempmod <nickname>", groups: [:admin, :mod, :director]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -136,10 +137,12 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
 
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Server Moderator", red: 127, green: 255, blue: 127)
       end
+    else
+      broadcast_message("Player not in game or name is not unique!")
     end
   end
 
-  command(:remove_tempdirector, arguments: 1, help: "!remove_tempdirector <nickname>", groups: [:admin, :mod, :director]) do |command|
+  command(:remove_tempdirector, aliases: [:rtd], arguments: 1, help: "!remove_tempdirector <nickname>", groups: [:admin, :mod, :director]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -156,6 +159,8 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
 
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Game Director", red: 127, green: 255, blue: 127)
       end
+    else
+      broadcast_message("Player not in game or name is not unique!")
     end
   end
 end

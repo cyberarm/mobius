@@ -52,13 +52,21 @@ module Mobius
     end
 
     def self.register_command(command)
-      existing_command = @commands[command.name]
+      _register_command(command.name, command)
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it is reserved" if command.name == :help
+      command.aliases.each do |comm|
+        _register_command(comm, command)
+      end
+    end
+
+    def self._register_command(name, command)
+      existing_command = @commands[name]
+
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it is reserved" if name == :help
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
-      @commands[command.name] = command
+      @commands[name] = command
     end
 
     def self.handle_command(player, message)
@@ -115,10 +123,10 @@ module Mobius
         player.in_group?(cmd.groups)
       end
 
-      cmds = cmds.map { |a| a.last }
+      cmds = cmds.map { |name, _| name }
 
       RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Commands:")
-      cmds.map { |c| "!#{c.name}" }.each_slice(10) do |slice|
+      cmds.map { |c| "!#{c}" }.each_slice(10) do |slice|
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
       end
     end

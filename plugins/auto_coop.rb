@@ -5,6 +5,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     bot_count = player_count * @bot_difficulty
     bot_count = base_bot_count if bot_count.zero? || bot_count < base_bot_count
 
+    bot_count = @max_bot_count if bot_count > @max_bot_count
+
     # Cannot use botcount with asymmetric bot count 😭
     # if @current_side == 0
     #   RenRem.cmd("botcount #{player_count + @support_bots} 0")
@@ -14,9 +16,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     #   RenRem.cmd("botcount #{bot_count} 0")
     # end
 
-    # return bot_count unless @last_bot_count != bot_count
-
-    if player_count > base_bot_count
+    if player_count > @friendless_player_count
       if @current_side == 0
         RenRem.cmd("botcount 0 0")
         RenRem.cmd("botcount #{bot_count} 1")
@@ -55,6 +55,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       @current_side = 0 # Force players to Soviet team for aircraft maps
     when "RA_PacificThreat"
       # TODO: Murder ship yard and sub pen on map start
+      # RESOLVED: This is done in SSGM.ini
     end
   end
 
@@ -87,6 +88,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @bot_difficulty = 2
     @support_bots = 4
     @last_bot_count = -1
+    @friendless_player_count = 12
+    @max_bot_count = 64
+    @hardcap_bot_count = 64
+    @hardcap_friendless_player_count = 12
 
     @coop_started = false
     @manual_bot_count = false
@@ -206,6 +211,32 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       configure_bots
 
       broadcast_message("[AutoCoop] #{command.issuer.name} has changed the bot difficulty, set to #{@bot_difficulty}")
+    end
+  end
+
+  command(:set_bot_limit, aliases: [:sbl], arguments: 1, help: "!set_bot_limit <total_bots> - Max bots permitted", groups: [:admin, :mod, :director]) do |command|
+    limit = command.arguments.first.to_i
+
+    if limit.zero? || limit.negative?
+      page_player(command.issuer.name, "Cannot set bot limit to ZERO or a negative number")
+    elsif limit > @hardcap_bot_count
+      page_player(command.issuer.name, "Cannot set bot limit to more than #{@hardcap_bot_count}")
+    else
+      page_player(command.issuer.name, "Bot limit set to #{limit}")
+      @max_bot_count = limit
+    end
+  end
+
+  command(:set_friendless_player_count, aliases: [:sfpc], arguments: 1, help: "!set_friendless_player_count <player_count> - Disables friendly bots after player count is reached", groups: [:admin, :mod, :director]) do |command|
+    player_count = command.arguments.first.to_i
+
+    if player_count.negative?
+      page_player(command.issuer.name, "Cannot set friendless player count to negative number")
+    elsif player_count > @hardcap_friendless_player_count
+      page_player(command.issuer.name, "Cannot set friendless player count to more than #{@hardcap_friendless_player_count}")
+    else
+      page_player(command.issuer.name, "friendless player count set to #{player_count}")
+      @friendless_player_count = player_count
     end
   end
 end

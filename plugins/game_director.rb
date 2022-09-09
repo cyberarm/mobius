@@ -16,7 +16,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
-  command(:setnextmap, arguments: 1, help: "!setnextmap <mapname>", groups: [:admin, :mod, :director]) do |command|
+  command(:setnextmap, aliases: [:snm], arguments: 1, help: "!setnextmap <mapname>", groups: [:admin, :mod, :director]) do |command|
     # message_player(command.issuer.name, "Not yet implemented!")
 
     maps = ServerConfig.installed_maps.select do |map|
@@ -83,7 +83,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
-  command(:force_team_change, arguments: 2, help: "!force_team_change <nickname> <team name or id>", groups: [:admin, :mod]) do |command|
+  command(:force_team_change, aliases: [:ftc], arguments: 2, help: "!force_team_change <nickname> <team name or id>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
     team = command.arguments.last
 
@@ -106,13 +106,13 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
-  command(:nextmap, arguments: 0, help: "!nextmap") do |command|
+  command(:nextmap, aliases: [:n, :next], arguments: 0, help: "!nextmap") do |command|
     map = ServerConfig.rotation[ServerStatus.get(:current_map_number) + 1]
 
     broadcast_message(map)
   end
 
-  command(:rotation, arguments: 0, help: "!rotation") do |command|
+  command(:rotation, aliases: [:rot], arguments: 0, help: "!rotation") do |command|
     maps = ServerConfig.rotation.rotate((ServerStatus.get(:current_map_number) + 1))
 
     maps.each_slice(6) do |slice|
@@ -122,8 +122,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
-  # FIXME:
-  command(:donate, arguments: 2, help: "!donate <nickname> <amount>") do |command|
+  command(:donate, aliases: [:d], arguments: 2, help: "!donate <nickname> <amount>") do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
     amount = command.arguments.last.to_i
 
@@ -148,11 +147,29 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
   end
 
   # FIXME:
-  command(:team_donate, arguments: 1, help: "!teamdonate <amount>") do |command|
-    broadcast_message("Not implemented, yet.")
+  command(:teamdonate, aliases: [:td], arguments: 1, help: "!teamdonate <amount>") do |command|
+    mates  = PlayerData.player_list.select { |ply| ply.ingame? && ply.team == command.issuer.team && ply != command.issuer }
+    amount = command.arguments.last.to_i
+
+    if mates.count.positive?
+      if amount.positive?
+        slice = (amount / mates.count.to_f).floor
+
+        mates.each do |mate|
+          RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
+
+          page_player(mate.name, "#{command.issuer.name} has donated #{amount} credits to you")
+        end
+
+        page_player(command.issuer.name, "You have donated #{amount} credits to your team")
+      else
+        page_player(command.issuer.name, "Cannot donate nothing!")
+      end
+    else
+      page_player(command.issuer.name, "You are the only one on your team!")
+    end
   end
 
-  # FIXME:
   command(:stuck, arguments: 0, help: "Become unstuck, maybe.") do |command|
     broadcast_message("!stuck not available. Use !killme if needed.")
   end
@@ -169,7 +186,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     broadcast_message("#{command.issuer.name}'s ping: #{player&.ping}ms")
   end
 
-  command(:player_ping, arguments: 1, help: "!player_ping <nickname>") do |command|
+  command(:player_ping, aliases: [:pping], arguments: 1, help: "!player_ping <nickname>") do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
