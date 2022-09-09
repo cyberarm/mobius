@@ -1,0 +1,10 @@
+.dialog
+  .sign_in
+    h2 Connect to Mobius Moderation Server
+
+    form.form action="/sign_in" method="post"
+      label for="username" Username
+      input#username.flex-grow type="text" name="username" autofocus=""/
+      label for="password" Password
+      input#password.flex-grow type="password" name="password"/
+      input type="submit" value="Sign In"/

@@ -1,0 +1,143 @@
+$tablet_screen: 768px
+
+*
+  margin: 0
+  padding: 0
+  box-sizing: border-box
+
+body
+  font-family: sans-serif
+  background: #cdab8f
+  font-size: 1.25rem
+  display: flex
+  flex-direction: column
+  height: 100vh
+
+input[type=text], input[type=password], input[type=button], input[type=submit]
+  color: black
+  background: #cdab8f
+  border: none
+  font-size: 16pt
+  padding: 4pt
+  &:hover, &:focus
+    background: #debc9f
+    color: #222222
+  &:active
+    background: #bc9a7e
+    color: #000
+
+#header
+  display: flex
+  flex-direction: column
+  background: #63452c
+  height: 48px
+  padding: 4pt
+  align-items: center
+  justify-content: center
+
+  p
+    display: block
+    text-align: center
+    font-size: 1.25rem
+    color: white
+    font-weight: bold
+
+#main
+  flex-grow: 1
+  display: flex
+
+#footer
+  display: flex
+
+.flex-grow
+  flex-grow: 1
+
+.padded_area
+  padding: 8pt
+  background: #b5835a
+
+.flex-row
+  display: flex
+  flex-direction: row
+
+.flex-column
+  display: flex
+  flex-direction: column
+
+.container
+  margin: 0 auto
+  padding: 8pt
+  display: flex
+  flex-direction: column
+
+.teams_container
+  display: flex
+  flex-direction: column
+  min-width: 320px
+
+  @media screen and (max-width: $tablet_screen)
+    display: none
+
+  .team_box
+    display: flex
+    flex-direction: column
+    flex: 0 50%
+    min-height: 0
+    background: white
+    &:not(:first-child)
+      margin-top: 16pt
+
+    h1,h2
+      padding-top: 8pt
+      padding-bottom: 8pt
+      color: white
+      background: green
+      text-align: center
+      font-size: 1rem
+
+    .team_list
+      min-height: 0
+      padding: 8pt
+      overflow: auto
+
+.dialog
+  margin: 0 auto
+  display: flex
+  align-items: center
+
+.sign_in
+  text-align: center
+
+  display: flex
+  flex-direction: column
+  margin: 0 auto
+  padding: 8pt
+  background: #b5835a
+  min-width: 320px
+  width: 100%
+  background: #63452c
+  h1,h2
+    color: white
+    padding: 8pt
+    padding-top: 0px
+
+  .form
+    display: flex
+    flex-direction: column
+    background: #b5835a
+    padding: 8pt
+
+    input, label
+      &:not(:first-child)
+        margin-top: 8pt
+
+#chat_panel
+  display: flex
+  flex-direction: column
+#chat_log
+  flex-grow: 1
+  background: #cdab8f
+#chat_input
+  display: flex
+  flex-direction: row
+  margin-top: 8pt

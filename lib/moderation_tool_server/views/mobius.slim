@@ -1,0 +1,66 @@
+.flex-row.flex-grow style="max-height: calc(100vh - 48px)"
+  / .container.teams_container
+
+  .container.flex-grow
+    .padded_area.flex-column.flex-grow
+      #chat_panel.flex-grow
+        #chat_log
+        form#chat_input action="/mobius/chat" method="post"
+          input#chat_message.flex-grow type="text" name="chat_message" max-length="249" autofocus=""/
+          input style="margin-left: 16pt" type="submit" value="Send"/
+
+      #fds_panel
+        #fs_log
+        #fds_input
+
+  .container.teams_container
+    .padded_area.flex-column.flex-grow style="max-height: calc(100vh - (48px + 16pt))"
+      .team_box
+        h2 TEAM NAME0
+        .team_list
+          p John
+          p Mark
+          p Andrew
+
+      .team_box
+        h2 TEAM NAME1
+
+        .team_list
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+          p John
+          p Mark
+          p Andrew
+
+script src="/application.js"
