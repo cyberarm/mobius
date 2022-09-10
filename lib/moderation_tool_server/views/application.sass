@@ -4,6 +4,8 @@ $tablet_screen: 768px
   margin: 0
   padding: 0
   box-sizing: border-box
+  min-width: 0
+  min-height: 0
 
 body
   font-family: sans-serif
@@ -34,6 +36,8 @@ input[type=text], input[type=password], input[type=button], input[type=submit]
   padding: 4pt
   align-items: center
   justify-content: center
+  min-height: 2.25em
+  height: 2.25em
 
   p
     display: block
@@ -137,7 +141,10 @@ input[type=text], input[type=password], input[type=button], input[type=submit]
 #chat_log
   flex-grow: 1
   background: #cdab8f
+  overflow: auto
 #chat_input
   display: flex
   flex-direction: row
   margin-top: 8pt
+  min-height: 2em
+  height: 2em

@@ -11,7 +11,8 @@ module Mobius
       GameLog,
       RenLog,
       ServerStatus,
-      PluginManager
+      PluginManager,
+      # ModerationServerClient
     ]
 
     modules.each(&:init)

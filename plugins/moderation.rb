@@ -12,72 +12,89 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
   end
 
   command(:ban, arguments: 2, help: "!ban <nickname> <reason>", groups: [:admin, :mod]) do |command|
-    player_id = PlayerData.name_to_id(command.arguments.first)
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    if player_id.negative?
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
-    elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot ban yourself!")
+    if player
+      if command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot ban yourself!")
+      else
+        page_player(command.issuer.name, "#{player.name} has been banned!")
+
+        RenRem.cmd("ban #{player.id} #{command.arguments.last}")
+      end
     else
-      RenRem.cmd("ban #{player_id} #{command.arguments.last}")
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:unban, arguments: 1, help: "!unban <nickname>", groups: [:admin, :mod]) do |command|
-    player_id = PlayerData.name_to_id(command.arguments.first)
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    if player_id.negative?
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
-    elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot unban yourself!")
+    if player
+      if command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot unban yourself!")
+      else
+        # FIXME: Update banList.tsv before calling rehash
+        page_player(command.issuer.name, "Not Implemented. Contact server adminstrator.")
+        RenRem.cmd("rehash_ban_list")
+      end
     else
-      # FIXME: Update banList.tsv before calling rehash
-      RenRem.cmd("rehash_ban_list")
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:kick, arguments: 2, help: "!kick <nickname> <reason>", groups: [:admin, :mod]) do |command|
-    player_id = PlayerData.name_to_id(command.arguments.first)
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    if player_id.negative?
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
-    elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot kick yourself!")
+    if player
+      if command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot kick yourself!")
+      else
+        page_player(command.issuer.name, "#{player.name} has been kicked!")
+
+        RenRem.cmd("kick #{player.id} #{command.arguments.last}")
+      end
     else
-      RenRem.cmd("kick #{player_id} #{command.arguments.last}")
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:mute, arguments: 2, help: "!mute <nickname> <reason>", groups: [:admin, :mod]) do |command|
-    player_id = PlayerData.name_to_id(command.arguments.first)
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    if player_id.negative?
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
-    elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot mute yourself!")
+    if player
+      if command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot mute yourself!")
+      else
+        page_player(command.issuer.name, "#{player.name} has been muted!")
+
+        RenRem.cmd("mute #{player.id} #{command.arguments.last}")
+      end
     else
-      # TODO: message player that they've been muted?  reason: #{command.arguments.last}
-      RenRem.cmd("mute #{player_id}")
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:unmute, arguments: 1, help: "!unmute <nickname>", groups: [:admin, :mod]) do |command|
-    player_id = PlayerData.name_to_id(command.arguments.first)
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    if player_id.negative?
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Failed to find player in game named: #{command.arguments.first}")
-    elsif command.issuer.id == player_id
-      RenRem.cmd("cmsgp #{command.issuer.id} 255,127,0 Cannot unmute yourself!")
+    if player
+      if command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot unmute yourself!")
+      else
+        page_player(command.issuer.name, "#{player.name} has been unmute!")
+
+        RenRem.cmd("unmute #{player.id} #{command.arguments.last}")
+      end
     else
-      # TODO: message player that they've been unmuted?  reason: #{command.arguments.last}
-      RenRem.cmd("unmute #{player_id}")
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:add_tempmod, aliases: [:atm], arguments: 1, help: "!add_tempmod <nickname>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
-    log "Found player: #{player&.name} (from: #{command.arguments.first})"
+    log "Found player: #{player.name} (from: #{command.arguments.first})"
 
     if player
       if command.issuer != player
@@ -94,7 +111,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
       end
     else
-      broadcast_message("Player not in game or name is not unique!")
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
     end
   end
 
@@ -116,7 +133,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
       end
     else
-      broadcast_message("Player not in game or name is not unique!")
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
     end
   end
 
@@ -138,7 +155,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Server Moderator", red: 127, green: 255, blue: 127)
       end
     else
-      broadcast_message("Player not in game or name is not unique!")
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
     end
   end
 
@@ -160,7 +177,7 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Game Director", red: 127, green: 255, blue: 127)
       end
     else
-      broadcast_message("Player not in game or name is not unique!")
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
     end
   end
 end

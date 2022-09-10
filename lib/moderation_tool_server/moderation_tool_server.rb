@@ -4,7 +4,8 @@ require "sassc"
 
 module Mobius
   class ModerationToolApp < Sinatra::Base
-    CONNECTIONS = []
+    CLIENTS = []
+    BOTS = []
 
     configure do
       set port: 32_068
@@ -29,9 +30,11 @@ module Mobius
       slim :mobius
     end
 
+    # FOR FRONTEND
+
     get "/mobius/stream?", provides: "text/event-stream" do
       stream :keep_open do |out|
-        CONNECTIONS << out
+        CLIENTS << out
 
         until out.closed?
           out << 'data: {"type":"keep_alive"}'
@@ -40,18 +43,50 @@ module Mobius
           sleep 1
         end
 
-        out.callback { CONNECTIONS.delete(out) }
+        out.callback { CLIENTS.delete(out) }
       end
-    end
-
-    get "/mobius/stream?" do
-      pp request
     end
 
     post "/mobius/chat?" do
     end
 
     post "/mobius/fds?" do
+    end
+
+    # FOR MOBIUS BOT
+
+    get "/mobius/deliveries?", provides: "text/event-stream" do
+      stream :keep_open do |out|
+        BOTS << out
+
+        until out.closed?
+          out << 'data: {"type":"keep_alive"}'
+          out << "\n\n"
+
+          sleep 1
+        end
+
+        out.callback { BOTS.delete(out) }
+      end
+    end
+
+    post "/mobius/ingest?" do
+      # TODO: Check for authorization header
+      # TODO: Check which server this bot is serving
+      payload = request.body.read
+      pp payload
+
+      CLIENTS.each do |c|
+        begin
+          c << request.body.read
+          c << "\n\n"
+        rescue => e
+          pp e
+          pp e.backtrace
+        end
+      end
+
+      "OKAY"
     end
 
     get "/css/application.css?" do
