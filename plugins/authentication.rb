@@ -21,6 +21,8 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
           break
         end
 
+       granted_role = grant(level, player) if hash[:force_grant]
+
         break if found
       end
     end
