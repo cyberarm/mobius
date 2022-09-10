@@ -97,12 +97,38 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @manual_bot_count = false
     @coop_votes = {}
 
+    # Attempt to auto resume coop if bot is restarted
+    # NOTE: Probably won't work if a player is a spy
+    after(3) do
+      team_0 = ServerStatus.get(:team_0_players)
+      team_1 = ServerStatus.get(:team_1_players)
+
+      if team_0 > 1 && team_1.zero?
+        @coop_started = true
+        @current_side = 0
+
+        broadcast_message("[AutoCoop] Resumed coop on team #{Teams.name(@current_side)}")
+      elsif team_1 > 1 && team_0.zero?
+        @coop_started = true
+        @current_side = 1
+
+        broadcast_message("[AutoCoop] Resumed coop on team #{Teams.name(@current_side)}")
+      end
+    end
+
     every(5) do
       if @coop_started
         configure_bots
         move_players_to_coop_team
       else
         check_votes(silent: true)
+      end
+    end
+
+    every(30) do
+      unless @coop_started
+        broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
+        broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
       end
     end
   end
@@ -136,6 +162,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       else
         log("No one is in game after 5 seconds, disabling coop this round.")
 
+        RenRem.cmd("botcount 0")
         @coop_started = false
       end
     end
@@ -149,7 +176,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       RenRem.cmd("team2 #{player.id} #{@current_side}")
     else
       broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
-      broadcast_message("[AutoCoop] Vote to start now with !request_coop, 100% of players must request it.")
+      broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
     end
   end
 
