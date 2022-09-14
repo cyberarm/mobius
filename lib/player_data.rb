@@ -2,9 +2,9 @@ module Mobius
   class PlayerData
     class Player
       attr_reader :origin
-      attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :time, :last_updated
+      attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :rank, :kills, :deaths, :money, :kd, :time, :last_updated
 
-      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, time:, last_updated:)
+      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
         # Connection method
         @origin = origin
 
@@ -15,6 +15,11 @@ module Mobius
         @team         = team # Integer
         @ping         = ping # Integer
         @address      = address # String
+        @rank         =  rank # Integer
+        @kills        =  kills # Integer
+        @deaths       =  deaths # Integer
+        @money        =  money # Integer
+        @kd           =  kd # Float
         @kbps         = kbps # Integer
         @time         = time # Time
         @last_updated = last_updated # Time
@@ -86,7 +91,7 @@ module Mobius
 
     @player_data = {}
 
-    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, time:, last_updated:)
+    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
       if (player = @player_data[id])
         if player.team != team
           process_team_change(id, player.team, team)
@@ -96,6 +101,11 @@ module Mobius
         player.team = team
         player.ping = ping
         player.kbps = kbps
+        player.rank = rank
+        player.kills = kills
+        player.deaths = deaths
+        player.money = money
+        player.kd = kd
         player.time = time
         player.last_updated = last_updated
       else
@@ -111,9 +121,22 @@ module Mobius
           ping: ping,
           address: address,
           kbps: kbps,
+          rank: rank,
+          kills: kills,
+          deaths: deaths,
+          money: money,
+          kd: kd,
           time: time,
           last_updated: last_updated
         )
+
+        player = @player_data[id]
+
+        PluginManager.publish_event(
+          :player_joined,
+          player
+        )
+        log "PlayerData", "#{player.name} has joined the game"
       end
     end
 

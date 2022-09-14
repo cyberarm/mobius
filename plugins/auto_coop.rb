@@ -1,9 +1,8 @@
 mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def configure_bots
     player_count = ServerStatus.total_players
-    base_bot_count = 12
     bot_count = player_count * @bot_difficulty
-    bot_count = base_bot_count if bot_count.zero? || bot_count < base_bot_count
+    bot_count = @base_bot_count if bot_count.zero? || bot_count < @base_bot_count
 
     bot_count = @max_bot_count if bot_count > @max_bot_count
 
@@ -37,12 +36,12 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     return unless ServerStatus.total_players.positive?
 
     PlayerData.player_list.each do |player|
-      next unless Teams.id_from_name(player.team) != @current_side
+      next unless player.team != @current_side
 
       RenRem.cmd("team2 #{player.id} #{@current_side}")
     end
 
-    RenRem.cmd("player_info")
+    RenRem.cmd("pinfo")
   end
 
   def check_map(map)
@@ -83,6 +82,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
   end
 
+  def bot_report
+
+  end
+
   on(:start) do
     @current_side = 0
     @bot_difficulty = 2
@@ -92,6 +95,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @max_bot_count = 64
     @hardcap_bot_count = 64
     @hardcap_friendless_player_count = 12
+    @base_bot_count = 12
 
     @coop_started = false
     @manual_bot_count = false

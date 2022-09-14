@@ -74,7 +74,7 @@ module Mobius
 
       RenRem.cmd("sversion")
 
-      RenRem.cmd("player_info")
+      RenRem.cmd("pinfo")
       RenRem.cmd("game_info")
     end
 

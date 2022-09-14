@@ -98,7 +98,7 @@ module Mobius
         # PlayerData.player(username).set_value(:changed_team, true)
 
         RenRem.cmd("game_info")
-        RenRem.cmd("player_info")
+        RenRem.cmd("pinfo")
       else
         # TODO: Deliver message to IRC/mod tool
       end
@@ -225,19 +225,13 @@ module Mobius
     end
 
     def handle_player_info(line)
-      if line =~ /Id\s+Name/
+      if line.start_with?("Start PInfo output")
         @log_player_info = true
 
         return true
       end
 
-      if line =~ /No players/
-        @log_player_info = false
-
-        return true
-      end
-
-      if line =~ /Total current bandwidth/
+      if line.start_with?("End PInfo output")
         @log_player_info = false
 
         # Check player list for invalid player names
@@ -266,8 +260,10 @@ module Mobius
           player
         )
 
+        log "PlayerData", "#{player.name} left the game"
+
         RenRem.cmd("game_info")
-        RenRem.cmd("player_info")
+        RenRem.cmd("pinfo")
 
         PlayerData.delete(player)
 
@@ -284,16 +280,7 @@ module Mobius
         name = match_data[1]
 
         RenRem.cmd("game_info")
-        RenRem.cmd("player_info")
-
-        PluginManager.defer(2) do
-          player = PlayerData.player(PlayerData.name_to_id(name))
-
-          PluginManager.publish_event(
-            :player_joined,
-            player
-          )
-        end
+        RenRem.cmd("pinfo")
 
         # TODO: More work needed
 
@@ -302,16 +289,23 @@ module Mobius
     end
 
     def parse_player_info(line)
-      split_data = line.split(" ")
+      # i,m_pName,m_Score,m_Team,m_Ping,m_IP,m_KB,m_Rank,m_Kills,m_Deaths,m_Money,m_KD
+
+      split_data = line.split(",")
 
       id       = split_data[0].to_i
       name     = split_data[1]
       score    = split_data[2].to_i
-      team     = split_data[3]
+      team     = split_data[3].to_i
       ping     = split_data[4].to_i
       address  = split_data[5]
       kbps     = split_data[6].to_i
-      time     = split_data[7]
+      rank     = split_data[7].to_i
+      kills    = split_data[8].to_i
+      deaths   = split_data[9].to_i
+      money    = split_data[10].to_i
+      kd       = split_data[11].to_f
+      # time     = split_data[7]
 
       PlayerData.update(
         origin: :game,
@@ -322,7 +316,12 @@ module Mobius
         ping: ping,
         address: address,
         kbps: kbps,
-        time: time,
+        rank: rank,
+        kills: kills,
+        deaths: deaths,
+        money: money,
+        kd: kd,
+        time: 0,
         last_updated: Time.now.utc
       )
 
@@ -343,7 +342,7 @@ module Mobius
         # TODO: Auto balance teams, if enabled.
 
         RenRem.cmd("game_info")
-        RenRem.cmd("player_info")
+        RenRem.cmd("pinfo")
 
         return true
       end

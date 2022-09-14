@@ -180,4 +180,41 @@ mobius_plugin(name: "Moderation", version: "0.0.1") do
       page_player(command.issuer.name, "Player not in game or name is not unique!")
     end
   end
+
+  command(:mods, arguments: 0, help: "!mods - shows list of in game staff") do |command|
+    admins    = PlayerData.player_list.select(&:administrator?)
+    mods      = PlayerData.player_list.select(&:moderator?)
+    directors = PlayerData.player_list.select(&:director?)
+
+    if admins.size.positive?
+      broadcast_message("Administrators:")
+      broadcast_message(admins.sort_by(&:name).map(&:name).join(", "))
+    end
+
+    if mods.size.positive?
+      broadcast_message("Moderators:")
+      broadcast_message(mods.sort_by(&:name).map(&:name).join(", "))
+    end
+
+    if directors.size.positive?
+      broadcast_message("Game Directors:")
+      broadcast_message(directors.sort_by(&:name).map(&:name).join(", "))
+    end
+
+    if [admins + mods + directors].flatten.size.zero?
+      broadcast_message("No staff in game.")
+    end
+  end
+
+  command(:debug_player, aliases: [:dp], arguments: 1, help: "!debug_player <nickname> - Print out PlayerData for player", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+    if player
+      player.inspect.to_s.chars.each_slice(100) do |slice|
+        page_player(command.issuer.name, slice.join)
+      end
+    else
+      page_player(command.issuer.name, "Failed to find player or name not unique.")
+    end
+  end
 end
