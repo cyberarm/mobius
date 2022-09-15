@@ -186,8 +186,8 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
         string += "\\score_#{i}\\#{player.score}"
         string += "\\ping_#{i}\\#{player.ping}"
         string += "\\team_#{i}\\#{player.team}"
-        string += "\\kills_#{i}\\#{player.kills || 0}"
-        string += "\\deaths_#{i}\\#{player.deaths || 0}"
+        string += "\\kills_#{i}\\#{player.kills}"
+        string += "\\deaths_#{i}\\#{player.deaths}"
 
         fragments << string
       end

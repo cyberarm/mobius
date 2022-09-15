@@ -211,9 +211,14 @@ module Mobius
       object[:player_y]       = data[9].to_f
       object[:player_z]       = data[10].to_f
 
-      if (player_obj = @game_objects[object[:player_object]] && vehicle_obj = @game_objects[object[:vehicle_object]])
+      player_obj = @game_objects[object[:player_object]]
+      vehicle_obj = @game_objects[object[:vehicle_object]]
+
+      if (player_obj && vehicle_obj)
         player_obj[:vehicle] = object[:vehicle_object]
         vehicle_obj[:drivers] += 1
+
+        last_driver = @game_objects[vehicle_obj[:last_driver]]
 
         if vehicle_obj[:drivers] == 1
           vehicle_obj[:driver] = object[:player_object]
@@ -227,7 +232,11 @@ module Mobius
               vehicle_name = vehicle_obj[:preset] # translate_preset(vehicle_obj[:preset])
 
               # FIXME: Add a mobius annnouncement method to simplify these sorts of broadcasts
-              RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!")
+              if last_driver
+                RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!")
+              else
+                RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!")
+              end
             end
 
             vehicle_obj[:last_team] = player_obj[:team]
@@ -303,7 +312,7 @@ module Mobius
         when "building"
           player.increment_value(:stats_building_repair, -object[:damage])
         when "vehicle"
-          player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj[:drivers].positive?
+          player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj && obj[:drivers].positive?
         end
       end
 

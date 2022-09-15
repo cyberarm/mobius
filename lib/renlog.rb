@@ -289,7 +289,7 @@ module Mobius
     end
 
     def parse_player_info(line)
-      # i,m_pName,m_Score,m_Team,m_Ping,m_IP,m_KB,m_Rank,m_Kills,m_Deaths,m_Money,m_KD
+      # i, m_pName, m_Score, m_Team, m_Ping, m_IP, m_KB, m_Rank, m_Kills, m_Deaths, m_Money, m_KD
 
       split_data = line.split(",")
 
