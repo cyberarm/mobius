@@ -233,9 +233,9 @@ module Mobius
 
               # FIXME: Add a mobius annnouncement method to simplify these sorts of broadcasts
               if last_driver
-                RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!")
+                RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!")
               else
-                RenRem.cmd("msg [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!")
+                RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!")
               end
             end
 
@@ -354,11 +354,11 @@ module Mobius
     end
 
     def killed_building(object, killed_obj, killer_obj)
-      RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
     end
 
     def killed_vehicle(object, killed_obj, killer_obj)
-      # RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
+      # RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.")
     end
 
     def killed_soldier(object, killed_obj, killer_obj)
@@ -367,12 +367,12 @@ module Mobius
       case killer_obj[:type].downcase
       when "soldier"
         if killed_obj[:name] == killer_obj[:name]
-          RenRem.cmd("msg [MOBIUS] #{killer_obj[:name]} killed theirself.")
+          RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} killed theirself.")
         else
           PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
         end
       when "vehicle"
-        RenRem.cmd("msg [MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.")
+        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.")
       end
     end
 

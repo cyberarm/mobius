@@ -486,11 +486,11 @@ module Mobius
     def check_username(id, name, address)
       if name =~ /(:|\!|\&|\s)/
         RenRem.cmd("kick #{id} disallowed characters in nickname")
-        RenRem.cmd("msg [MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name")
+        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name")
 
       elsif name.length <= 1 || name =~ /[\001\002\037]/
         RenRem.cmd("kick #{id} non-ascii characters detected in nickname")
-        RenRem.cmd("msg [MOBIUS] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!")
+        RenRem.cmd("cmsg 255,127,0 [MOBIUS] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!")
 
       elsif name.length > 30
         RenRem.cmd("kick #{id} nickname may only be 30 characters long")
