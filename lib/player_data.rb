@@ -132,11 +132,12 @@ module Mobius
 
         player = @player_data[id]
 
+        log "PlayerData", "#{player.name} has joined the game"
+
         PluginManager.publish_event(
           :player_joined,
           player
         )
-        log "PlayerData", "#{player.name} has joined the game"
       end
     end
 

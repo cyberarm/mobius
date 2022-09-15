@@ -75,7 +75,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       count = configure_bots
       move_players_to_coop_team
 
-      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team") unless silent
+      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}") unless silent
       log("Coop has started by player vote") unless silent
     else
       broadcast_message("[AutoCoop] Still need #{missing.count} to vote!") unless silent
@@ -83,7 +83,18 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   def bot_report
+    return "0 bots per team" unless @coop_started
 
+    player_count = ServerStatus.total_players
+
+    if player_count > @friendless_player_count
+      "0 bots on team #{Teams.name(@current_side)}, #{@last_bot_count} on team #{Teams.name((@current_side + 1) % 2)}"
+    else
+      half = @last_bot_count / 2
+      on_team = half - player_count
+
+      "#{on_team} bots on team #{Teams.name(@current_side)}, #{half} on team #{Teams.name((@current_side + 1) % 2)}"
+    end
   end
 
   on(:start) do
@@ -96,6 +107,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @hardcap_bot_count = 64
     @hardcap_friendless_player_count = 12
     @base_bot_count = 12
+    @max_bot_difficulty = 13 # >= 12
 
     @coop_started = false
     @manual_bot_count = false
@@ -159,8 +171,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
         count = configure_bots
 
-        log("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
-        broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+        log("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}")
+        broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}")
 
         move_players_to_coop_team
       else
@@ -176,7 +188,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     if @coop_started
       count = configure_bots
 
-      message_player(player.name, "[AutoCoop] Running coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+      message_player(player.name, "[AutoCoop] Running coop on team #{Teams.name(@current_side)} with #{bot_report}")
       RenRem.cmd("team2 #{player.id} #{@current_side}")
     else
       broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
@@ -191,7 +203,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   command(:botcount, arguments: 0, help: "Reports number of bots configured") do |command|
-    broadcast_message("[AutoCoop] There are #{@last_bot_count / 2} bots per team")
+    broadcast_message("[AutoCoop] There are #{bot_report}")
   end
 
   command(:bot_diff, arguments: 0, help: "Reports bot difficulty (bots per player)") do |command|
@@ -224,19 +236,19 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       count = configure_bots
       move_players_to_coop_team
 
-      broadcast_message("[AutoCoop] #{command.issuer.name} has started coop on team #{Teams.name(@current_side)} with #{count / 2} bots per team")
+      broadcast_message("[AutoCoop] #{command.issuer.name} has started coop on team #{Teams.name(@current_side)} with #{bot_report}")
     else
       page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
     end
   end
 
-  command(:set_bot_diff, arguments: 1, help: "!set_bot_diff <bots_per_player>", groups: [:admin, :mod, :director]) do |command|
+  command(:set_bot_diff, aliases: [:sbd], arguments: 1, help: "!set_bot_diff <bots_per_player>", groups: [:admin, :mod, :director]) do |command|
     diff = command.arguments.first.to_i
 
     if diff <= 0
       page_player(command.issuer.name, "Invalid bot difficulty, must be greater than 0!")
-    elsif diff >= 6
-      page_player(command.issuer.name, "Invalid bot difficulty, must be less than 6!")
+    elsif diff >= @max_bot_difficulty
+      page_player(command.issuer.name, "Invalid bot difficulty, must be less than #{@max_bot_difficulty}!")
     else
       @bot_difficulty = diff
       configure_bots

@@ -77,7 +77,7 @@ module Mobius
 
       if cmd.downcase.to_sym == :help
         log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
-        handle_help_command(player)
+        handle_help_command(player, parts)
 
         return
       end
@@ -94,16 +94,18 @@ module Mobius
 
       arguments = []
 
-      if parts.count >= command.arguments
+      if parts.count.zero? && command.arguments.zero? && parts.count.zero?
+        # Do nothing here, command has no arguments and we've received no arguments
+      elsif parts.count == command.arguments
         (command.arguments - 1).times do
           arguments << parts.shift
         end
 
         arguments << parts.join(" ")
       else
-        # TODO: Send error and help
         RenRem.cmd("cmsgp #{player.id} 255,255,255 wrong number of arguments provided.")
         RenRem.cmd("cmsgp #{player.id} 255,255,255 #{command.help}")
+
         return
       end
 
@@ -118,16 +120,29 @@ module Mobius
       end
     end
 
-    def self.handle_help_command(player)
+    def self.handle_help_command(player, parts)
       cmds = @commands.select do |name, cmd|
         player.in_group?(cmd.groups)
       end
 
-      cmds = cmds.map { |name, _| name }
+      if parts.size == 1
+        command = cmds.find { |name, _| name == parts.first.to_sym }
 
-      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Commands:")
-      cmds.map { |c| "!#{c}" }.each_slice(10) do |slice|
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+        if command
+          command = command.last
+
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Help for command !#{command.name}:")
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{command.help}")
+        else
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Command !#{parts.first} not found.")
+        end
+      else
+        cmds = cmds.map { |name, _| name }
+
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Commands:")
+        cmds.map { |c| "!#{c}" }.each_slice(10) do |slice|
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+        end
       end
     end
 
