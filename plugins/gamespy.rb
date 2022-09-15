@@ -81,7 +81,6 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
         loop do
           message, addrinfo = socket.recvfrom_nonblock(2048)
 
-          pp message, addrinfo
           #query_server_receive(message, addrinfo)
         end
       rescue IO::WaitReadable
@@ -100,8 +99,6 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
 
   def query_server_receive(message, addrinfo)
     # TODO: handle ban checking
-
-    pp message, addrinfo
 
     reply = case message
             when "\\basic\\"
