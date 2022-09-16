@@ -15,14 +15,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     #   RenRem.cmd("botcount #{bot_count} 0")
     # end
 
-    if player_count > @friendless_player_count
-      if @current_side == 0
-        RenRem.cmd("botcount 0 0")
-        RenRem.cmd("botcount #{bot_count} 1")
-      else
-        RenRem.cmd("botcount 0 1")
-        RenRem.cmd("botcount #{bot_count} 0")
-      end
+    if player_count >= @friendless_player_count
+      # NOTE: Maybe this is causing the bots to sometimes reset?
+      # RenRem.cmd("botcount 0 #{@current_side}")
+      RenRem.cmd("botcount #{bot_count} #{(@current_side + 1) % 2}")
     else
       RenRem.cmd("botcount #{bot_count}")
     end
