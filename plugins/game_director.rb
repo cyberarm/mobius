@@ -107,7 +107,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
   end
 
   command(:nextmap, aliases: [:n, :next], arguments: 0, help: "!nextmap") do |command|
-    map = ServerConfig.rotation[ServerStatus.get(:current_map_number) + 1]
+    map = ServerConfig.rotation.rotate(ServerStatus.get(:current_map_number) + 1)&.first
 
     broadcast_message(map)
   end
