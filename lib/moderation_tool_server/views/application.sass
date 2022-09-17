@@ -10,7 +10,8 @@ $tablet_screen: 768px
 body
   font-family: sans-serif
   background: #cdab8f
-  font-size: 1.25rem
+  font-size: 1rem
+  font-family: Noto Sans, sans-serif
   display: flex
   flex-direction: column
   height: 100vh
@@ -92,6 +93,7 @@ input[type=text], input[type=password], input[type=button], input[type=submit]
       margin-top: 16pt
 
     h1,h2
+      min-height: auto
       padding-top: 8pt
       padding-bottom: 8pt
       color: white
@@ -142,7 +144,8 @@ input[type=text], input[type=password], input[type=button], input[type=submit]
   flex-grow: 1
   background: #cdab8f
   overflow: auto
-#chat_input
+  padding: 8pt
+#chat_form
   display: flex
   flex-direction: row
   margin-top: 8pt

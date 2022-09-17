@@ -3,13 +3,13 @@
     "id": 0,
     "name": "Soviets",
     "abbreviation": "Sov",
-    "color": "04"
+    "color": "bf1b26"
   },
   {
     "id": 1,
     "name": "Allies",
     "abbreviation": "All",
-    "color": "08,15"
+    "color": "185db3"
   },
   {
     "id": 2,

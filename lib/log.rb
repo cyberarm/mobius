@@ -9,6 +9,17 @@ module Kernel
             raise ArgumentError
           end
 
+    if defined?(Mobius::ModerationServerClient)
+      Mobius::ModerationServerClient.post(
+        JSON.dump(
+          {
+            type: :log,
+            message: msg
+          }
+        )
+      )
+    end
+
     puts "[#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}] #{msg}"
   end
 end

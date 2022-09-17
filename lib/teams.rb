@@ -91,6 +91,10 @@ module Mobius
       end
     end
 
+    def self.list
+      @teams
+    end
+
     def self.colorize_name(team)
       IRC.colorize(color(team), name(team))
     end

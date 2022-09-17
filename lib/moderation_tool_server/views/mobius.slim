@@ -5,8 +5,8 @@
     .padded_area.flex-column.flex-grow
       #chat_panel.flex-grow
         #chat_log
-        form#chat_input action="/mobius/chat" method="post"
-          input#chat_message.flex-grow type="text" name="chat_message" max-length="249" autofocus=""/
+        form#chat_form action="/mobius/chat" method="post"
+          input#chat_message.flex-grow type="text" name="chat_message" maxlength="249" autofocus="" autocomplete="off"/
           input style="margin-left: 16pt" type="submit" value="Send"/
 
       #fds_panel
@@ -15,52 +15,13 @@
 
   .container.teams_container
     .padded_area.flex-column.flex-grow
-      .team_box
-        h2 TEAM NAME0
+      .team_box#team_box_0
+        h2#team_0_name TEAM NAME0
         .team_list
-          p John
-          p Mark
-          p Andrew
 
-      .team_box
-        h2 TEAM NAME1
+      .team_box#team_box_1
+        h2#team_1_name TEAM NAME1
 
         .team_list
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
-          p John
-          p Mark
-          p Andrew
 
 script src="/application.js"

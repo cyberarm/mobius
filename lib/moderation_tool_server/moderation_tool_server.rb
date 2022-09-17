@@ -1,9 +1,12 @@
 require "sinatra/base"
+require "sinatra/reloader"
 require "slim"
 require "sassc"
 
 module Mobius
   class ModerationToolApp < Sinatra::Base
+    Client = Struct.new(:socket, :send_queue, :last_delivery, :keep_alive_interval)
+
     CLIENTS = []
     BOTS = []
 
@@ -12,6 +15,10 @@ module Mobius
       set root: File.expand_path(".", __dir__)
       set server: :puma
       set :logging, false
+    end
+
+    configure :development do
+      register Sinatra::Reloader
     end
 
     get "/?" do
@@ -34,20 +41,44 @@ module Mobius
 
     get "/mobius/stream?", provides: "text/event-stream" do
       stream :keep_open do |out|
-        CLIENTS << out
+        # CLIENTS << out
+        client = Client.new(out, [], -1, 15)
 
-        until out.closed?
-          out << 'data: {"type":"keep_alive"}'
-          out << "\n\n"
+        CLIENTS << client
+        client.socket.callback { CLIENTS.delete(client) }
+
+        until client.socket.closed?
+          if client.send_queue.empty? && Time.now.to_i >= client.last_delivery + client.keep_alive_interval
+            client.last_delivery = Time.now.to_i
+
+            client.socket << 'data: {"type":"keep_alive"}'
+            client.socket << "\n\n"
+          else
+            while (data = client.send_queue.shift)
+              client.last_delivery = Time.now.to_i
+
+              client.socket << "data: #{data}\n\n"
+            end
+          end
 
           sleep 1
         end
-
-        out.callback { CLIENTS.delete(out) }
       end
     end
 
     post "/mobius/chat?" do
+      payload = request.body.read
+      hash = JSON.parse(payload, symbolize_names: true)
+
+      case hash[:type]
+      when "chat", "team_chat", "log"
+        BOTS.each { |b| b.send_queue << payload }
+      else
+        pp hash
+        halt 400
+      end
+
+      "OK"
     end
 
     post "/mobius/fds?" do
@@ -56,12 +87,28 @@ module Mobius
     # FOR MOBIUS BOT
 
     get "/mobius/deliveries?", provides: "text/event-stream" do
-      stream :keep_open do |out|
-        BOTS << out
+      # TODO: Check for authorization header
+      # TODO: Check which server this bot is serving
 
-        until out.closed?
-          out << 'data: {"type":"keep_alive"}'
-          out << "\n\n"
+      stream :keep_open do |out|
+        client = Client.new(out, [], -1, 15)
+
+        BOTS << client
+        client.socket.callback { BOTS.delete(client) }
+
+        until client.socket.closed?
+          if client.send_queue.empty? && Time.now.to_i >= client.last_delivery + client.keep_alive_interval
+            client.last_delivery = Time.now.to_i
+
+            client.socket << 'data: {"type":"keep_alive"}'
+            client.socket << "\n\n"
+          else
+            while (data = client.send_queue.shift)
+              client.last_delivery = Time.now.to_i
+
+              client.socket << "data: #{data}\n\n"
+            end
+          end
 
           sleep 1
         end
@@ -74,12 +121,10 @@ module Mobius
       # TODO: Check for authorization header
       # TODO: Check which server this bot is serving
       payload = request.body.read
-      pp payload
 
-      CLIENTS.each do |c|
+      CLIENTS.each do |client|
         begin
-          c << request.body.read
-          c << "\n\n"
+          client.send_queue << payload
         rescue => e
           pp e
           pp e.backtrace
