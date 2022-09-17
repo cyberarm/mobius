@@ -158,6 +158,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     @versus_started = false
     @versus_votes = {}
+    @advertise_versus_player_count = 8
 
     # Attempt to auto resume coop if bot is restarted
     # NOTE: Probably won't work if a player is a spy
@@ -190,15 +191,15 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       end
     end
 
-    every(20) do
+    every(120) do
       if @versus_started
         broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
       elsif !@coop_started && !@versus_started
         broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
         broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
-      elsif @coop_started && !@versus_started
+      elsif @coop_started && !@versus_started && ServerStatus.total_players >= @advertise_versus_player_count
         broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
-        broadcast_message("[AutoCoop] Vote to switch to PvP with !request_versus (!vs), 100% of players must request it.")
+        broadcast_message("[AutoCoop] Vote to switch this round to PvP with !request_versus (!vs), 100% of players must request it.")
       end
     end
   end
