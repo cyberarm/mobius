@@ -10,6 +10,10 @@ module Mobius
       monitor
     end
 
+    def self.running?
+      @running
+    end
+
     def self.teardown
       log "TEARDOWN", "Shutdown ModerationServerClient..."
       @sse_client&.close

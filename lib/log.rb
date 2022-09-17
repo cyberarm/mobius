@@ -9,7 +9,7 @@ module Kernel
             raise ArgumentError
           end
 
-    if defined?(Mobius::ModerationServerClient)
+    if defined?(Mobius::ModerationServerClient) && Mobius::ModerationServerClient.running?
       Mobius::ModerationServerClient.post(
         JSON.dump(
           {

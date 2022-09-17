@@ -161,6 +161,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
           page_player(mate.name, "#{command.issuer.name} has donated #{amount} credits to you")
         end
 
+        # FIXME: Sometimes this message is not delivered!
         page_player(command.issuer.name, "You have donated #{amount} credits to your team")
       else
         page_player(command.issuer.name, "Cannot donate nothing!")
