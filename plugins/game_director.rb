@@ -158,7 +158,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
         mates.each do |mate|
           RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
 
-          page_player(mate.name, "#{command.issuer.name} has donated #{amount} credits to you")
+          page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you")
         end
 
         # FIXME: Sometimes this message is not delivered!
