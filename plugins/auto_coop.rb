@@ -130,7 +130,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     player_count = ServerStatus.total_players
 
-    if player_count > @friendless_player_count
+    if player_count >= @friendless_player_count
       "0 bots on team #{Teams.name(@current_side)}, #{@last_bot_count} on team #{Teams.name((@current_side + 1) % 2)}"
     else
       half = @last_bot_count / 2
@@ -147,10 +147,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @last_bot_count = -1
     @friendless_player_count = 12
     @max_bot_count = 64
-    @hardcap_bot_count = 64
+    @hardcap_bot_count = 127 #64
     @hardcap_friendless_player_count = 12
     @base_bot_count = 12
-    @max_bot_difficulty = 13 # >= 12
+    @max_bot_difficulty = @hardcap_bot_count + 1 # 13 # >= 12
 
     @coop_started = false
     @manual_bot_count = false
@@ -338,7 +338,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       page_player(command.issuer.name, "Invalid bot difficulty, must be less than #{@max_bot_difficulty}!")
     else
       @bot_difficulty = diff
-      configure_bots
+      # configure_bots # This should not be explicitly called! Let the timer handle this...
 
       broadcast_message("[AutoCoop] #{command.issuer.name} has changed the bot difficulty, set to #{@bot_difficulty}")
     end
