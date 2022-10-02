@@ -112,7 +112,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     broadcast_message(map)
   end
 
-  command(:rotation, aliases: [:rot], arguments: 0, help: "!rotation") do |command|
+  command(:rotation, aliases: [:r, :rot], arguments: 0, help: "!rotation") do |command|
     maps = ServerConfig.rotation.rotate((ServerStatus.get(:current_map_number) + 1))
 
     maps.each_slice(6) do |slice|

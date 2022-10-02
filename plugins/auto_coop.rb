@@ -16,10 +16,11 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     # end
 
     if @versus_started
+      bot_count = -1
       RenRem.cmd("botcount 0")
     elsif player_count >= @friendless_player_count
-      # NOTE: Maybe this is causing the bots to sometimes reset?
-      # RenRem.cmd("botcount 0 #{@current_side}")
+      # NOTE: Prevent sudden influx of enemy bots when transitioning to exclusive PvE mode
+      bot_count = (bot_count / 2.0).round
       RenRem.cmd("botcount #{bot_count} #{(@current_side + 1) % 2}")
     else
       RenRem.cmd("botcount #{bot_count}")
@@ -265,15 +266,32 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @versus_votes.delete(player.name)
   end
 
-  command(:botcount, arguments: 0, help: "Reports number of bots configured") do |command|
+  command(:coop_info, aliases: [:ci], arguments: 0, help: "Reports co-op configuration") do |command|
+    page_player(
+      command.issuer.name,
+      "[AutoCoop] PvP: #{@versus_started}, PvE: #{@coop_started}, "\
+      "Bots: #{@last_bot_count}/#{@max_bot_count} (hard cap: #{@hardcap_bot_count}), "\
+      "Bot Diff: #{@bot_difficulty}/#{@max_bot_difficulty}, "\
+      "Friendless Player Count: #{@friendless_player_count} (hard cap: #{@hardcap_friendless_player_count})")
+  end
+
+  command(:botcount, aliases: [:bc], arguments: 0, help: "Reports number of bots configured") do |command|
     broadcast_message("[AutoCoop] There are #{bot_report}")
   end
 
-  command(:bot_diff, arguments: 0, help: "Reports bot difficulty (bots per player)") do |command|
+  command(:bot_diff, aliases: [:bd], arguments: 0, help: "Reports bot difficulty (bots per player)") do |command|
     broadcast_message("[AutoCoop] Bot difficulty is set to #{@bot_difficulty}")
   end
 
-  command(:request_coop, arguments: 0, help: "Vote to start coop") do |command|
+  command(:bot_limit, aliases: [:botl], arguments: 0, help: "Reports bot limit") do |command|
+    broadcast_message("[AutoCoop] Bot limit is set to #{@max_bot_count}")
+  end
+
+  command(:friendless_player_count, aliases: [:fpc], arguments: 0, help: "Reports friendless player count") do |command|
+    broadcast_message("[AutoCoop] Friendless Player Count is set to #{@friendless_player_count}")
+  end
+
+  command(:request_coop, aliases: [:rc], arguments: 0, help: "Vote to start coop") do |command|
     if @coop_started
       page_player(command.issuer.name, "Coop is already active!")
     else
