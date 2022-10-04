@@ -57,6 +57,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
   command(:time, arguments: 1, help: "!time 5m", groups: [:admin, :mod, :director]) do |command|
     match_data = command.arguments.first.match(/(\d+)([smh])/)
 
+    # FIXME: Specifying time without s/m causes error
     time = match_data[1].to_i
     unit = match_data[2]
 
