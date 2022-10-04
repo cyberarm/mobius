@@ -28,7 +28,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     elsif maps.count.zero?
       page_player(command.issuer.name, "No map matched: #{command.arguments.first}")
     else
-      original_map = ServerConfig.rotation[ServerStatus.get(:current_map_number) + 1]
+      original_map = ServerConfig.rotation.rotate(ServerStatus.get(:current_map_number) + 1)&.first
       array_index = ServerConfig.rotation.index(original_map)
 
       RenRem.cmd("mlistc #{array_index} #{maps.first}")
