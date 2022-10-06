@@ -137,7 +137,7 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
       player_fragments, team_fragment = generate_players
 
       player_fragments.each do |fragment|
-        @query_socket.send("#{fragment}queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
+        @query_socket.send("#{fragment}\\queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
         index += 1
       end
 
