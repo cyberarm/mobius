@@ -180,17 +180,18 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
     fragments = []
 
     PlayerData.player_list.each_slice(15) do |slice|
+      string = ""
+
       slice.each_with_index do |player, i|
-        string = ""
         string += "\\player_#{i}\\#{player.name}"
         string += "\\score_#{i}\\#{player.score}"
         string += "\\ping_#{i}\\#{player.ping}"
         string += "\\team_#{i}\\#{player.team}"
         string += "\\kills_#{i}\\#{player.kills}"
         string += "\\deaths_#{i}\\#{player.deaths}"
-
-        fragments << string
       end
+
+      fragments << string
     end
 
     team0_score = ServerStatus.get(:team_0_points)
