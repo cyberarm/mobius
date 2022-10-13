@@ -156,7 +156,7 @@ module Mobius
         player = @player_data.find { |_, data| data.name.downcase == name&.downcase }&.last
         player ? player.id : -1
       else
-        players = player_list.select { |ply| ply.name.downcase.start_with?(name&.downcase) }
+        players = player_list.select { |ply| ply.name.downcase.include?(name&.downcase) }
         players.size == 1 ? players.first&.id : -1
       end
     end
