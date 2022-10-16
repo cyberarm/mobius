@@ -21,7 +21,8 @@ module Mobius
       end
     end
 
-    attr_reader :fds_path, :server_settings_path, :database_path, :renrem_address, :renrem_port, :renrem_password, :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level
+    attr_reader :fds_path, :server_settings_path, :database_path, :renrem_address, :renrem_port, :renrem_password,
+                :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
@@ -49,9 +50,9 @@ module Mobius
 
       @debug_verbose = false
 
-      @messages = @data.dig(:mobius, :messages)
+      @messages = @data.dig(:mobius, :messages) || {}
 
-      @limit_commands_to_staff_level = @data.dig(:mobius, :limit_commands_to_staff_level)
+      @limit_commands_to_staff_level = @data.dig(:mobius, :limit_commands_to_staff_level) || nil
     end
   end
 end
