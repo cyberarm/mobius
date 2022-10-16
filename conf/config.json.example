@@ -4,6 +4,7 @@
     "server_settings_path": "data/APB_Public.ini",
     "database_path":"./conf/database.db",
     "limit_commands_to_staff_level": null,
+    "record_gamelog": false,
     "gamespy":{
       "master_servers":[
         "renmaster.cncnet.org:27900",
