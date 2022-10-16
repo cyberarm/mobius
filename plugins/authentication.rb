@@ -27,7 +27,7 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
       end
     end
 
-    if granted_role && Config.messages[:staff]
+    if granted_role && Config.dig(:messages, :staff)
       case granted_role
       when :admin
         broadcast_message("[MOBIUS] #{player.name} is a Server Administrator", red: 127, green: 255, blue: 127)

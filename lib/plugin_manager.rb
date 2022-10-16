@@ -91,6 +91,23 @@ module Mobius
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
+      if Config.limit_commands_to_staff_level
+        case Config.limit_commands_to_staff_level.to_sym
+        when :admin
+          command.groups.clear
+          command.groups.push(:admin)
+        when :mod
+          command.groups.clear
+          command.groups.push(:admin, :mod)
+        when :director
+          command.groups.clear
+          command.groups.push(:admin, :mod, :director)
+        else
+          raise ArgumentError, "Invalid config option 'limit_commands_to_staff_level' expected: admin, mod, or director, got: #{Config.limit_commands_to_staff_level}"
+          command.groups << Config.limit_commands_to_staff_level.to_sym
+        end
+      end
+
       @commands[name] = command
     end
 
