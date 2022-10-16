@@ -13,6 +13,11 @@ mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
     end
   end
 
+  def announce_rules(player)
+    RenRem.cmd("cmsg 255,127,0 [MOBIUS] All players are expected to follow W3D Hub's server rules")
+    RenRem.cmd("cmsg 255,127,0 [MOBIUS] This is not an official W3D Hub server")
+  end
+
   on(:start) do
     @index = 0
     @sayings = [
@@ -27,5 +32,9 @@ mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
     every(200) do
       broadcast_announcement
     end
+  end
+
+  on(:player_joined) do |player|
+    announce_rules(player)
   end
 end

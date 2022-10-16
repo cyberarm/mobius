@@ -1,11 +1,5 @@
 mobius_plugin(name: "Moderation", version: "0.0.1") do
-  def announce_rules(player)
-    RenRem.cmd("cmsg 255,127,0 [MOBIUS] All players are expected to follow W3D Hub's server rules")
-    RenRem.cmd("cmsg 255,127,0 [MOBIUS] This is not an official W3D Hub server")
-  end
-
   on(:player_joined) do |player|
-    announce_rules(player)
   end
 
   on(:player_left) do |player|
