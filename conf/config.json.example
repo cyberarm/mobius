@@ -3,6 +3,7 @@
     "fds_path":"C:/GameServers/a-path-beyond-fds",
     "server_settings_path": "data/APB_Public.ini",
     "database_path":"./conf/database.db",
+    "limit_commands_to_staff_level": null,
     "gamespy":{
       "master_servers":[
         "renmaster.cncnet.org:27900",
@@ -27,6 +28,16 @@
           ]
         }
       ]
+    },
+    "messages": {
+      "staff": true,
+      "crate": true,
+      "soldier_killed": true,
+      "soldier_purchase": true,
+      "building_killed": true,
+      "vehicle_killed": true,
+      "vehicle_purchase": true,
+      "vehicle_stolen": true
     }
   }
 }
