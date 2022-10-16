@@ -1,6 +1,7 @@
 require "json"
 require "socket"
 require "resolv"
+require "fileutils"
 
 # require "lmdb"
 require "sqlite3"

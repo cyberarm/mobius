@@ -36,9 +36,20 @@ module Mobius
       @last_purchase_team_one = nil # NOD, Soviets
       @last_purchase_team_two = nil # GDI, Allies
       @vehicle_from_create = nil
+
+      if Config.record_gamelog
+        FileUtils.mkdir_p("#{ROOT_PATH}/data")
+        @data_recorder = File.open("#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat", "a+")
+
+        at_exit do
+          @data_recorder&.close
+        end
+      end
     end
 
     def parse_line(line)
+      @data_recorder&.puts(line) if Config.record_gamelog
+
       return unless @ready
 
       case line
@@ -75,6 +86,9 @@ module Mobius
       when /\[(.+?)\] WIN/
         log("GameLog", "WIN") if Config.debug_verbose
         win(line)
+      when /\[(.+?)\] 2.03/ # This is sadness
+        log("GameLog", "MAPLOADED") if Config.debug_verbose
+        maploaded(line)
       when /\[(.+?)\] CONFIG/
         log("GameLog", "CONFIG") if Config.debug_verbose
         config(line)
@@ -420,6 +434,14 @@ module Mobius
       # TODO: RESET DATA FOR NEXT GAME
 
       clear_data
+    end
+
+    def maploaded(line)
+      return unless Config.record_gamelog
+
+      @data_recorder&.close
+      @data_recorder = File.open("#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat", "a+")
+      @data_recorder.puts(line)
     end
 
     def config(line)

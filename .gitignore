@@ -1,3 +1,4 @@
 conf/config.json
 conf/teams.json
 *.db
+data/*
