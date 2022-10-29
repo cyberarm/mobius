@@ -98,10 +98,49 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     if player
       if team.is_a?(Integer)
         broadcast_message("[GameDirector] Player #{player.name} has changed teams")
+        player.set_value(:manual_team, true)
         RenRem.cmd("team2 #{player.id} #{team}")
       else
         page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.last}, got #{team}, try again.")
       end
+    else
+      page_player(command.issuer.name, "Player is not in game or name is not unique!")
+    end
+  end
+
+  command(:revive, arguments: 2, help: "!revive <team> <building preset>", groups: [:admin, :mod]) do |command|
+    team = command.arguments.first
+    preset = command.arguments.last
+
+    begin
+      team = Integer(team)
+    rescue ArgumentError
+      team = Teams.id_from_name(team)
+      team = team[:id] if team
+    end
+
+    if team.is_a?(Integer)
+      page_player(command.issuer.name, "Attempting to revive building for team #{Teams.name(team)} from preset: #{preset}")
+      RenRem.cmd("revivebuildingbypreset #{team} #{preset}")
+    else
+      page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
+    end
+  end
+
+  command(:spawn, arguments: 2, help: "!spawn <z> <vehicle preset>", groups: [:admin, :mod]) do |command|
+    z = Integer(command.arguments.first)
+    preset = command.arguments.last
+
+    page_player(command.issuer.name, "Attempting to spawn vehicle from preset: #{preset}")
+    RenRem.cmd("SpawnVehicle #{command.issuer.id} #{z} #{preset}")
+  end
+
+  command(:spectate, arguments: 1, help: "!spectate <name>", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+    if player
+      RenRem.cmd("toggle_spectator #{player.id}")
+      page_player(command.issuer.name, "#{player.name} is now spectating.")
     else
       page_player(command.issuer.name, "Player is not in game or name is not unique!")
     end

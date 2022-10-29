@@ -39,6 +39,11 @@
       "vehicle_killed": true,
       "vehicle_purchase": true,
       "vehicle_stolen": true
+    },
+    "discord_bot":{
+      "token":"",
+      "restrict_to_servers": [],
+      "restrict_to_channels": []
     }
   }
 }

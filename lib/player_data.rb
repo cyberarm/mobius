@@ -55,6 +55,8 @@ module Mobius
         @data.delete(:stats_building_repairs)
         @data.delete(:stats_vehicle_kills)
         @data.delete(:stats_vehicle_repairs)
+
+        @data.delete(:manual_team)
       end
 
       def remote_moderation?
@@ -153,9 +155,13 @@ module Mobius
 
     def self.name_to_id(name, exact_match: true)
       if exact_match
-        player = @player_data.find { |_, data| data.name.downcase == name&.downcase }&.last
+        player = player_list.find { |ply| ply.name.downcase == name&.downcase }
         player ? player.id : -1
       else
+        name_exact_match = player_list.find { |ply| ply.name.downcase == name&.downcase }
+
+        return name_exact_match.id if name_exact_match
+
         players = player_list.select { |ply| ply.name.downcase.include?(name&.downcase) }
         players.size == 1 ? players.first&.id : -1
       end

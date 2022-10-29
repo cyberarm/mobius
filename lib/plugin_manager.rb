@@ -6,6 +6,8 @@ module Mobius
     @commands = {}
     @deferred = []
 
+    @blackboard = {}
+
     def self.init
       log("INIT", "Initializing plugins...")
 
@@ -67,6 +69,8 @@ module Mobius
     end
 
     def self.disable_plugin(plugin)
+      deliver_event(plugin, :shutdown, nil)
+
       plugin.___disable_plugin
 
       @commands.each do |name, command|
@@ -114,7 +118,7 @@ module Mobius
     def self.handle_command(player, message)
       return unless message.start_with?("!")
 
-      parts = message.split(" ")
+      parts = message.strip.split(" ")
       cmd = parts.shift.sub("!", "")
 
       if cmd.downcase.to_sym == :help
@@ -159,7 +163,7 @@ module Mobius
 
       if parts.count.zero? && command.arguments.zero? && parts.count.zero?
         # Do nothing here, command has no arguments and we've received no arguments
-      elsif parts.count == command.arguments
+      elsif parts.count >= command.arguments
         (command.arguments - 1).times do
           arguments << parts.shift
         end
@@ -260,7 +264,7 @@ module Mobius
 
       if found_plugins.size == 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabling plugin: #{found_plugins.first.___name}")
-        found_plugins.first.___disable_plugin
+        disable_plugin(found_plugins.first)
 
       elsif found_plugins.size > 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
@@ -311,6 +315,14 @@ module Mobius
           puts e.backtrace
         end
       end
+    end
+
+    def self.blackboard(key)
+      @blackboard[key]
+    end
+
+    def self.blackboard_store(key, value)
+      @blackboard[key] = value
     end
 
     # Delay delivery of event/block until the backend has done it's thing

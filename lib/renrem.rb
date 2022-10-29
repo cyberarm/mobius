@@ -105,6 +105,9 @@ module Mobius
 
     def cmd(data)
       begin
+        # Quite verbose, enable for debugging
+        # log "RENREM", "Sent command '#{data[0..249]}' to RenRem!"
+
         @socket.send(encode_data(@password), 0)
         @socket.send(encode_data(data[0..249]), 0)
       rescue Errno::ECONNREFUSED

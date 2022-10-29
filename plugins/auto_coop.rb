@@ -15,15 +15,24 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     #   RenRem.cmd("botcount #{bot_count} 0")
     # end
 
-    if @versus_started
+    if @versus_started || !@coop_started || player_count.zero?
       bot_count = -1
       RenRem.cmd("botcount 0")
+
+      PluginManager.blackboard_store(:"team_0_bot_count", 0)
+      PluginManager.blackboard_store(:"team_1_bot_count", 0)
     elsif player_count >= @friendless_player_count
       # NOTE: Prevent sudden influx of enemy bots when transitioning to exclusive PvE mode
       bot_count = (bot_count / 2.0).round
       RenRem.cmd("botcount #{bot_count} #{(@current_side + 1) % 2}")
+
+      PluginManager.blackboard_store(:"team_#{@current_side}_bot_count", 0)
+      PluginManager.blackboard_store(:"team_#{(@current_side + 1) % 2}_bot_count", bot_count)
     else
       RenRem.cmd("botcount #{bot_count}")
+
+      PluginManager.blackboard_store(:"team_#{@current_side}_bot_count", bot_count / 2 - player_count)
+      PluginManager.blackboard_store(:"team_#{(@current_side + 1) % 2}_bot_count", bot_count / 2)
     end
 
     @last_bot_count = bot_count
@@ -36,6 +45,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     PlayerData.player_list.each do |player|
       next unless player.team != @current_side
+      next if player.value(:manual_team)
 
       RenRem.cmd("team2 #{player.id} #{@current_side}")
     end
@@ -70,6 +80,12 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
   end
 
+  def revive_naval_buildings
+    broadcast_message("[AutoCoop] Reviving Naval Factories...")
+    RenRem.cmd("revivebuildingbypreset 0 Sov_Pen")
+    RenRem.cmd("revivebuildingbypreset 1 All_Nyd")
+  end
+
   def check_coop_votes(silent:)
     missing = []
 
@@ -82,14 +98,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
 
     if missing.size.zero?
-      @coop_started = true
-      @versus_started = false
+      broadcast_message("[AutoCoop] Co-op will be enabled after this round.") unless silent
+      log("Co-op will be enabled after this round by player vote") unless silent
 
-      count = configure_bots
-      move_players_to_coop_team
-
-      broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}") unless silent
-      log("Coop has started by player vote") unless silent
+      @next_round_mode = :coop
 
       @coop_votes.clear
       @versus_votes.clear
@@ -110,14 +122,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
 
     if missing.size.zero?
-      @coop_started = false
-      @versus_started = true
+      broadcast_message("[AutoCoop] Co-op will be disabled after this round.") unless silent
+      log("PvP will be enabled after this round by player vote") unless silent
 
-      count = configure_bots
-      remix_teams
-
-      broadcast_message("[AutoCoop] Coop for this round has been disabled. PvP active.") unless silent
-      log("PvP has started by player vote") unless silent
+      @next_round_mode = :versus
 
       @versus_votes.clear
       @coop_votes.clear
@@ -129,21 +137,12 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   def bot_report
     return "0 bots per team" unless @coop_started
 
-    player_count = ServerStatus.total_players
-
-    if player_count >= @friendless_player_count
-      "0 bots on team #{Teams.name(@current_side)}, #{@last_bot_count} on team #{Teams.name((@current_side + 1) % 2)}"
-    else
-      half = @last_bot_count / 2
-      on_team = half - player_count
-
-      "#{on_team} bots on team #{Teams.name(@current_side)}, #{half} on team #{Teams.name((@current_side + 1) % 2)}"
-    end
+    "#{PluginManager.blackboard(:team_0_bot_count).to_i} bots on team #{Teams.name(0)}, #{PluginManager.blackboard(:team_1_bot_count).to_i} bots on team #{Teams.name(1)}"
   end
 
   on(:start) do
     @current_side = 0
-    @bot_difficulty = 2
+    @bot_difficulty = 3
     @support_bots = 4
     @last_bot_count = -1
     @friendless_player_count = 12
@@ -153,6 +152,10 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @base_bot_count = 12
     @max_bot_difficulty = @hardcap_bot_count + 1 # 13 # >= 12
 
+    @default_bot_difficulty = 3
+    @default_max_bot_count = 64
+    @default_friendless_player_count = 12
+
     @coop_started = false
     @manual_bot_count = false
     @coop_votes = {}
@@ -161,7 +164,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @versus_votes = {}
     @advertise_versus_player_count = 8
 
-    # Attempt to auto resume coop if bot is restarted
+    # Attempt to auto resume co-op if bot is restarted
     # NOTE: Probably won't work if a player is a spy
     after(3) do
       team_0 = ServerStatus.get(:team_0_players)
@@ -172,35 +175,27 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
         @versus_started = false
         @current_side = 0
 
-        broadcast_message("[AutoCoop] Resumed coop on team #{Teams.name(@current_side)}")
+        configure_bots
+
+        broadcast_message("[AutoCoop] Resumed co-op on team #{Teams.name(@current_side)}")
       elsif team_1 > 1 && team_0.zero?
         @coop_started = true
         @versus_started = false
         @current_side = 1
 
-        broadcast_message("[AutoCoop] Resumed coop on team #{Teams.name(@current_side)}")
-      end
-    end
-
-    every(5) do
-      if @coop_started
         configure_bots
-        move_players_to_coop_team
-      else
-        check_coop_votes(silent: true)
-        check_versus_votes(silent: true)
+
+        broadcast_message("[AutoCoop] Resumed co-op on team #{Teams.name(@current_side)}")
       end
     end
 
-    every(120) do
-      if @versus_started
-        broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
-      elsif !@coop_started && !@versus_started
-        broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
-        broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
-      elsif @coop_started && !@versus_started && ServerStatus.total_players >= @advertise_versus_player_count
+    every(60 * 5) do
+      if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_versus_player_count
         broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
-        broadcast_message("[AutoCoop] Vote to switch this round to PvP with !request_versus (!vs), 100% of players must request it.")
+        broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !request_versus (!vs), 100% of players must request it.")
+      elsif !@coop_started && @next_round_mode != :coop
+        broadcast_message("[AutoCoop] Want to switch back to co-op?")
+        broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), 100% of players must request it.")
       end
     end
   end
@@ -209,6 +204,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @current_side += 1
     @current_side %= 2
 
+    @coop_started = false
     @versus_started = false
 
     @coop_votes.clear
@@ -217,7 +213,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     if @override_current_side
       @current_side = @override_current_side
 
-      log "Restored coop team to #{Teams.name(@current_side)}, was overridden by map rule."
+      log "Restored co-op team to #{Teams.name(@current_side)}, was overridden by map rule."
 
       @override_current_side = nil
     end
@@ -225,19 +221,38 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     check_map(map)
 
     after(5) do
+      if ServerStatus.total_players.zero?
+        log "Resetting to defaults since no players are in-game."
+        @next_round_mode = :coop
+
+        # Reset Co-Op settings to defaults
+        @bot_difficulty = @default_bot_difficulty
+        @max_bot_count = @default_max_bot_count
+        @friendless_player_count = @default_friendless_player_count
+      end
+
+      if @next_round_mode == :versus
+        @coop_started   = false
+        @versus_started = true
+      else
+        @coop_started   = true
+        @versus_started = false
+      end
+
       if @versus_started
-        # Don't override fast typist
+        revive_naval_buildings
+        configure_bots
       elsif ServerStatus.total_players.positive?
         @coop_started = true
 
-        count = configure_bots
+        configure_bots
 
-        log("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}")
-        broadcast_message("[AutoCoop] Starting coop on team #{Teams.name(@current_side)} with #{bot_report}")
+        log("[AutoCoop] Starting co-op on team #{Teams.name(@current_side)} with #{bot_report}")
+        broadcast_message("[AutoCoop] Starting co-op on team #{Teams.name(@current_side)} with #{bot_report}")
 
         move_players_to_coop_team
       else
-        log("No one is in game after 5 seconds, disabling coop this round.")
+        log("No one is in game after 5 seconds, disabling co-op until a player joins.")
 
         RenRem.cmd("botcount 0")
         @coop_started = false
@@ -247,23 +262,34 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
   on(:player_joined) do |player|
     if @versus_started
-      message_player(player.name, "[AutoCoop] Coop for this round has been disabled. PvP active.")
-    elsif @coop_started
-      count = configure_bots
+      message_player(player.name, "[AutoCoop] Co-op for this round has been disabled. PvP active.")
 
-      message_player(player.name, "[AutoCoop] Running coop on team #{Teams.name(@current_side)} with #{bot_report}")
+      configure_bots
+    elsif @coop_started || ServerStatus.total_players == 1
+      @coop_started = true
+      @versus_started = false
+
+      configure_bots
+
+      message_player(player.name, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
       RenRem.cmd("team2 #{player.id} #{@current_side}")
     else
-      broadcast_message("[AutoCoop] Coop will automatically begin on the next map.")
+      broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.")
       broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
+
+      configure_bots
     end
   end
 
   on(:player_left) do |player|
-    configure_bots
-
     @coop_votes.delete(player.name)
     @versus_votes.delete(player.name)
+
+    # Player is still logically connected until after this
+    # callback has been issued by the PluginManager.
+    after(1) do
+      configure_bots
+    end
   end
 
   command(:coop_info, aliases: [:ci], arguments: 0, help: "Reports co-op configuration") do |command|
@@ -292,8 +318,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   command(:request_coop, aliases: [:rc], arguments: 0, help: "Vote to start coop") do |command|
-    if @coop_started
-      page_player(command.issuer.name, "Coop is already active!")
+    if @next_round_mode == :coop
+      page_player(command.issuer.name, "Co-op is already set to start on the next round!")
     else
       @coop_votes[command.issuer.name] = true
       check_coop_votes(silent: false)
@@ -301,8 +327,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   command(:request_versus, aliases: [:vs], arguments: 0, help: "Vote to start Player vs. Player") do |command|
-    if @versus_started
-      page_player(command.issuer.name, "PvP is already active!")
+    if @next_round_mode == :versus
+      page_player(command.issuer.name, "PvP is already set to start on the next round!")
     else
       @versus_votes[command.issuer.name] = true
       check_versus_votes(silent: false)
@@ -320,14 +346,16 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
 
     if team.is_a?(Integer)
+      @next_round_mode = :coop
+
       @current_side = team
       @coop_started = true
       @versus_started = false
 
-      count = configure_bots
+      configure_bots
       move_players_to_coop_team
 
-      broadcast_message("[AutoCoop] #{command.issuer.name} has started coop on team #{Teams.name(@current_side)} with #{bot_report}")
+      broadcast_message("[AutoCoop] #{command.issuer.name} has started co-op on team #{Teams.name(@current_side)} with #{bot_report}")
     else
       page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
     end
@@ -335,13 +363,15 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
   command(:versus, arguments: 1, help: "!versus NOW - Switch to Player vs. Player for this round.", groups: [:admin, :mod, :director]) do |command|
     if command.arguments.first == "NOW"
+      @next_round_mode = :versus
+
       @coop_started = false
       @versus_started = true
 
       configure_bots
       remix_teams
 
-      broadcast_message("#{command.issuer.name} has started Player vs. Player, coop will resume on next map.")
+      broadcast_message("#{command.issuer.name} has started Player vs. Player.")
     else
       page_player(command.issuer.name, "Use !versus NOW if you really mean it.")
     end
@@ -356,7 +386,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       page_player(command.issuer.name, "Invalid bot difficulty, must be less than #{@max_bot_difficulty}!")
     else
       @bot_difficulty = diff
-      # configure_bots # This should not be explicitly called! Let the timer handle this...
+      configure_bots
 
       broadcast_message("[AutoCoop] #{command.issuer.name} has changed the bot difficulty, set to #{@bot_difficulty}")
     end
@@ -372,6 +402,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     else
       page_player(command.issuer.name, "Bot limit set to #{limit}")
       @max_bot_count = limit
+
+      configure_bots
     end
   end
 
@@ -385,6 +417,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     else
       page_player(command.issuer.name, "friendless player count set to #{player_count}")
       @friendless_player_count = player_count
+
+      configure_bots
     end
   end
 end
