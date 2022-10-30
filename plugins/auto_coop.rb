@@ -164,6 +164,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     @versus_votes = {}
     @advertise_versus_player_count = 8
 
+    @player_characters = {}
+
     # Attempt to auto resume co-op if bot is restarted
     # NOTE: Probably won't work if a player is a spy
     after(3) do
@@ -209,6 +211,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
     @coop_votes.clear
     @versus_votes.clear
+    @player_characters.clear
 
     if @override_current_side
       @current_side = @override_current_side
@@ -278,6 +281,31 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
 
       configure_bots
+    end
+  end
+
+  on(:created) do |hash|
+    case hash[:type].downcase
+    when "soldier"
+      @player_characters[hash[:object]] = hash[:preset]
+    end
+  end
+
+  on(:purchased) do |hash|
+    next unless @coop_started
+
+    player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
+
+    next unless player
+
+    case hash[:type].downcase
+    when "character"
+      if hash[:preset].downcase.include?("_spy_")
+        RenRem.cmd("ChangeChar #{player.id} #{@player_characters[hash[:object]]}")
+        RenRem.cmd("GiveCredits #{player.id} 500")
+
+        page_player(player.name, "Spies may not be purchased during a co-op match, you have been refunded and returned to your previous character.")
+      end
     end
   end
 
