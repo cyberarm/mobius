@@ -98,6 +98,8 @@ module Mobius
       else
         log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
       end
+
+      PluginManager.publish_event(:gamelog, line)
     end
 
     def crate(line)
@@ -115,6 +117,8 @@ module Mobius
       object[:health] = data[9].to_f
       object[:armor]  = data[10].to_f
       object[:team]   = data[11].to_i
+
+      PluginManager.publish_event(:crate, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -153,7 +157,7 @@ module Mobius
         @current_players[object[:name].downcase] = object[:object]
       end
 
-      # FIXME: Emit event to plugins
+      PluginManager.publish_event(:created, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -178,6 +182,8 @@ module Mobius
       if @game_objects[object[:object]]
         @game_objects[object[:object]][:destroyed] = true
       end
+
+      PluginManager.publish_event(:destroyed, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -205,6 +211,8 @@ module Mobius
         obj[:z] = object[:z]
         obj[:facing] = object[:facing]
       end
+
+      PluginManager.publish_event(:position, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -258,6 +266,8 @@ module Mobius
         end
       end
 
+      PluginManager.publish_event(:enter_vehicle, object, data)
+
       pp object if Config.debug_verbose
     end
 
@@ -286,6 +296,8 @@ module Mobius
           vehicle_obj[:team] = -1 # Neutral Team
         end
       end
+
+      PluginManager.publish_event(:exit_vehicle, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -330,6 +342,8 @@ module Mobius
         end
       end
 
+      PluginManager.publish_event(:damaged, object, data)
+
       pp object if Config.debug_verbose
     end
 
@@ -364,6 +378,8 @@ module Mobius
         end
       end
 
+      PluginManager.publish_event(:killed, object, data)
+
       pp object if Config.debug_verbose
     end
 
@@ -396,23 +412,26 @@ module Mobius
       object = {}
 
       # TODO: validate these keys
-      object[:type]   = data[1]
-      object[:object] = data[2] # player name
-      object[:preset] = data[3]
-      object[:name]   = data[4]
+      object[:type]        = data[1]
+      object[:name]        = data[2] # player name
+      object[:preset]      = data[3]
+      object[:preset_name] = data[4]
 
-      game_obj = @game_objects[@current_players[object[:object]]]
+      game_obj = @game_objects[@current_players[object[:name]]]
 
       return unless game_obj
 
       player_team = game_obj[:team]
+      object[:object] = game_obj[:object]
 
       case object[:type].downcase
       when "character"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} changed to #{object[:name]}") if Config.messages[:soldier_purchase]
+        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:name]} changed to #{object[:preset_name]}") if Config.messages[:soldier_purchase]
       when "vehicle"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:object]} purchased a #{object[:name]}") if Config.messages[:vehicle_purchase]
+        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:name]} purchased a #{object[:preset_name]}") if Config.messages[:vehicle_purchase]
       end
+
+      PluginManager.publish_event(:purchased, object, data)
 
       pp object if Config.debug_verbose
     end
@@ -427,11 +446,15 @@ module Mobius
       object[:score]   = data[2]
       object[:credits] = data[3]
 
+      PluginManager.publish_event(:score, object, data)
+
       pp object if Config.debug_verbose
     end
 
     def win(line)
       # TODO: RESET DATA FOR NEXT GAME
+
+      PluginManager.publish_event(:win)
 
       clear_data
     end
