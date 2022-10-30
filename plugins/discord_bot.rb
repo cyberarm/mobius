@@ -41,7 +41,25 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
     # end
   end
 
+  def update_status
+    return unless @bot
+
+    total_players = ServerStatus.total_players
+    max_players = ServerStatus.get(:max_players)
+
+    @bot.update_status(
+      total_players.zero? ? "idle" : "online",
+      "#{Config.gamespy[:custom_info][:w3dhubgame].upcase}: #{total_players}/#{max_players} players - #{ServerStatus.get(:current_map)}",
+      nil,
+      0,
+      false,
+      0
+    )
+  end
+
   on(:start) do
+    @schedule_status_update = false
+
     unless Config.discord_bot && Config.discord_bot[:token].length > 20
       log "Missing configuration data or invalid token"
       PluginManager.disable_plugin(self)
@@ -78,6 +96,24 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
     end
 
     @bot.run(true)
+
+    @schedule_status_update = true
+  end
+
+  on(:tick) do
+    if @schedule_status_update
+      @schedule_status_update = false
+
+      update_status
+    end
+  end
+
+  on(:player_joined) do
+    @schedule_status_update = true
+  end
+
+  on(:player_left) do
+    @schedule_status_update = true
   end
 
   on(:shutdown) do
