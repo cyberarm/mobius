@@ -53,7 +53,7 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
       nil,
       0,
       false,
-      0
+      Discordrb::Activity::WATCHING
     )
   end
 
