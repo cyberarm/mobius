@@ -112,6 +112,10 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
     @schedule_status_update = true
   end
 
+  on(:map_loaded) do
+    @schedule_status_update = true
+  end
+
   on(:player_left) do
     @schedule_status_update = true
   end
