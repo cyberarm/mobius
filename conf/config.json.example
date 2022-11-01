@@ -41,7 +41,9 @@
       "vehicle_stolen": true
     },
     "discord_bot":{
+      "server_short_name": "APB COOP",
       "token":"",
+      "server_admins": [], # Array of Discord user IDs to page if the fds is detected offline.
       "restrict_to_servers": [],
       "restrict_to_channels": []
     }

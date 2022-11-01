@@ -1,4 +1,4 @@
-mobius_plugin(name: "DiscordBot", version: "0.0.1") do
+mobius_plugin(name: "DiscordBot", version: "0.1.0") do
   def handle_player_list(event)
     event.channel.send_embed do |embed|
       embed.title = ServerConfig.server_name
@@ -45,20 +45,36 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
     return unless @bot
 
     total_players = ServerStatus.total_players
-    max_players = ServerStatus.get(:max_players)
+    bot_status = total_players.zero? ? "idle" : "online"
+    bot_status = "dnd" unless ServerStatus.get(:fds_responding)
 
     @bot.update_status(
-      total_players.zero? ? "idle" : "online",
-      "#{Config.gamespy[:custom_info][:w3dhubgame].upcase}: #{total_players}/#{max_players} players - #{ServerStatus.get(:current_map)}",
+      bot_status,
+      "#{Config.discord_bot[:server_short_name].upcase}: #{ServerStatus.get(:fds_responding) ? total_players : 'OFFLINE'}",
       nil,
       0,
       false,
-      Discordrb::Activity::WATCHING
+      Discordrb::Activity::GAME
     )
+  end
+
+  def page_server_administrators!
+    return unless @bot
+
+    Config.discord_bot[:server_admins].each do |id|
+      if (channel = @bot.pm_channel(id))
+        if @fds_responding
+          channel.send_message("**OKAY** #{Config.discord_bot[:server_short_name].upcase}: Communication with FDS restored!")
+        else
+          channel.send_message("**ERROR** #{Config.discord_bot[:server_short_name].upcase}: Unable to communicate with FDS!")
+        end
+      end
+    end
   end
 
   on(:start) do
     @schedule_status_update = false
+    @fds_responding = true
 
     unless Config.discord_bot && Config.discord_bot[:token].length > 20
       log "Missing configuration data or invalid token"
@@ -91,13 +107,16 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
       when "!gi"
         handle_game_info(event)
       when "!poke"
-        handle_poke(event)
+        # handle_poke(event)
       end
     end
 
     @bot.run(true)
 
-    @schedule_status_update = true
+    # Let server data get fetched before updating status
+    after(5) do
+      @schedule_status_update = true
+    end
   end
 
   on(:tick) do
@@ -105,6 +124,13 @@ mobius_plugin(name: "DiscordBot", version: "0.0.1") do
       @schedule_status_update = false
 
       update_status
+    end
+
+    if ServerStatus.get(:fds_responding) != @fds_responding
+      @schedule_status_update = true
+      @fds_responding = ServerStatus.get(:fds_responding)
+
+      page_server_administrators!
     end
   end
 
