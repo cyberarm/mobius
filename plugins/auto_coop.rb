@@ -200,6 +200,11 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
         broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), 100% of players must request it.")
       end
     end
+
+    # Check that a player is on the correct team and move them if not
+    every(5) do
+      move_players_to_coop_team if @coop_started
+    end
   end
 
   on(:map_loaded) do |map|
