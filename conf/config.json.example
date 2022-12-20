@@ -46,6 +46,8 @@
       "server_admins": [], # Array of Discord user IDs to page if the fds is detected offline.
       "restrict_to_servers": [],
       "restrict_to_channels": []
-    }
+    },
+    "enabled_plugins": [],
+    "disabled_plugins": []
   }
 }

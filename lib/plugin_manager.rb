@@ -47,6 +47,9 @@ module Mobius
 
     def self.init_plugins
       @plugins.each do |plugin|
+        next if Config.enabled_plugins.size.positive? && Config.enabled_plugins.find { |i| i.downcase == plugin.___name.downcase }.nil?
+        next if Config.disabled_plugins.size.positive? && Config.disabled_plugins.find { |i| i.downcase == plugin.___name.downcase }
+
         enable_plugin(plugin)
       end
     end
