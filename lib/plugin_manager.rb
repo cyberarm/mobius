@@ -94,7 +94,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it is reserved" if name == :help
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -131,6 +131,13 @@ module Mobius
         return
       end
 
+      if cmd.downcase.to_sym == :fds && player.administrator?
+        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        handle_fds_command(player, parts)
+
+        return
+      end
+
       if cmd.downcase.to_sym == :plugins && player.administrator?
         log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
         handle_plugins_command(player, parts)
@@ -163,11 +170,12 @@ module Mobius
       end
 
       arguments = []
+      command_arguments = command.arguments.is_a?(Range) ? command.arguments.max : command.arguments
 
-      if parts.count.zero? && command.arguments.zero? && parts.count.zero?
+      if parts.count.zero? && command_arguments.zero? && parts.count.zero?
         # Do nothing here, command has no arguments and we've received no arguments
-      elsif parts.count >= command.arguments
-        (command.arguments - 1).times do
+      elsif command.arguments.is_a?(Range) ? parts.count >= command.arguments.min : parts.count >= command_arguments
+        (command_arguments - 1).times do
           arguments << parts.shift
         end
 
@@ -214,6 +222,10 @@ module Mobius
           RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
         end
       end
+    end
+
+    def self.handle_fds_command(player, parts)
+      RenRem.cmd(parts.join(" "))
     end
 
     def self.handle_plugins_command(player, parts)

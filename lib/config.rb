@@ -59,7 +59,11 @@ module Mobius
 
       @discord_bot = @data.dig(:mobius, :discord_bot)
 
-      @tournament = @data.dig(:mobius, :tournament) || { team_0_ghost: "Allied_Ghost", team_1_ghost: "Soviet_Ghost" }
+      @tournament = @data.dig(:mobius, :tournament) || {
+        team_0_ghost_preset: "Allied_Ghost",
+        team_1_ghost_preset: "Soviet_Ghost",
+        infected_preset: "Ant_Scout"
+      }
 
       @enabled_plugins = @data.dig(:mobius, :enabled_plugins)
       @disabled_plugins = @data.dig(:mobius, :disabled_plugins)
