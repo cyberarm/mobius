@@ -50,7 +50,7 @@ module Mobius
           log "Something went wrong: #{response.status}"
         end
 
-      rescue Errno::ECONNRESET, Errno::ECONNABORTED, Excon::Error::Socket
+      rescue Errno::ECONNRESET, Errno::ECONNABORTED, Excon::Error::Socket, Excon::Error
         tries += 1
 
         if tries > 5

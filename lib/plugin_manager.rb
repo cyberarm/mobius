@@ -125,35 +125,35 @@ module Mobius
       cmd = parts.shift.sub("!", "")
 
       if cmd.downcase.to_sym == :help
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_help_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :fds && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_fds_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :plugins && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_plugins_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :enable && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_enable_plugin_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :disable && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_disable_plugin_command(player, parts)
 
         return
@@ -162,7 +162,7 @@ module Mobius
       command = @commands[cmd.downcase.to_sym]
 
       if command.nil? || !player.in_group?(command&.groups)
-        log "PLUGIN MANAGER", "Player #{player.name} tried to use command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} tried to use command #{message}"
 
         RenRem.cmd("cmsgp #{player.id} 255,255,255, command: #{cmd} not found.")
 
@@ -188,7 +188,7 @@ module Mobius
       end
 
       begin
-        log "PLUGIN MANAGER", "Player #{player.name} issued command !#{cmd}"
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
 
         command.block&.call(CommandResult.new(player, arguments))
       rescue StandardError => e

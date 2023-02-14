@@ -33,7 +33,14 @@ mobius_plugin(name: "MobiusAgent", version: "0.0.1") do
     ModerationServerClient.post(:full_payload)
   end
 
-  on(:player_left) do
+  on(:team_changed) do
     ModerationServerClient.post(:full_payload)
+  end
+
+  on(:player_left) do
+    # Event is fired BEFORE player data is removed
+    after(3) do
+      ModerationServerClient.post(:full_payload)
+    end
   end
 end

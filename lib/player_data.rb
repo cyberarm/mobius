@@ -95,9 +95,7 @@ module Mobius
 
     def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
       if (player = @player_data[id])
-        if player.team != team
-          process_team_change(id, player.team, team)
-        end
+        old_team = player.team
 
         player.score = score
         player.team = team
@@ -110,6 +108,10 @@ module Mobius
         player.kd = kd
         player.time = time
         player.last_updated = last_updated
+
+        if old_team != team
+          process_team_change(id, old_team, team)
+        end
       else
         # TODO: Check bans, kicks, etc.
 

@@ -12,7 +12,7 @@ module Mobius
       RenLog,
       ServerStatus,
       PluginManager,
-      # ModerationServerClient
+      ModerationServerClient
     ]
 
     modules.each(&:init)

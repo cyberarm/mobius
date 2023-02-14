@@ -135,7 +135,10 @@ module Mobius
     end
 
     get "/css/application.css?" do
-      sass :application
+      content_type :css
+
+      scss = SassC::Sass2Scss.convert(File.read("views/application.sass"))
+      SassC::Engine.new(scss, style: :compressed).render
     end
   end
 end
