@@ -25,7 +25,7 @@
         {
           "name":"player",
           "hostnames":[
-            "192.168.1.117",
+            "192.168.1.117"
           ]
         }
       ]
@@ -43,15 +43,15 @@
     "discord_bot": {
       "server_short_name": "APB COOP",
       "token":"",
-      "server_admins": [], # Array of Discord user IDs to page if the fds is detected offline.
+      "server_admins": [], // Array of Discord user IDs to page if the fds is detected offline.
       "restrict_to_servers": [],
       "restrict_to_channels": []
     },
     "tournament": {
       "team_0_ghost": "Allied_Ghost",
-      "team_1_ghost": "Soviet_Ghost"
-      }
-    }
+      "team_1_ghost": "Soviet_Ghost",
+      "infected_preset": "Ant_Scout"
+    },
     "enabled_plugins": [],
     "disabled_plugins": []
   }

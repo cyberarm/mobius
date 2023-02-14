@@ -11,6 +11,7 @@ module Mobius
       GameLog,
       RenLog,
       ServerStatus,
+      MapSettings,
       PluginManager,
       ModerationServerClient
     ]

@@ -1,4 +1,3 @@
-conf/config.json
-conf/teams.json
+conf/*.json
 *.db
 data/*

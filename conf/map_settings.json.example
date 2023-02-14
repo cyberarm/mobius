@@ -1,0 +1,68 @@
+{
+  "defaults": {
+    "time": 30,
+    "mines": 40,
+    "vehicles": 30,
+    "donatelimit": 2,
+    "rules": ""
+  },
+  "maps": {
+    "RA_AS_Seamist.mix": {
+      "time": 21,
+      "mines": 20
+    },
+    "RA_CanyonRiver.mix": {
+      "mines": 30
+    },
+    "RA_Christmas2020.mix": {
+      "mines": 20
+    },
+    "RA_HostileWaters.mix": {
+      "mines": 0,
+      "donatelimit": 0
+    },
+    "RA_Metro.mix": {
+      "mines": 30
+    },
+    "RA_Pipeline.mix": {
+      "mines": 30
+    },
+    "RA_Siege.mix": {
+      "mines": 60
+    },
+    "RA_RidgeWar.mix": {
+      "mines": 50
+    },
+    "RA_StormyValley.mix": {
+      "mines": 50
+    },
+    "RA_ToTheCore.mix": {
+      "mines": 60
+    },
+    "RA_Under.mix": {
+      "mines": 30
+    },
+    "RA_LunarParadox.mix": {
+      "mines": 0,
+      "donatelimit": 0
+    },
+    "RA_Wasteland.mix":{
+      "time": 6,
+      "mines": 0
+    },
+    "RA_Antlion.mix": {
+      "time": 5,
+      "mines": 0,
+      "donatelimit": 999
+    },
+    "RA_RockTrap.mix": {
+      "time": 8,
+      "mines": 0
+    },
+    "RA_RidgeRacer.mix": {
+      "time": 5,
+      "mines": 0,
+      "donatelimit": 999
+    }
+  }
+}

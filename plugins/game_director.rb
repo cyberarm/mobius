@@ -1,10 +1,18 @@
 mobius_plugin(name: "GameDirector", version: "0.0.1") do
-  # TODO: Store map index and name to restore later if needed
-  on(:start) do
-  end
+  def donations_available?(player)
+    donate_limit = MapSettings.get_map_setting(:donatelimit)
+    map = ServerStatus.get(:current_map)
+    map_elapsed_time = Time.now.to_i - ServerStatus.get(:map_start_time)
 
-  # TODO: Restore original map rotation
-  on(:map_loaded) do
+    if (donate_limit != 0 && map_elapsed_time < donate_limit * 60)
+      remaining = donate_limit - (map_elapsed_time / 60.0).round;
+
+      page_player(player.name, "[MOBIUS] Donations are not allowed on #{map} in the first #{donate_limit} minutes. You have to wait #{remaining} more minutes.")
+
+      return false
+    end
+
+    return true
   end
 
   command(:gameover, arguments: 1, help: "!gameover NOW", groups: [:admin, :mod, :director]) do |command|
@@ -169,12 +177,14 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     if player
       if amount.positive?
         if command.issuer.team == player.team && command.issuer.name != player.name
-          RenRem.cmd("donate #{command.issuer.id} #{player.id} #{amount}")
+          if donations_available?(command.issuer)
+            RenRem.cmd("donate #{command.issuer.id} #{player.id} #{amount}")
 
-          page_player(command.issuer.name, "You have donated #{amount} credits to #{player.name}")
-          page_player(player.name, "#{command.issuer.name} has donated #{amount} credits to you")
+            page_player(command.issuer.name, "You have donated #{amount} credits to #{player.name}")
+            page_player(player.name, "#{command.issuer.name} has donated #{amount} credits to you")
+          end
         elsif command.issuer.name == player.name
-          page_player(command.issuer.name, "You cannot donate to youself")
+          page_player(command.issuer.name, "You cannot donate to yourself")
         else
           page_player(command.issuer.name, "Can only donate to players on your team")
         end
@@ -193,16 +203,18 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
 
     if mates.count.positive?
       if amount.positive?
-        slice = (amount / mates.count.to_f).floor
+        if donations_available?(command.issuer)
+          slice = (amount / mates.count.to_f).floor
 
-        mates.each do |mate|
-          RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
+          mates.each do |mate|
+            RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
 
-          page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you")
+            page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you")
+          end
+
+          # FIXME: Sometimes this message is not delivered!
+          page_player(command.issuer.name, "You have donated #{amount} credits to your team")
         end
-
-        # FIXME: Sometimes this message is not delivered!
-        page_player(command.issuer.name, "You have donated #{amount} credits to your team")
       else
         page_player(command.issuer.name, "Cannot donate nothing!")
       end

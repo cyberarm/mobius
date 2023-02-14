@@ -105,8 +105,8 @@ module Mobius
 
       @data[:map_start_time] = Time.now.to_i
 
-      # TODO: Only apply map settings if we just loaded otherwise let the level Loaded ok event process it
-      # Modules.apply_map_settings(0)
+      # Only apply map settings if we just loaded, otherwise let the Level Loaded OK event process it.
+      MapSettings.apply_map_settings(apply_time: false) if map_name == "last round"
     end
 
     def self.update_map_number(number)

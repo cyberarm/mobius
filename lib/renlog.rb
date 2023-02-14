@@ -331,8 +331,9 @@ module Mobius
     def handle_level_loaded(line)
       if line == "Level loaded OK"
         # TODO: Send message to IRC/mod tool
-        # TODO: Read/update server settings
-        # TODO: Apply map rules (without setting map time?)
+        ServerConfig.read_server_settings
+
+        MapSettings.apply_map_settings(apply_time: true)
 
         PluginManager.publish_event(
           :map_loaded,
