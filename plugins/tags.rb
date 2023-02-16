@@ -48,7 +48,7 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
     tag = command.arguments.last
 
     if tag.length > 32
-      page_player(command.issuer.id, "The specified tag is too long, please use 32 characters or less.")
+      page_player(command.issuer.name, "The specified tag is too long, please use 32 characters or less.")
     else
       player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
@@ -56,7 +56,7 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
         insert(player, command.issuer, tag)
         RenRem.cmd("tag #{player.id} #{tag}")
       else
-        page_player(command.issuer.id, "Player #{command.arguments.first} was not found ingame, or is not unique.")
+        page_player(command.issuer.name, "Player #{command.arguments.first} was not found ingame, or is not unique.")
       end
     end
   end

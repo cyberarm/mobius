@@ -15,6 +15,16 @@ module Mobius
       @@instance&.parse_line(line)
     end
 
+    [:wreckages, :vehicles, :presets, :weapons, :area_data, :game_objects, :current_players,
+                :last_purchase_team_one, :last_purchase_team_two, :vehicle_from_create].each do |item|
+      GameLog.define_singleton_method(item) do
+        @@instance.send(item)
+      end
+    end
+
+    attr_reader :wreckages, :vehicles, :presets, :weapons, :area_data, :game_objects, :current_players,
+                :last_purchase_team_one, :last_purchase_team_two, :vehicle_from_create
+
     def initialize
       @@instance = self
 

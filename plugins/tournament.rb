@@ -22,6 +22,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
+  def just_killed?(player)
+    @recent_kills.find { |ply| GameLog.current_players[player.name.downcase] }
+  end
+
   on(:start) do
     @tournament = false
     @last_man_standing = false
@@ -32,6 +36,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @team_1_ghost_preset = Config.tournament[:team_1_ghost_preset]
 
     @infected_preset = Config.tournament[:infected_preset]
+
+    @recent_kills = []
   end
 
   on(:map_loaded) do |map|
@@ -49,6 +55,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   on(:created) do |hash|
     if hash[:type].downcase.strip == "soldier" && (@tournament || @last_man_standing || @infection) && hash[:preset] != @preset
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
+      just_killed = just_killed?(player)
 
       if player
         if @tournament
@@ -56,15 +63,26 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
         if @last_man_standing && (hash[:preset] != @team_0_ghost_preset && hash[:preset] != @team_1_ghost_preset)
-          change_player(player: player, ghost: true)
+          just_killed ? change_player(player: player, ghost: true) : change_player(player: player)
         end
 
         if @infection && hash[:preset] != @infected_preset
-          player.change_team(0)
-          change_player(player: player, infected: true)
+          if just_killed
+            player.change_team(0)
+            change_player(player: player, infected: true)
+          else
+            player.change_team(1)
+            change_player(player: player)
+          end
         end
       end
     end
+
+    @recent_kills.clear
+  end
+
+  on(:killed) do |hash|
+    @recent_kills << hash if hash[:killed_type].downcase == "soldier" && (@tournament || @last_man_standing || @infection)
   end
 
   command(:tournament, arguments: 0..1, help: "!tournament [<soldier_preset>] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>", groups: [:admin, :mod, :director]) do |command|
@@ -147,6 +165,21 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         player.change_team(0)
         change_player(player: player, infected: true)
       end
+    end
+  end
+
+  command(:infect, arguments: 1, help: "!infect <nickname> - Manually infect player.", groups: [:admin, :mod]) do |command|
+    if @infection
+      player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+      if player
+        player.change_team(0)
+        change_player(player: player, infected: true)
+      else
+        page_player(command.issuer.name, "Player #{command.arguments.first} was not found ingame, or is not unique.")
+      end
+    else
+      page_player(command.issuer.name, "Infection mode is not enabled.")
     end
   end
 end
