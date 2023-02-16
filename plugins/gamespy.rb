@@ -178,17 +178,20 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
 
   def generate_players
     fragments = []
+    index = 0
 
     PlayerData.player_list.each_slice(15) do |slice|
       string = ""
 
-      slice.each_with_index do |player, i|
-        string += "\\player_#{i}\\#{player.name}"
-        string += "\\score_#{i}\\#{player.score}"
-        string += "\\ping_#{i}\\#{player.ping}"
-        string += "\\team_#{i}\\#{player.team}"
-        string += "\\kills_#{i}\\#{player.kills}"
-        string += "\\deaths_#{i}\\#{player.deaths}"
+      slice.each do |player|
+        string += "\\player_#{index}\\#{player.name}"
+        string += "\\score_#{index}\\#{player.score}"
+        string += "\\ping_#{index}\\#{player.ping}"
+        string += "\\team_#{index}\\#{player.team}"
+        string += "\\kills_#{index}\\#{player.kills}"
+        string += "\\deaths_#{index}\\#{player.deaths}"
+
+        index += 1
       end
 
       fragments << string

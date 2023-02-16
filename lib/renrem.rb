@@ -1,6 +1,7 @@
 module Mobius
   class RenRem
     @@instance = nil
+    @@queue = []
 
     def self.init
       log("INIT", "Enabling RenRem access...")
@@ -10,6 +11,10 @@ module Mobius
         port: Config.renrem_port,
         password: Config.renrem_password
       )
+    end
+
+    def self.queue
+      @@queue
     end
 
     def self.teardown
@@ -28,10 +33,18 @@ module Mobius
       end
     end
 
+    # Queue command for single execution on next tick (Repeated calls will be ignored in the same tick)
+    def self.enqueue(data)
+      @@queue << data
+      @@queue.uniq!
+    end
+
     def initialize(address:, port:, password:)
       raise "RenRem instance already active!" if @@instance
 
       @@instance = self
+
+      @@queue = []
 
       @address = address
       @port = port

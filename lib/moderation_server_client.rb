@@ -78,7 +78,7 @@ module Mobius
     end
 
     def self.full_payload
-      players = PlayerData.player_list.select { |ply| ply.ingame? }.map do |player|
+      players = PlayerData.player_list.select(&:ingame?).map do |player|
         {
           id: player.id,
           name: player.name,

@@ -107,7 +107,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
       if team.is_a?(Integer)
         broadcast_message("[GameDirector] Player #{player.name} has changed teams")
         player.set_value(:manual_team, true)
-        RenRem.cmd("team2 #{player.id} #{team}")
+        player.change_team(team)
       else
         page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.last}, got #{team}, try again.")
       end

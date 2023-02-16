@@ -23,14 +23,14 @@ module Mobius
       RenRem.cmd("mlimit #{mine_limit}")
       RenRem.cmd("vlimit #{vehicle_limit}")
 
-      RenRem::cmd("msg [MOBIUS] Special rules for #{ServerStatus.get(:current_map)}: #{rules}", 5) unless rules.empty?
+      RenRem.cmd("msg [MOBIUS] Special rules for #{ServerStatus.get(:current_map)}: #{rules}", 5) unless rules.empty?
     end
 
-    def self.get_map_settings(setting)
+    def self.get_map_setting(setting)
       map = ServerStatus.get(:current_map)
 
-      default_setting = MapSettings.data.dig(:defaults, setting)
-      map_setting = MapSettings.data.dig(:maps, map, setting)
+      default_setting = @@instance.data.dig(:defaults, setting)
+      map_setting = @@instance.data.dig(:maps, map, setting)
 
       map_setting ? map_setting : default_setting
     end
@@ -41,8 +41,6 @@ module Mobius
       @@instance = self
 
       @data = JSON.parse(File.read(path), symbolize_names: true).freeze
-
-      pp @data
     end
   end
 end

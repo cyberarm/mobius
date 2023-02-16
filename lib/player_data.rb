@@ -89,11 +89,21 @@ module Mobius
         return true if groups.include?(:director) && director?
         return true if groups.include?(:ingame) && ingame?
       end
+
+      def change_team(team)
+        old_team = @team
+
+        @team = team
+        RenRem.cmd("team2 #{@id} #{@team}")
+        RenRem.enqueue("pinfo")
+
+        PlayerData.process_team_change(id, old_team, @team) if old_team != @team
+      end
     end
 
     @player_data = {}
 
-    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
+    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, last_updated:)
       if (player = @player_data[id])
         old_team = player.team
 
@@ -106,7 +116,7 @@ module Mobius
         player.deaths = deaths
         player.money = money
         player.kd = kd
-        player.time = time
+        player.time += last_updated - player.last_updated
         player.last_updated = last_updated
 
         if old_team != team
@@ -130,7 +140,7 @@ module Mobius
           deaths: deaths,
           money: money,
           kd: kd,
-          time: time,
+          time: 0,
           last_updated: last_updated
         )
 

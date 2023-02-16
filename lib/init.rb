@@ -25,6 +25,10 @@ module Mobius
     RenRem.cmd("rehash_ban_list")
 
     loop do
+      while (cmd = RenRem.queue.shift)
+        RenRem.cmd(cmd)
+      end
+
       PluginManager.publish_event(:tick)
 
       sleep 1

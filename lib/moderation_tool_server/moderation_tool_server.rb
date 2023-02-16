@@ -10,6 +10,8 @@ module Mobius
     CLIENTS = []
     BOTS = []
 
+    MEMORY = {}
+
     configure do
       set port: 32_068
       set root: File.expand_path(".", __dir__)

@@ -1,4 +1,12 @@
 mobius_plugin(name: "MobiusAgent", version: "0.0.1") do
+  on(:start) do
+    unless ModerationServerClient.running?
+      log "Moderation Server Client not running, disabling plugin."
+
+      PluginManager.disable_plugin(self)
+    end
+  end
+
   on(:chat) do |player, message|
     ModerationServerClient.post(
       JSON.dump(

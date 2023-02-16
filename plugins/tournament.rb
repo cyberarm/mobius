@@ -60,7 +60,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
         if @infection && hash[:preset] != @infected_preset
-          RenRem.cmd("team2 #{player.id} 0")
+          player.change_team(0)
           change_player(player: player, infected: true)
         end
       end
@@ -137,14 +137,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Infection mode has been activated!")
 
       PlayerData.player_list.each do |player|
-        RenRem.cmd("team2 #{player.id} 1")
+        player.change_team(1)
       end
       change_players
 
       infected = (ServerStatus.total_players / 6.0).ceil
 
       PlayerData.player_list.sample(infected).each do |player|
-        RenRem.cmd("team2 #{player.id} 0")
+        player.change_team(0)
         change_player(player: player, infected: true)
       end
     end

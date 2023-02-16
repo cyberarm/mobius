@@ -321,7 +321,6 @@ module Mobius
         deaths: deaths,
         money: money,
         kd: kd,
-        time: 0,
         last_updated: Time.now.utc
       )
 

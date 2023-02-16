@@ -47,10 +47,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       next unless player.team != @current_side
       next if player.value(:manual_team)
 
-      RenRem.cmd("team2 #{player.id} #{@current_side}")
+      player.change_team(@current_side)
     end
-
-    RenRem.cmd("pinfo")
   end
 
   def remix_teams
@@ -60,10 +58,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       side = i % 2
       next unless player.team != side
 
-      RenRem.cmd("team2 #{player.id} #{side}")
+      player.change_team(side)
     end
-
-    RenRem.cmd("pinfo")
   end
 
   def check_map(map)
@@ -280,7 +276,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
       configure_bots
 
       message_player(player.name, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
-      RenRem.cmd("team2 #{player.id} #{@current_side}")
+      player.change_team(@current_side)
     else
       broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.")
       broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
