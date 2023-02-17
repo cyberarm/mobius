@@ -23,10 +23,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   def just_killed?(player)
-    @recent_kills.find { |ply| GameLog.current_players[player.name.downcase] }
+    @recent_kills.find { GameLog.current_players[player.name.downcase] }
   end
 
-  on(:start) do
+  def reset
     @tournament = false
     @last_man_standing = false
     @infection = false
@@ -38,47 +38,70 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @infected_preset = Config.tournament[:infected_preset]
 
     @recent_kills = []
+    @infectioned_players = []
+  end
+
+  on(:start) do
+    reset
   end
 
   on(:map_loaded) do |map|
-    @tournament = false
-    @last_man_standing = false
-    @infection = false
-    @preset = nil
+    reset
+  end
 
-    @team_0_ghost_preset = Config.tournament[:team_0_ghost_preset]
-    @team_1_ghost_preset = Config.tournament[:team_1_ghost_preset]
+  on(:player_joined) do |player|
+    if (@tournament || @last_man_standing || @infection)
+      change_player(player: player) if @tournament
 
-    @infected_preset = Config.tournament[:infected_preset]
+      change_player(player: player) if @last_man_standing
+
+      if @infection
+        player.change_team(1)
+        change_player(player: player)
+      end
+    end
+  end
+
+  on(:player_left) do |player|
+    @recent_kills.delete_if { |h| h[:killed_object] == GameLog.current_players[player.name.downcase] }
   end
 
   on(:created) do |hash|
-    if hash[:type].downcase.strip == "soldier" && (@tournament || @last_man_standing || @infection) && hash[:preset] != @preset
+    if hash[:type].downcase.strip == "soldier" && (@tournament || @last_man_standing || @infection) && hash[:preset].downcase != @preset.downcase
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
-      just_killed = just_killed?(player)
+      just_killed = player && just_killed?(player)
 
       if player
         if @tournament
           change_player(player: player)
         end
 
-        if @last_man_standing && (hash[:preset] != @team_0_ghost_preset && hash[:preset] != @team_1_ghost_preset)
-          just_killed ? change_player(player: player, ghost: true) : change_player(player: player)
-        end
-
-        if @infection && hash[:preset] != @infected_preset
+        if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
           if just_killed
-            player.change_team(0)
-            change_player(player: player, infected: true)
+            change_player(player: player, ghost: true)
           else
-            player.change_team(1)
             change_player(player: player)
           end
         end
+
+        if @infection && hash[:preset].downcase != @infected_preset.downcase
+          if just_killed
+            @infectioned_players[player.id] = true
+            player.change_team(0)
+            change_player(player: player, infected: true)
+          else
+            unless @infectioned_players[player.id]
+              player.change_team(1)
+              change_player(player: player)
+            end
+          end
+        end
+
+        if just_killed
+          @recent_kills.delete_if { |h| h[:killed_object] == GameLog.current_players[player.name.downcase] }
+        end
       end
     end
-
-    @recent_kills.clear
   end
 
   on(:killed) do |hash|
@@ -89,10 +112,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     preset = command.arguments.first
 
     if preset.empty?
-      @tournament = false
-      @last_man_standing = false
-      @infection = false
-      @preset = nil
+      reset
 
       broadcast_message("[Tournament] Tournament mode has been deactivated!")
     else
@@ -111,10 +131,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     preset = command.arguments.first
 
     if preset.empty?
-      @last_man_standing = false
-      @tournament = false
-      @infection = false
-      @preset = nil
+      reset
 
       broadcast_message("[Tournament] Last Man Standing mode has been deactivated!")
     else
@@ -134,10 +151,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     infected_preset = command.arguments.last
 
     if hunter_preset.to_s.empty?
-      @last_man_standing = false
-      @tournament = false
-      @infection = false
-      @preset = nil
+      reset
 
       @infected_preset = Config.tournament[:infected_preset]
 
@@ -162,6 +176,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       infected = (ServerStatus.total_players / 6.0).ceil
 
       PlayerData.player_list.sample(infected).each do |player|
+        @infectioned_players[player.id] = true
         player.change_team(0)
         change_player(player: player, infected: true)
       end
@@ -173,6 +188,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
       if player
+        @infectioned_players[player.id] = true
         player.change_team(0)
         change_player(player: player, infected: true)
       else
