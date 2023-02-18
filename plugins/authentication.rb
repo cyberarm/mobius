@@ -6,7 +6,7 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
       found = false
 
       list.each do |hash|
-        next unless hash[:name] == player.name
+        next unless hash[:name].downcase == player.name.downcase
 
         player_ip = player.address.split(";").first
 
@@ -21,21 +21,29 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
           break
         end
 
-       granted_role = grant(level, player) if hash[:force_grant]
+        granted_role = grant(level, player) if hash[:force_grant]
+
+        if !granted_role && hash[:discord_id]
+          PluginManager.publish_event(:_discord_bot_verify_staff, player, hash[:discord_id])
+        end
 
         break if found
       end
     end
 
-    if granted_role && Config.messages[:staff]
-      case granted_role
-      when :admin
-        broadcast_message("[MOBIUS] #{player.name} is a Server Administrator", red: 127, green: 255, blue: 127)
-      when :mod
-        broadcast_message("[MOBIUS] #{player.name} is a Server Moderator", red: 127, green: 255, blue: 127)
-      when :director
-        broadcast_message("[MOBIUS] #{player.name} is a Game Director", red: 127, green: 255, blue: 127)
-      end
+    announce_staff(player, granted_role)
+  end
+
+  def announce_staff(player, role)
+    return unless role && Config.messages[:staff]
+
+    case role
+    when :admin
+      broadcast_message("[MOBIUS] #{player.name} is a Server Administrator", red: 127, green: 255, blue: 127)
+    when :mod
+      broadcast_message("[MOBIUS] #{player.name} is a Server Moderator", red: 127, green: 255, blue: 127)
+    when :director
+      broadcast_message("[MOBIUS] #{player.name} is a Game Director", red: 127, green: 255, blue: 127)
     end
   end
 
@@ -70,5 +78,18 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
 
   on(:player_left) do |player|
     # Announce departure of server staff
+  end
+
+  on(:_discord_bot_verified_staff) do |player, discord_id|
+    Config.staff.each do |level, list|
+      if (hash = list.find { |h| h[:name].downcase == player.name.downcase })
+        role = grant(level, player)
+        announce_staff(player, role)
+
+        # Remember player ip to auto authenticate them next time
+        player_ip = player.address.split(";").first
+        hash[:hostnames] << player_ip unless hash[:hostnames].include?(player_ip)
+      end
+    end
   end
 end

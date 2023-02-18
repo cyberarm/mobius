@@ -86,6 +86,15 @@ module Mobius
     def self.register_command(command)
       _register_command(command.name, command)
 
+      ### Save list of commands to file
+      # File.open("_mobius_commands.txt", "a+") do |f|
+      #   f.puts "!#{command.name}"
+      #   f.puts "    Help: #{command.help}"
+      #   f.puts "    Aliases: #{command.aliases.map { |a| "!#{a}" }.join(', ')}"
+      #   f.puts "    Groups: #{command.groups.join(', ')}"
+      #   f.puts
+      # end
+
       command.aliases.each do |comm|
         _register_command(comm, command)
       end

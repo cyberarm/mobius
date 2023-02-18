@@ -13,7 +13,7 @@ module Mobius
       ServerStatus,
       MapSettings,
       PluginManager,
-      ModerationServerClient
+      # ModerationServerClient
     ]
 
     modules.each(&:init)

@@ -1,3 +1,4 @@
 conf/*.json
 *.db
 data/*
+_*

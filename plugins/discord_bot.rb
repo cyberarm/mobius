@@ -61,7 +61,9 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
   def page_server_administrators!
     return unless @bot
 
-    Config.discord_bot[:server_admins].each do |id|
+    Config.staff[:admin].each do |hash|
+      next unless (id = hash[:discord_id])
+
       if (channel = @bot.pm_channel(id))
         if @fds_responding
           channel.send_message("**OKAY** #{Config.discord_bot[:server_short_name].upcase}: Communication with FDS restored!")
@@ -72,9 +74,25 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
     end
   end
 
+  def waiting_for_reply?(discord_id)
+    @staff_pending_verification[discord_id]
+  end
+
+  def check_pending_staff_verifications!
+    @staff_pending_verification.each do |discord_id, hash|
+      if (Time.now.utc - hash[:time]) >= @verification_timeout
+        kick_player!(hash[:player].name, "Protected username: You failed to verify in time!")
+
+        @staff_pending_verification.delete(discord_id)
+      end
+    end
+  end
+
   on(:start) do
     @schedule_status_update = false
     @fds_responding = true
+    @staff_pending_verification = {}
+    @verification_timeout = 65 # seconds
 
     unless Config.discord_bot && Config.discord_bot[:token].length > 20
       log "Missing configuration data or invalid token"
@@ -86,6 +104,27 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
     @bot = Discordrb::Bot.new(token: Config.discord_bot[:token])
 
     @bot.message do |event|
+      discord_id = event.message.author.id
+
+      if (pending_staff = @staff_pending_verification[discord_id])
+        message = event.message.to_s.downcase.strip
+
+        if message == "y" || message == "yes"
+          PluginManager.publish_event(:_discord_bot_verified_staff, pending_staff[:player], discord_id)
+          event.message.respond("Welcome back, Commander!")
+          @staff_pending_verification.delete(discord_id)
+        elsif message == "n" || message == "no"
+          # Kick imposter
+          kick_player!(pending_staff[:player].name, "Protected username: You are an imposter!")
+          @staff_pending_verification.delete(discord_id)
+          event.message.respond("Roger, imposter has been kicked.")
+        else
+          event.message.respond("Unexpected reply, `#{event.message.to_s}`, please reply with `Yes` or `No`.")
+        end
+
+        next
+      end
+
       if (servers = Config.discord_bot[:restrict_to_servers])
         if !servers.empty? && event.server
           next unless servers.include?(event&.server&.id)
@@ -120,6 +159,8 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
   end
 
   on(:tick) do
+    check_pending_staff_verifications!
+
     if @schedule_status_update
       @schedule_status_update = false
 
@@ -148,5 +189,20 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
 
   on(:shutdown) do
     @bot&.stop
+  end
+
+  on(:_discord_bot_verify_staff) do |player, discord_id|
+    next unless @bot
+    next if waiting_for_reply?(discord_id)
+
+    after(5) do
+      page_player(player.name, "Protected nickname, please authenticate within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+    end
+
+    if (channel = @bot.pm_channel(discord_id))
+      @staff_pending_verification[discord_id] = { player: player, time: Time.now.utc }
+
+      channel.send_message("Your nickname, `#{player.name}`, has joined `#{ServerConfig.server_name}`, is this you?\nReply: `Yes` or `No`.")
+    end
   end
 end

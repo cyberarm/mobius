@@ -18,6 +18,7 @@ GEM
     event_emitter (0.2.6)
     excon (0.99.0)
     ffi (1.15.5)
+    ffi (1.15.5-x64-mingw-ucrt)
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
@@ -49,16 +50,19 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
+    sqlite3 (1.6.0-x64-mingw-ucrt)
     sqlite3 (1.6.0-x86_64-linux)
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8.2)
+    unf_ext (0.0.8.2-x64-mingw-ucrt)
     websocket (1.2.9)
     websocket-client-simple (0.6.0)
       event_emitter
       websocket
 
 PLATFORMS
+  x64-mingw-ucrt
   x86_64-linux
 
 DEPENDENCIES
