@@ -38,7 +38,20 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @infected_preset = Config.tournament[:infected_preset]
 
     @recent_kills = []
-    @infectioned_players = []
+    @ghost_players = []
+    @infected_players = []
+  end
+
+  def infection_survivor_count
+    ServerStatus.total_players - @infected_players.count
+  end
+
+  def ghost_count
+    ServerStatus.total_players - @ghost_players.count
+  end
+
+  def the_last_man_standing
+    PlayerData.player_list.find { |ply| @ghost_players[ply.id].nil? }
   end
 
   on(:start) do
@@ -58,6 +71,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       if @infection
         player.change_team(1)
         change_player(player: player)
+        page_player(player.name, "[Tournament] Group up! The infected will try to hunt you all down.")
       end
     end
   end
@@ -78,19 +92,20 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
         if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
           if just_killed
+            @ghost_players[player.id] = true
             change_player(player: player, ghost: true)
           else
-            change_player(player: player)
+            change_player(player: player) unless @ghost_players[player.id]
           end
         end
 
         if @infection && hash[:preset].downcase != @infected_preset.downcase
           if just_killed
-            @infectioned_players[player.id] = true
+            @infected_players[player.id] = true
             player.change_team(0)
             change_player(player: player, infected: true)
           else
-            unless @infectioned_players[player.id]
+            unless @infected_players[player.id]
               player.change_team(1)
               change_player(player: player)
             end
@@ -106,6 +121,25 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
   on(:killed) do |hash|
     @recent_kills << hash if hash[:killed_type].downcase == "soldier" && (@tournament || @last_man_standing || @infection)
+  end
+
+  on(:tick) do
+    if @tournament || @last_man_standing || @infection
+      if @last_man_standing
+        if ghost_count == ServerStatus.total_players - 1
+          broadcast_message("[Tournament] #{the_last_man_standing.name} won as the Last Man Standing!")
+
+          reset
+        end
+
+      elsif @infection
+        if infected_players.count == ServerStatus.total_players
+          broadcast_message("[Tournament] All players have been infected!")
+
+          reset
+        end
+      end
+    end
   end
 
   command(:tournament, arguments: 0..1, help: "!tournament [<soldier_preset>] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>", groups: [:admin, :mod, :director]) do |command|
@@ -153,8 +187,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     if hunter_preset.to_s.empty?
       reset
 
-      @infected_preset = Config.tournament[:infected_preset]
-
       broadcast_message("[Tournament] Infection mode has been deactivated!")
     else
       @infection = true
@@ -168,17 +200,19 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       broadcast_message("[Tournament] Infection mode has been activated!")
 
-      PlayerData.player_list.each do |player|
-        player.change_team(1)
-      end
-      change_players
-
       infected = (ServerStatus.total_players / 6.0).ceil
 
-      PlayerData.player_list.sample(infected).each do |player|
-        @infectioned_players[player.id] = true
-        player.change_team(0)
-        change_player(player: player, infected: true)
+      PlayerData.player_list.shuffle.shuffle.shuffle.each_with_index do |player, i|
+        if i <= infected
+          @infected_players[player.id] = true
+          player.change_team(0)
+          change_player(player: player, infected: true)
+          page_player(player.name, "You have been infected, hunt down the #{infection_survivor_count} survivors!")
+        else
+          player.change_team(1)
+          change_player(player: player)
+          page_player(player.name, "Group up! The infected will try to hunt you all down.")
+        end
       end
     end
   end
@@ -188,9 +222,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
       if player
-        @infectioned_players[player.id] = true
+        @infected_players[player.id] = true
         player.change_team(0)
         change_player(player: player, infected: true)
+        page_player(player.name, "You have been infected, hunt down the #{infection_survivor_count} survivors!")
       else
         page_player(command.issuer.name, "Player #{command.arguments.first} was not found ingame, or is not unique.")
       end
