@@ -127,6 +127,9 @@ module Mobius
     end
 
     def notify_moderators(message)
+      PlayerData.player_list.each do |player|
+        page_player(player.name, message) if player.administrator? || player.moderator?
+      end
     end
 
     def auto_kick!(name)
