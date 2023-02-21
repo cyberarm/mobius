@@ -233,19 +233,23 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     broadcast_message("#{command.issuer.name} has respawned")
   end
 
-  command(:ping, arguments: 0, help: "!ping") do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.issuer.name))
+  command(:ping, arguments: 0..1, help: "!ping [<nickname>]") do |command|
+    if command.arguments.first.empty?
+      player = PlayerData.player(PlayerData.name_to_id(command.issuer.name))
 
-    broadcast_message("#{command.issuer.name}'s ping: #{player&.ping}ms")
-  end
-
-  command(:player_ping, aliases: [:pping], arguments: 1, help: "!player_ping <nickname>") do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
-
-    if player
-      broadcast_message("#{player.name}'s ping: #{player.ping}ms")
+      if player
+        broadcast_message("#{command.issuer.name}'s ping: #{player.ping}ms")
+      else
+        broadcast_message("Failed to find player.")
+      end
     else
-      broadcast_message("Player not in game or name is not unique!")
+      player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+      if player
+        broadcast_message("#{player.name}'s ping: #{player.ping}ms")
+      else
+        broadcast_message("Player not in game or name is not unique!")
+      end
     end
   end
 end
