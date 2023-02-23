@@ -108,6 +108,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
             unless @infected_players[player.id]
               player.change_team(1)
               change_player(player: player)
+              page_player(player.name, "You have been infected, hunt down the #{infection_survivor_count} survivors!")
             end
           end
         end
@@ -133,7 +134,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
       elsif @infection
-        if infected_players.count == ServerStatus.total_players
+        if @infected_players.count == ServerStatus.total_players
           broadcast_message("[Tournament] All players have been infected!")
 
           reset
