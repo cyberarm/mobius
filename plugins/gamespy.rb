@@ -2,9 +2,13 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
   MasterServer = Struct.new(:socket)
 
   on(:start) do
-    @query_id = 10
+    @query_id = 1
+    @fragment_id = 1
+    @query_address = nil
     @flood = {}
     @bans = {}
+
+    @buffer = StringIO.new
 
     @master_servers = []
     @query_socket = UDPSocket.new
@@ -100,106 +104,91 @@ mobius_plugin(name: "GameSpy", version: "0.0.1") do
   def query_server_receive(message, addrinfo)
     # TODO: handle ban checking
 
-    reply = case message
-            when "\\basic\\"
-              generate_basic
-            when "\\info\\"
-              generate_info
-            when "\\rules\\"
-              generate_rules
-            end
+    @buffer.string = ""
+    @query_address = addrinfo
+    @fragment_id = 1
 
-    if message.start_with?("\\echo\\")
-      # _, echo = message.split("\\echo\\")
-
-      log "ECHO: #{message}"
-
-      reply = message
+    case message
+    when "\\basic\\"
+      generate_basic
+    when "\\info\\"
+      generate_info
+    when "\\rules\\"
+      generate_rules
+    when "\\status\\"
+      "#{generate_basic}#{generate_info}#{generate_rules}#{generate_players}"
+    when "\\echo\\"
+      append_fragment("\\echo\\#{message[6..message.length - 1]}") # echo back received message less \echo\
     end
 
-    if reply
-      @query_id += 1
+    @query_socket.send("#{@buffer.string}\\final\\queryid\\#{@query_id}.#{@fragment_id}", 0, @query_address[2], @query_address[1])
 
-      @query_socket.send("#{reply}\\final\\queryid\\#{@query_id}.1", 0, addrinfo[2], addrinfo[1])
-    end
+    @buffer.string = ""
+    @query_address = nil
+    @fragment_id = 1
+  end
 
-    if message.start_with?("\\players\\") || message.start_with?("\\status\\")
-      @query_id += 1
-      index = 1
+  def append_fragment(string)
+    @buffer.write(string)
 
-      if message.start_with?("\\status\\")
-        reply = "#{generate_basic}#{generate_info}#{generate_rules}\\queryid\\#{@query_id}.#{index}"
-        @query_socket.send(reply, 0, addrinfo[2], addrinfo[1])
+    return unless @buffer.size > 400
 
-        index += 1
-      end
+    @query_socket.send("#{@buffer.string}\\queryid\\#{@query_id}.#{@fragment_id}", 0, @query_address[2], @query_address[1])
+    @buffer.string = ""
 
-      player_fragments, team_fragment = generate_players
-
-      player_fragments.each do |fragment|
-        @query_socket.send("#{fragment}\\queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
-        index += 1
-      end
-
-      @query_socket.send("#{team_fragment}\\final\\queryid\\#{@query_id}.#{index}", 0, addrinfo[2], addrinfo[1])
-    end
+    @fragment_id += 1
   end
 
   def generate_basic
-    "\\gamename\\ccrenegade\\gamever\\838"
+    append_fragment("\\gamename\\ccrenegade\\gamever\\838")
   end
 
   def generate_info
-    "\\hostname\\#{ServerConfig.server_name}" \
-    "\\hostport\\#{ServerConfig.server_port}" \
-    "\\mapname\\#{ServerStatus.get(:current_map)}" \
-    "\\gametype\\#{Config.gamespy[:game_type]}" \
-    "\\numplayers\\#{ServerStatus.total_players}" \
-    "\\maxplayers\\#{ServerStatus.get(:max_players)}"
+    append_fragment(
+      "\\hostname\\#{ServerConfig.server_name}" \
+      "\\hostport\\#{ServerConfig.server_port}" \
+      "\\mapname\\#{ServerStatus.get(:current_map)}" \
+      "\\gametype\\#{Config.gamespy[:game_type]}" \
+      "\\numplayers\\#{ServerStatus.total_players}" \
+      "\\maxplayers\\#{ServerStatus.get(:max_players)}"
+    )
   end
 
   def generate_rules
-    string = "\\CSVR\\1" \
-             "\\DED\\1" \
-             "\\password\\#{ServerStatus.get(:has_password)}" \
-             "\\DG\\#{bool_to_int(ServerConfig.driver_gunner)}" \
-             "\\TC\\#{bool_to_int(ServerConfig.team_changing)}" \
-             "\\FF\\#{bool_to_int(ServerConfig.friendly_fire)}" \
-             "\\SC\\#{ServerConfig.starting_credits}" \
-             "\\SSC\\Mobius v#{Mobius::VERSION}" \
-             "\\timeleft\\#{ServerStatus.get(:time_remaining)}"
+    append_fragment(
+      "\\CSVR\\1" \
+      "\\DED\\1" \
+      "\\password\\#{bool_to_int(ServerStatus.get(:has_password))}" \
+      "\\DG\\#{bool_to_int(ServerConfig.driver_gunner)}" \
+      "\\TC\\#{bool_to_int(ServerConfig.team_changing)}" \
+      "\\FF\\#{bool_to_int(ServerConfig.friendly_fire)}" \
+      "\\SC\\#{ServerConfig.starting_credits}" \
+      "\\SSC\\Mobius v#{Mobius::VERSION}" \
+      "\\timeleft\\#{ServerStatus.get(:time_remaining)}"
+    )
 
     Config.gamespy[:custom_info].each do |key, value|
-      string += "\\#{key}\\#{value}"
+      append_fragment("\\#{key}\\#{value}")
     end
-
-    string
   end
 
   def generate_players
-    fragments = []
-    index = 0
-
-    PlayerData.player_list.each_slice(15) do |slice|
-      string = ""
-
-      slice.each do |player|
-        string += "\\player_#{index}\\#{player.name}"
-        string += "\\score_#{index}\\#{player.score}"
-        string += "\\ping_#{index}\\#{player.ping}"
-        string += "\\team_#{index}\\#{player.team}"
-        string += "\\kills_#{index}\\#{player.kills}"
-        string += "\\deaths_#{index}\\#{player.deaths}"
-
-        index += 1
-      end
-
-      fragments << string
+    [0, 1].each do |team|
+      append_fragment(
+        "\\team_t#{team}\\#{Teams.name(team)}" \
+        "\\score_t#{team}\\#{ServerStatus.get(:"team_#{team}_points")}"
+      )
     end
 
-    team0_score = ServerStatus.get(:team_0_points)
-    team1_score = ServerStatus.get(:team_1_points)
-
-    [fragments, "\\team_t0\\#{Teams.name(0)}\\score_t0\\#{team0_score}\\team_t1\\#{Teams.name(1)}\\score_t1\\#{team1_score}"]
+    PlayerData.player_list.each_with_index do |player, index|
+      append_fragment(
+        "\\player_#{index}\\#{player.name}" \
+        "\\score_#{index}\\#{player.score}" \
+        "\\ping_#{index}\\#{player.ping}" \
+        "\\team_#{index}\\#{player.team}" \
+        "\\kills_#{index}\\#{player.kills}" \
+        "\\deaths_#{index}\\#{player.deaths}"
+      )
+    end
   end
 end
