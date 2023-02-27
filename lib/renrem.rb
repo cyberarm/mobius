@@ -39,6 +39,8 @@ module Mobius
       @@queue.uniq!
     end
 
+    Command = Struct.new(:command, :queued_time, :delay, :block)
+
     def initialize(address:, port:, password:)
       raise "RenRem instance already active!" if @@instance
 
@@ -52,10 +54,37 @@ module Mobius
 
       # TODO: FAIL IF PASSWORD != 8
 
+      @password_last_used = 0.0
+      @password_session = 50.0 # seconds
+
       @checksum_factor_cache = 2**32
 
       @socket = UDPSocket.new
       @socket.connect(@address, @port)
+
+      @queue = []
+      @delayed_queue = []
+
+      start
+    end
+
+    def start
+      Thread.new do
+        until @socket.closed?
+          while (command = @queue.shift)
+            deliver_command(command.command)
+          end
+
+          delayed = @delayed_queue.select { |c| Time.now - c.queued_time >= c.delay }
+          delayed.each do |comm|
+            @delayed_queue.delete(comm)
+
+            deliver_command(comm.command)
+          end
+
+          sleep 0.01
+        end
+      end
     end
 
     def encode_data(data)
@@ -108,34 +137,44 @@ module Mobius
       length.times do |i|
         j = password_array[i % 8]
         password_array[i % 8] = msgbuf[i + 4] ^ password_array[i % 8]
-        # Maybe correct?
-        # msgbuf[i + 4] = ( unpack("c", pack("C",($msgbuf[$i + 4] ^ $p))) - $i + 50);
-        msgbuf[i + 4] = [(msgbuf[i + 4] ^ j)].pack("C").unpack1("c") - i + 50
+        msgbuf[i + 4] = ([(msgbuf[i + 4] ^ j)].pack("C").unpack1("c") - i + 0x32) % 128
       end
 
-      msgbuf[8..msgbuf.length].map(&:chr).join
+      msgbuf[8..msgbuf.length].map(&:chr).join.chomp("\x00")
+    end
+
+    def queue_command(data, delay, block)
+      if delay
+        @delayed_queue << Command.new(command: data, queued_time: Time.now, delay: delay, block: block)
+      else
+        @queue << Command.new(command: data, queued_time: Time.now, delay: delay, block: block)
+      end
+    end
+
+    def deliver_command(data)
+      # Quite verbose, enable for debugging
+      # log "RENREM", "Sent command '#{data[0..249]}' to RenRem!"
+
+      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless data.length <= 249
+
+      # We don't need to send the password EVERY time, send it only if last sent more then ~50 seconds ago
+      if (Time.now.to_i - @password_last_used.to_i) >= @password_session
+        @password_last_used = Time.now
+        @socket.send(encode_data(@password), 0)
+      end
+
+      # Actually send command to RenRem
+      @socket.send(encode_data(data[0..249]), 0)
+    rescue Errno::ECONNREFUSED
+      log "RENREM", "Failed to send command '#{data}' to RenRem!"
     end
 
     def cmd(data)
-      begin
-        # Quite verbose, enable for debugging
-        # log "RENREM", "Sent command '#{data[0..249]}' to RenRem!"
-
-        @socket.send(encode_data(@password), 0)
-        @socket.send(encode_data(data[0..249]), 0)
-      rescue Errno::ECONNREFUSED
-        log "RENREM", "Failed to send command '#{data}' to RenRem!"
-      end
-
-      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless data.length <= 249
+      queue_command(data, nil, nil)
     end
 
-    def cmd_delayed(data, seconds)
-      Thread.new do
-        sleep seconds
-
-        cmd(data)
-      end
+    def cmd_delayed(data, seconds, &block)
+      queue_command(data, seconds, block)
     end
 
     def teardown
