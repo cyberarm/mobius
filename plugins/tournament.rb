@@ -170,7 +170,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       broadcast_message("[Tournament] Last Man Standing mode has been deactivated!")
     else
-      @last_man_standing = true
+      @last_man_standing = false
       @tournament = false
       @infection = false
       @preset = preset
@@ -178,6 +178,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Last Man Standing mode has been activated!")
 
       change_players
+
+      after(2) do
+        @last_man_standing = true
+      end
     end
   end
 
@@ -190,7 +194,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       broadcast_message("[Tournament] Infection mode has been deactivated!")
     else
-      @infection = true
+      @infection = false
       @last_man_standing = false
       @tournament = false
       @preset = hunter_preset
@@ -214,6 +218,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           change_player(player: player)
           page_player(player.name, "Group up! The infected will try to hunt you all down.")
         end
+      end
+
+      after(2) do
+        @infection = true
       end
     end
   end
