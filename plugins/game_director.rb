@@ -15,12 +15,22 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     return true
   end
 
+  command(:remix, arguments: 0, help: "!remix NOW - Shuffle teams", groups: [:admin, :mod]) do |command|
+    if command.arguments.first == "NOW"
+      log "#{command.issuer.name} remixed teams"
+      remix_teams
+      broadcast_message("Teams have been remixed")
+    else
+      page_player(player.name, "Use !remix NOW to truely remix teams")
+    end
+  end
+
   command(:gameover, arguments: 1, help: "!gameover NOW", groups: [:admin, :mod, :director]) do |command|
     if command.arguments.first == "NOW"
       log "#{command.issuer.name} ended the game"
       RenRem.cmd("gameover")
     else
-      RenRem.cmd("ppage #{command.issuer.id} Use !gameover NOW to truely end the game")
+      page_player(player.name, "Use !gameover NOW to truely end the game")
     end
   end
 

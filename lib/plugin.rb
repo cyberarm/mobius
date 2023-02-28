@@ -138,6 +138,17 @@ module Mobius
     def add_player_report(name, reporter, reason)
     end
 
+    def remix_teams
+      return unless ServerStatus.total_players.positive?
+
+      PlayerData.player_list.select { |ply| ply.ingame? }.shuffle.each_with_index do |player, i|
+        side = i % 2
+        next unless player.team != side
+
+        player.change_team(side)
+      end
+    end
+
     def log(message)
       Kernel.log("PLUGIN: #{@___name}", message)
     end

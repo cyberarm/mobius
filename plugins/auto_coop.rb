@@ -51,17 +51,6 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
     end
   end
 
-  def remix_teams
-    return unless ServerStatus.total_players.positive?
-
-    PlayerData.player_list.select { |ply| ply.ingame? }.shuffle.each_with_index do |player, i|
-      side = i % 2
-      next unless player.team != side
-
-      player.change_team(side)
-    end
-  end
-
   def check_map(map)
     case map.split(".", 2).first
     when "RA_AS_Seamist"
