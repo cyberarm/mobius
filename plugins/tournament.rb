@@ -43,7 +43,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   def infection_survivor_count
-    ServerStatus.total_players - @infected_players.count
+    ServerStatus.total_players - @infected_players.reject(:nil?).count
   end
 
   def ghost_count
@@ -134,7 +134,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
       elsif @infection
-        if @infected_players.count == ServerStatus.total_players
+        if infection_survivor_count.zero? # == ServerStatus.total_players
           broadcast_message("[Tournament] All players have been infected!")
 
           reset
