@@ -117,8 +117,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
             end
           end
         end
-
-        end
       end
     end
   end
