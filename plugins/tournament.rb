@@ -43,7 +43,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   def infection_survivor_count
-    ServerStatus.total_players - @infected_players.reject(:nil?).count
+    ServerStatus.total_players - @infected_players.reject(&:nil?).count
   end
 
   def ghost_count
