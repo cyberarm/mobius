@@ -17,19 +17,23 @@ module Mobius
       @@queue
     end
 
+    def self.instance
+      @@instance
+    end
+
     def self.teardown
       log("TEARDOWN", "Shutdown RenRem...")
 
       @@instance&.teardown
     end
 
-    def self.cmd(data, delay = nil)
+    def self.cmd(data, delay = nil, &block)
       raise "RenRem not running!" unless @@instance
 
       if delay
-        @@instance.cmd_delayed(data, delay)
+        @@instance.cmd_delayed(data, delay, block)
       else
-        @@instance.cmd(data)
+        @@instance.cmd(data, block)
       end
     end
 
@@ -52,10 +56,7 @@ module Mobius
       @port = port
       @password = password
 
-      # TODO: FAIL IF PASSWORD != 8
-
-      @password_last_used = 0.0
-      @password_session = 50.0 # seconds
+      raise "Password length must be 8 characters long, got: #{@password.length}" if @password.length != 8
 
       @checksum_factor_cache = 2**32
 
@@ -64,26 +65,24 @@ module Mobius
 
       @queue = []
       @delayed_queue = []
-
-      start
     end
 
-    def start
-      Thread.new do
-        until @socket.closed?
-          while (command = @queue.shift)
-            deliver_command(command.command)
-          end
+    def drain
+      # Always send password for the first command
+      # Password isn't needed for subsequent commands for this method call
+      send_password = true
 
-          delayed = @delayed_queue.select { |c| Time.now - c.queued_time >= c.delay }
-          delayed.each do |comm|
-            @delayed_queue.delete(comm)
+      while (command = @queue.shift)
+        deliver_command(command, send_password)
+        send_password = false
+      end
 
-            deliver_command(comm.command)
-          end
+      delayed = @delayed_queue.select { |c| monotonic_time - c.queued_time >= c.delay }
+      delayed.each do |comm|
+        @delayed_queue.delete(comm)
 
-          sleep 0.01
-        end
+        deliver_command(comm, send_password)
+        send_password = false
       end
     end
 
@@ -145,35 +144,59 @@ module Mobius
 
     def queue_command(data, delay, block)
       if delay
-        @delayed_queue << Command.new(command: data, queued_time: Time.now, delay: delay, block: block)
+        @delayed_queue << Command.new(command: data, queued_time: monotonic_time, delay: delay, block: block)
       else
-        @queue << Command.new(command: data, queued_time: Time.now, delay: delay, block: block)
+        @queue << Command.new(command: data, queued_time: monotonic_time, delay: delay, block: block)
       end
     end
 
-    def deliver_command(data)
+    def deliver_command(command, send_password)
       # Quite verbose, enable for debugging
-      # log "RENREM", "Sent command '#{data[0..249]}' to RenRem!"
+      # log "RENREM", "Sent command '#{command.command[0..249]}' to RenRem!"
+      # t = monotonic_time
 
-      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless data.length <= 249
+      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless command.command.length <= 249
 
-      # We don't need to send the password EVERY time, send it only if last sent more then ~50 seconds ago
-      if (Time.now.to_i - @password_last_used.to_i) >= @password_session
-        @password_last_used = Time.now
+      # Drain potential garbage that appears on level change/load.
+      # Don't wait for packet as there shouldn't be a packet most of the time.
+      drain_socket(timeout: 0)
+
+      if send_password
         @socket.send(encode_data(@password), 0)
+        password_response = drain_socket
       end
 
       # Actually send command to RenRem
-      @socket.send(encode_data(data[0..249]), 0)
+      @socket.send(encode_data(command.command[0..249]), 0)
+      response = drain_socket
+
+      command.block&.call(response)
+      # log "Completed command after: #{(monotonic_time - t.round(2))}s"
     rescue Errno::ECONNREFUSED
-      log "RENREM", "Failed to send command '#{data}' to RenRem!"
+      log "RENREM", "Failed to send command '#{command.command}' to RenRem!"
     end
 
-    def cmd(data)
-      queue_command(data, nil, nil)
+    def drain_socket(timeout: 1.0)
+      begin
+        IO.select([@socket], nil, nil, timeout)
+        buffer = []
+
+        while (response = decode_data(@socket.recv_nonblock(65_000)))
+          buffer << response
+        end
+      rescue IO::WaitReadable # Done receiving response from FDS/RenRem
+        return buffer.join
+      rescue => e
+        puts e
+        puts e.backtrace
+      end
     end
 
-    def cmd_delayed(data, seconds, &block)
+    def cmd(data, block)
+      queue_command(data, nil, block)
+    end
+
+    def cmd_delayed(data, seconds, block)
       queue_command(data, seconds, block)
     end
 

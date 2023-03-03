@@ -24,14 +24,21 @@ module Mobius
 
     RenRem.cmd("rehash_ban_list")
 
+    last_tick_time = 0.0
     loop do
       while (cmd = RenRem.queue.shift)
         RenRem.cmd(cmd)
       end
 
-      PluginManager.publish_event(:tick)
+      RenRem.instance.drain
 
-      sleep 1
+      if monotonic_time - last_tick_time >= 1.0
+        last_tick_time = monotonic_time
+
+        PluginManager.publish_event(:tick)
+      end
+
+      sleep 0.001
     end
   ensure
     modules.reverse.each(&:teardown)
