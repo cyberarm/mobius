@@ -2,6 +2,9 @@ module Mobius
   ROOT_PATH = File.expand_path("..", __dir__)
 
   def self.init
+    major, minor, _point = RUBY_VERSION.split(".").map(&:to_i)
+    raise "Must use Ruby 3.2.0 or newer due to changes to Struct class (Using Ruby #{RUBY_VERSION})" unless major >= 3 && minor >= 2
+
     modules = [
       Config,
       Teams,
@@ -41,6 +44,6 @@ module Mobius
       sleep 0.001
     end
   ensure
-    modules.reverse.each(&:teardown)
+    modules.reverse.each(&:teardown) if modules
   end
 end
