@@ -68,7 +68,7 @@ module Mobius
         ServerConfig.fetch_available_maps
       end
 
-      @data[:last_request_time] = Time.now.to_i # FIXME: Use monotonic time!
+      @data[:last_request_time] = monotonic_time.to_i # FIXME: Use monotonic time!
 
       RenRem.cmd("mapnum") if @data[:current_map_number] == -1
 
@@ -88,7 +88,7 @@ module Mobius
         # TODO: Warn about invalid mode?
       end
 
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
     end
 
     def self.update_radar_mode(mode)
@@ -96,14 +96,14 @@ module Mobius
     end
 
     def self.update_map(map_name)
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
 
       return if @data[:current_map] == map_name
 
       @data[:last_map] = @current_map
       @data[:current_map] = map_name
 
-      @data[:map_start_time] = Time.now.to_i
+      @data[:map_start_time] = monotonic_time.to_i
 
       # Only apply map settings if we just loaded, otherwise let the Level Loaded OK event process it.
       MapSettings.apply_map_settings(apply_time: false) if map_name == "last round"
@@ -112,19 +112,19 @@ module Mobius
     def self.update_map_number(number)
       @data[:current_map_number] = number
 
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
     end
 
     def self.update_time_remaining(remaining)
       @data[:time_remaining] = remaining.strip
 
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
     end
 
     def self.update_sfps(sfps)
       @data[:sfps] = sfps
 
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
     end
 
     def self.update_team_status(team, player_count, max_player_count, points)
@@ -132,7 +132,7 @@ module Mobius
       @data[:max_players] = max_player_count
       @data[:"team_#{team}_points"] = points
 
-      @data[:last_response_time] = Time.now.to_i
+      @data[:last_response_time] = monotonic_time.to_i
     end
 
     def self.update_default_max_players(max_players)

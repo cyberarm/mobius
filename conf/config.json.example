@@ -48,8 +48,8 @@
       "restrict_to_channels": []
     },
     "tournament": {
-      "team_0_ghost": "Allied_Ghost",
-      "team_1_ghost": "Soviet_Ghost",
+      "team_0_ghost_preset": "Allied_Ghost",
+      "team_1_ghost_preset": "Soviet_Ghost",
       "infected_preset": "Ant_Scout"
     },
     "enabled_plugins": [],

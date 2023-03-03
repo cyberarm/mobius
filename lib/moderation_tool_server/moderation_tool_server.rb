@@ -50,14 +50,14 @@ module Mobius
         client.socket.callback { CLIENTS.delete(client) }
 
         until client.socket.closed?
-          if client.send_queue.empty? && Time.now.to_i >= client.last_delivery + client.keep_alive_interval
-            client.last_delivery = Time.now.to_i
+          if client.send_queue.empty? && monotonic_time.to_i >= client.last_delivery + client.keep_alive_interval
+            client.last_delivery = monotonic_time.to_i
 
             client.socket << 'data: {"type":"keep_alive"}'
             client.socket << "\n\n"
           else
             while (data = client.send_queue.shift)
-              client.last_delivery = Time.now.to_i
+              client.last_delivery = monotonic_time.to_i
 
               client.socket << "data: #{data}\n\n"
             end
@@ -99,14 +99,14 @@ module Mobius
         client.socket.callback { BOTS.delete(client) }
 
         until client.socket.closed?
-          if client.send_queue.empty? && Time.now.to_i >= client.last_delivery + client.keep_alive_interval
-            client.last_delivery = Time.now.to_i
+          if client.send_queue.empty? && monotonic_time.to_i >= client.last_delivery + client.keep_alive_interval
+            client.last_delivery = monotonic_time.to_i
 
             client.socket << 'data: {"type":"keep_alive"}'
             client.socket << "\n\n"
           else
             while (data = client.send_queue.shift)
-              client.last_delivery = Time.now.to_i
+              client.last_delivery = monotonic_time.to_i
 
               client.socket << "data: #{data}\n\n"
             end

@@ -28,4 +28,8 @@ require_relative "lib/moderation_server_client"
 require_relative "lib/init"
 require_relative "lib/version"
 
+def monotonic_time
+  Process.clock_gettime(Process::CLOCK_MONOTONIC)
+end
+
 Mobius.init

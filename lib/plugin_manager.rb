@@ -234,7 +234,13 @@ module Mobius
     end
 
     def self.handle_fds_command(player, parts)
-      RenRem.cmd(parts.join(" "))
+      RenRem.cmd(parts.join(" ")) do |response|
+        response.each_line do |line|
+          next if line.strip.empty?
+
+          RenRem.cmd("ppage #{player.id} #{line}")
+        end
+      end
     end
 
     def self.handle_plugins_command(player, parts)

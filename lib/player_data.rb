@@ -90,11 +90,11 @@ module Mobius
         return true if groups.include?(:ingame) && ingame?
       end
 
-      def change_team(team)
+      def change_team(team, kill: true)
         old_team = @team
 
         @team = team
-        RenRem.cmd("team2 #{@id} #{@team}")
+        RenRem.cmd("#{kill ? 'team2' : 'team3'} #{@id} #{@team}")
         RenRem.enqueue("pinfo")
 
         PlayerData.process_team_change(id, old_team, @team) if old_team != @team

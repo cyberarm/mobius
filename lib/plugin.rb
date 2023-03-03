@@ -143,7 +143,6 @@ module Mobius
 
       PlayerData.player_list.select { |ply| ply.ingame? }.shuffle.each_with_index do |player, i|
         side = i % 2
-        next unless player.team != side
 
         player.change_team(side)
       end

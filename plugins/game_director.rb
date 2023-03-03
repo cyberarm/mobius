@@ -2,7 +2,7 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
   def donations_available?(player)
     donate_limit = MapSettings.get_map_setting(:donatelimit)
     map = ServerStatus.get(:current_map)
-    map_elapsed_time = Time.now.to_i - ServerStatus.get(:map_start_time)
+    map_elapsed_time = monotonic_time.to_i - ServerStatus.get(:map_start_time)
 
     if (donate_limit != 0 && map_elapsed_time < donate_limit * 60)
       remaining = donate_limit - (map_elapsed_time / 60.0).round;

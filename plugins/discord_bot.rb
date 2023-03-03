@@ -80,7 +80,7 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
 
   def check_pending_staff_verifications!
     @staff_pending_verification.each do |discord_id, hash|
-      if (Time.now.utc - hash[:time]) >= @verification_timeout
+      if (monotonic_time - hash[:time]) >= @verification_timeout
         kick_player!(hash[:player].name, "Protected username: You failed to verify in time!")
 
         @staff_pending_verification.delete(discord_id)
@@ -200,7 +200,7 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
     end
 
     if (channel = @bot.pm_channel(discord_id))
-      @staff_pending_verification[discord_id] = { player: player, time: Time.now.utc }
+      @staff_pending_verification[discord_id] = { player: player, time: monotonic_time }
 
       channel.send_message("Your nickname, `#{player.name}`, has joined `#{ServerConfig.server_name}`, is this you?\nReply: `Yes` or `No`.")
     end
