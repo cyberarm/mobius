@@ -45,6 +45,55 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     status
   end
 
+  def message_discord_id(discord_id, message)
+    {
+      type: :message,
+      data: {
+        discord_id: discord_id,
+        message: message
+      }
+    }
+  end
+
+  def verify_staff(discord_id, nickname)
+    {
+      type: :verify_staff,
+      data: {
+        discord_id: discord_id,
+        nickname: nickname,
+        server_name: ServerConfig.server_name
+      }
+    }
+  end
+
+  def waiting_for_reply?(discord_id)
+    @staff_pending_verification[discord_id]
+  end
+
+  def check_pending_staff_verifications!
+    @staff_pending_verification.each do |discord_id, hash|
+      if (monotonic_time - hash[:time]) >= @verification_timeout
+        kick_player!(hash[:player].name, "Protected username: You failed to verify in time!")
+
+        @staff_pending_verification.delete(discord_id)
+      end
+    end
+  end
+
+  def page_server_administrators!
+    Config.staff[:admin].each do |hash|
+      next unless (discord_id = hash[:discord_id])
+
+      server_name = ServerConfig.server_name || Config.discord_bridge[:server_short_name].upcase
+
+      if @fds_responding
+        deliver(message_discord_id(discord_id, "**OKAY** #{server_name}: Communication with FDS restored!"))
+      else
+        deliver(message_discord_id(discord_id, "**ERROR** #{server_name}: Unable to communicate with FDS!"))
+      end
+    end
+  end
+
   def connect_to_bridge
     this = self
     @connection_error = false
@@ -53,7 +102,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
     Thread.new do
       begin
-        WebSocket::Client::Simple.connect("ws://localhost:3000/api/v1/websocket") do |ws|
+        WebSocket::Client::Simple.connect("#{Config.discord_bridge[:url]}/api/v1/websocket") do |ws|
           this.websocket = ws
 
           ws.on(:open) do
@@ -62,6 +111,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
           ws.on(:message) do |msg|
             this.log msg.data
+            this.handle_message(msg.data)
           end
 
           ws.on(:error) do |error|
@@ -97,6 +147,31 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     end
   end
 
+  def handle_message(msg)
+    hash = JSON.parse(msg, symbolize_names: true)
+
+    pp hash
+
+    case hash[:type].to_s.downcase.to_sym
+    when :verify_staff
+      discord_id = hash[:data][:discord_id]
+
+      if (pending_staff = @staff_pending_verification[discord_id])
+        verified = hash[:data][:verified]
+
+        if verified
+          PluginManager.publish_event(:_discord_bot_verified_staff, pending_staff[:player], discord_id)
+          page_player(pending_staff[:player].name, "Welcome back, Commander!")
+          @staff_pending_verification.delete(discord_id)
+        else
+          # Kick imposter
+          kick_player!(pending_staff[:player].name, "Protected username: You are an imposter!")
+          @staff_pending_verification.delete(discord_id)
+        end
+      end
+    end
+  end
+
   on(:start) do
     unless Config.discord_bridge && !Config.discord_bridge[:url].to_s.empty?
       log "Missing configuration data or invalid url"
@@ -107,6 +182,11 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
     @uuid = Config.discord_bridge[:uuid]
     @send_status = true
+
+    @schedule_status_update = false
+    @fds_responding = true
+    @staff_pending_verification = {}
+    @verification_timeout = 65 # seconds
 
     connect_to_bridge
 
@@ -143,6 +223,35 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     after(3) do
       @send_status = true
     end
+  end
+
+  on(:tick) do
+    check_pending_staff_verifications!
+
+    if @schedule_status_update
+      @schedule_status_update = false
+
+      update_status
+    end
+
+    if ServerStatus.get(:fds_responding) != @fds_responding
+      @schedule_status_update = true
+      @fds_responding = ServerStatus.get(:fds_responding)
+
+      page_server_administrators!
+    end
+  end
+
+  on(:_discord_bot_verify_staff) do |player, discord_id|
+    next if waiting_for_reply?(discord_id)
+
+    after(5) do
+      page_player(player.name, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+    end
+
+    @staff_pending_verification[discord_id] = { player: player, time: monotonic_time }
+
+    deliver(verify_staff(discord_id, player.name))
   end
 
   on(:shutdown) do

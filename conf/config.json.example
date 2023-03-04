@@ -51,7 +51,8 @@
       "url": null,
       "uuid": "<TOKEN>",
       "server_color": null,
-      "battleview_url": null
+      "battleview_url": null,
+      "server_short_name": "APB"
     },
     "tournament": {
       "team_0_ghost_preset": "Allied_Ghost",
