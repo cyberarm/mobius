@@ -47,6 +47,12 @@
       "restrict_to_servers": [],
       "restrict_to_channels": []
     },
+    "discord_bridge": {
+      "url": null,
+      "uuid": "<TOKEN>",
+      "server_color": null,
+      "battleview_url": null
+    },
     "tournament": {
       "team_0_ghost_preset": "Allied_Ghost",
       "team_1_ghost_preset": "Soviet_Ghost",

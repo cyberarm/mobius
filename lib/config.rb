@@ -23,7 +23,7 @@ module Mobius
 
     attr_reader :fds_path, :server_settings_path, :database_path, :renrem_address, :renrem_port, :renrem_password,
                 :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level,
-                :record_gamelog, :discord_bot, :tournament, :enabled_plugins, :disabled_plugins
+                :record_gamelog, :discord_bot, :discord_bridge, :tournament, :enabled_plugins, :disabled_plugins
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
@@ -58,6 +58,8 @@ module Mobius
       @record_gamelog = @data.dig(:mobius, :record_gamelog) || false
 
       @discord_bot = @data.dig(:mobius, :discord_bot)
+
+      @discord_bridge = @data.dig(:mobius, :discord_bridge)
 
       @tournament = @data.dig(:mobius, :tournament) || {
         team_0_ghost_preset: "Allied_Ghost",
