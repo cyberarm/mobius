@@ -150,8 +150,8 @@ module Mobius
       object[:armor]      = data[9].to_f
       object[:team]       = data[10].to_i
       object[:name]       = data[11]
-      object[:destroyed]  = 0
-      object[:killed]     = 0
+      object[:destroyed]  = false
+      object[:killed]     = false
       object[:drivers]    = 0
 
       @game_objects[object[:object]] = object
@@ -274,6 +274,9 @@ module Mobius
             vehicle_obj[:last_team] = player_obj[:team]
           end
         end
+
+        object[:_player_object] = player_obj
+        object[:_vehicle_object] = vehicle_obj
       end
 
       PluginManager.publish_event(:enter_vehicle, object, data)
@@ -305,6 +308,9 @@ module Mobius
           vehicle_obj[:driver] = nil
           vehicle_obj[:team] = -1 # Neutral Team
         end
+
+        object[:_player_object] = player_obj
+        object[:_vehicle_object] = vehicle_obj
       end
 
       PluginManager.publish_event(:exit_vehicle, object, data)
@@ -342,14 +348,19 @@ module Mobius
         obj[:armor] = object[:armor]
       end
 
-      # If the damage is less than 0 it's actually being repaired
-      if (damager = @game_objects[object[:damager_object]]) && object[:damage].negative? && (player = PlayerData.player(PlayerData.name_to_id(damager[:name])))
-        case object[:type].downcase.strip
-        when "building"
-          player.increment_value(:stats_building_repair, -object[:damage])
-        when "vehicle"
-          player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj && obj[:drivers].positive?
+      if (damager = @game_objects[object[:damager_object]]) && (player = PlayerData.player(PlayerData.name_to_id(damager[:name])))
+        # If the damage is less than 0 it's actually being repaired
+        if object[:damage].negative?
+          case object[:type].downcase.strip
+          when "building"
+            player.increment_value(:stats_building_repair, -object[:damage])
+          when "vehicle"
+            player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj && obj[:drivers].positive?
+          end
         end
+
+        object[:_damager_object] = damager
+        object[:_player_object] = player
       end
 
       PluginManager.publish_event(:damaged, object, data)
@@ -378,6 +389,8 @@ module Mobius
       object[:killer_weapon]    = data[14]
 
       if (killed_obj = @game_objects[object[:killed_object]]) && (killer_obj = @game_objects[object[:killer_object]])
+        killed_obj[:killed] = true
+
         case object[:killed_type].downcase
         when "building"
           killed_building(object, killed_obj, killer_obj)
@@ -386,6 +399,9 @@ module Mobius
         when "soldier"
           killed_soldier(object, killed_obj, killer_obj)
         end
+
+        object[:_killed_object] = killed_obj
+        object[:_killer_object] = killer_obj
       end
 
       PluginManager.publish_event(:killed, object, data)
@@ -440,6 +456,8 @@ module Mobius
       when "vehicle"
         RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:name]} purchased a #{object[:preset_name]}") if Config.messages[:vehicle_purchase]
       end
+
+      object[:_player_object] = game_obj
 
       PluginManager.publish_event(:purchased, object, data)
 

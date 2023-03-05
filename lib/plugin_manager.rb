@@ -103,7 +103,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds].include?(name)
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :enable, :reload_plugin, :disable].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -157,6 +157,13 @@ module Mobius
       if cmd.downcase.to_sym == :enable && player.administrator?
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_enable_plugin_command(player, parts)
+
+        return
+      end
+
+      if cmd.downcase.to_sym == :reload_plugin && player.administrator?
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        handle_reload_plugin_command(player, parts)
 
         return
       end
@@ -267,7 +274,7 @@ module Mobius
         return
       end
 
-      found_plugins = @plugins.select { |plugin| !plugin.___enabled? && plugin.___name.downcase.include?(name.downcase)}
+      found_plugins = @plugins.select { |plugin| !plugin.___enabled? && plugin.___name.downcase.include?(name.downcase) }
 
       if found_plugins.size == 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Enabling plugin: #{found_plugins.first.___name}")
@@ -281,6 +288,29 @@ module Mobius
       end
     end
 
+    def self.handle_reload_plugin_command(player, parts)
+      name = parts[0]
+
+      if name.nil?
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] !reload_plugin <plugin name>")
+
+        return
+      end
+
+      found_plugins = @plugins.select { |plugin| plugin.___name.downcase.include?(name.downcase) }
+
+      if found_plugins.size == 1
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading plugin: #{found_plugins.first.___name}")
+        reload_plugin(found_plugins.first)
+
+      elsif found_plugins.size > 1
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
+
+      else
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No plugins matching: #{name}.")
+      end
+    end
+
     def self.handle_disable_plugin_command(player, parts)
       name = parts[0]
 
@@ -290,7 +320,7 @@ module Mobius
         return
       end
 
-      found_plugins = @plugins.select { |plugin| plugin.___enabled? && plugin.___name.downcase.include?(name.downcase)}
+      found_plugins = @plugins.select { |plugin| plugin.___enabled? && plugin.___name.downcase.include?(name.downcase) }
 
       if found_plugins.size == 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabling plugin: #{found_plugins.first.___name}")
