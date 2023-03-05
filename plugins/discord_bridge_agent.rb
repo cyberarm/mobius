@@ -87,9 +87,9 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
       server_name = ServerConfig.server_name || Config.discord_bridge[:server_short_name].upcase
 
       if @fds_responding
-        deliver(message_discord_id(discord_id, "**OKAY** #{server_name}: Communication with FDS restored!"))
+        deliver(message_discord_id(discord_id, "**OKAY** `#{server_name}`: Communication with FDS restored!"))
       else
-        deliver(message_discord_id(discord_id, "**ERROR** #{server_name}: Unable to communicate with FDS!"))
+        deliver(message_discord_id(discord_id, "**ERROR** `#{server_name}`: Unable to communicate with FDS!"))
       end
     end
   end

@@ -12,19 +12,16 @@ mobius_plugin(name: "Bounty", version: "0.0.1") do
   end
 
   on(:killed) do |hash|
-    pp [:killed, hash]
-
     if (killed_obj = hash[:_killed_object]) && (killer_obj = hash[:_killer_object])
       if (bounty = @bounties[killed_obj[:name]])
+        killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
         killer = PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))
 
-        if killer
+        if (killed && killer) && killed.team != killer.team && killed.name != killer.name
           RenRem.cmd("givecredits #{killer.id} #{bounty}")
           @bounties.delete(killed_obj[:name])
+
           broadcast_message("[Bounty] #{killer.name} has claimed the bounty on #{killed_obj[:name]} of $#{bounty}!")
-          log "givecredits #{killer.id} #{bounty}"
-        else
-          broadcast_message("[Bounty] Something went wrong!")
         end
       end
     end
@@ -48,7 +45,7 @@ mobius_plugin(name: "Bounty", version: "0.0.1") do
               @bounties[player.name] ||= 0
               @bounties[player.name] += amount
 
-              broadcast_message("[Bounty] #{command.issuer.name} has added $#{amount} to the $#{@bounties[player.name]} bounty on #{player.name}!")
+              broadcast_message("[Bounty] #{command.issuer.name} has added $#{amount} to the bounty on #{player.name}. Total is now $#{@bounties[player.name]}!")
             else
               page_player(command.issuer.name, "Insufficient funds, cannot place bounty.")
             end
