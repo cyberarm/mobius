@@ -15,13 +15,21 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     return true
   end
 
+  on(:start) do
+    @spectators = {}
+  end
+
+  on(:map_loaded) do
+    @spectators = {}
+  end
+
   command(:remix, arguments: 0, help: "!remix NOW - Shuffle teams", groups: [:admin, :mod]) do |command|
     if command.arguments.first == "NOW"
       log "#{command.issuer.name} remixed teams"
       remix_teams
       broadcast_message("Teams have been remixed")
     else
-      page_player(player.name, "Use !remix NOW to truely remix teams")
+      page_player(command.issuer.name, "Use !remix NOW, to truely remix teams!")
     end
   end
 
@@ -30,13 +38,11 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
       log "#{command.issuer.name} ended the game"
       RenRem.cmd("gameover")
     else
-      page_player(player.name, "Use !gameover NOW to truely end the game")
+      page_player(command.issuer.name, "Use !gameover NOW, to truely end the game!")
     end
   end
 
   command(:setnextmap, aliases: [:snm], arguments: 1, help: "!setnextmap <mapname>", groups: [:admin, :mod, :director]) do |command|
-    # message_player(command.issuer.name, "Not yet implemented!")
-
     maps = ServerConfig.installed_maps.select do |map|
       map.downcase.include?(command.arguments.first.downcase)
     end
@@ -72,22 +78,32 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     end
   end
 
-  command(:time, arguments: 1, help: "!time 5m", groups: [:admin, :mod, :director]) do |command|
+  command(:time, arguments: 1, help: "!time 5[{s,m,h}]", groups: [:admin, :mod, :director]) do |command|
     match_data = command.arguments.first.match(/(\d+)([smh])/)
 
-    # FIXME: Specifying time without s/m causes error
-    time = match_data[1].to_i
-    unit = match_data[2]
+    time = -1
+    unit = "s"
+
+    if match_data
+      time = match_data[1].to_i
+      unit = match_data[2]
+    else
+      begin
+        time = Integer(command.arguments.first)
+      rescue ArgumentError
+        time = -1
+      end
+    end
 
     hardcap = 2 * 60 * 60 # 2 hours
 
     if time <= 0
       page_player(command.issuer.name, "Time must be greater than 0!")
-    elsif (unit == "s" && time >= hardcap) || (unit == "m" && time * 60 >= hardcap)
+    elsif (unit == "s" && time > hardcap) || (unit == "m" && time * 60 > hardcap)
       log "Player #{command.issuer.name} attempted to set the game clock to #{match_data[0]}"
       page_player(command.issuer.name, "Game clock may not be set greater than 2 hours!")
     else
-      case unit
+      case unit.downcase
       when "s"
         RenRem.cmd("time #{time}")
         log "#{command.issuer.name} has set the game clock to #{time} seconds"
@@ -96,21 +112,29 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
         RenRem.cmd("time #{time * 60}")
         log "#{command.issuer.name} has set the game clock to #{time} minutes"
         broadcast_message("[GameDirector] #{command.issuer.name} has set the game clock to #{time} minutes")
+      when "h"
+        RenRem.cmd("time #{time * 60 * 60}")
+        log "#{command.issuer.name} has set the game clock to #{time} hours"
+        broadcast_message("[GameDirector] #{command.issuer.name} has set the game clock to #{time} hours")
       else
-        page_player(command.issuer.name, "Time unit must be s for seconds and m for minutes. Example: !time 15m")
+        page_player(command.issuer.name, "Time unit must be s for seconds, m for minutes, and h for hours. Example: !time 15m")
       end
     end
   end
 
-  command(:force_team_change, aliases: [:ftc], arguments: 2, help: "!force_team_change <nickname> <team name or id>", groups: [:admin, :mod]) do |command|
+  command(:force_team_change, aliases: [:ftc], arguments: 1..2, help: "!force_team_change <nickname> [<team name or id>]", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
     team = command.arguments.last
 
-    begin
-      team = Integer(team)
-    rescue ArgumentError
-      team = Teams.id_from_name(team)
-      team = team[:id] if team
+    if player && team.to_s.empty?
+      team = (player.team + 1) % 2
+    else
+      begin
+        team = Integer(team)
+      rescue ArgumentError
+        team = Teams.id_from_name(team)
+        team = team[:id] if team
+      end
     end
 
     if player
@@ -153,12 +177,35 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     RenRem.cmd("SpawnVehicle #{command.issuer.id} #{z} #{preset}")
   end
 
-  command(:spectate, arguments: 1, help: "!spectate <name>", groups: [:admin, :mod]) do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+  command(:spectate, arguments: 0..1, help: "!spectate [<nickname>]", groups: [:admin, :mod]) do |command|
+    nickname = command.arguments.first
+    player = PlayerData.player(PlayerData.name_to_id(nickname, exact_match: false))
+    spectating = @spectators[player ? player.name : command.issuer.name]
+
+    log player
+    log spectating
 
     if player
+      if spectating
+        @spectators.delete(player.name)
+        spectating = false
+      else
+        spectating = @spectators[player.name] = true
+      end
+
       RenRem.cmd("toggle_spectator #{player.id}")
-      page_player(command.issuer.name, "#{player.name} is now spectating.")
+      page_player(player.name, "You are #{spectating ? 'now' : 'no longer' } spectating.")
+      page_player(command.issuer.name, "#{player.name} is #{spectating ? 'now' : 'no longer' } spectating.")
+    elsif nickname.to_s.empty?
+      if spectating
+        @spectators.delete(command.issuer.name)
+        spectating = false
+      else
+        spectating = @spectators[command.issuer.name] = true
+      end
+
+      RenRem.cmd("toggle_spectator #{command.issuer.id}")
+      page_player(command.issuer.name, "You are #{spectating ? 'now' : 'no longer' } spectating.")
     else
       page_player(command.issuer.name, "Player is not in game or name is not unique!")
     end
