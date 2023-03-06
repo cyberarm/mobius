@@ -166,6 +166,8 @@ module Mobius
     end
 
     def self.name_to_id(name, exact_match: true)
+      return -1 if name.to_s.empty?
+
       if exact_match
         player = player_list.find { |ply| ply.name.downcase == name&.downcase }
         player ? player.id : -1
