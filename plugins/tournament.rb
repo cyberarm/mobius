@@ -49,9 +49,12 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @ghost_players = []
     @infected_players = []
 
-    @infection_duration = 5 * 60.0 # 5 minutes
+    @infection_duration = 7 * 60.0 # 7 minutes
     @infection_last_minute = -1
     @infection_start_time = 0
+
+    @building_damage_warnings = {}
+    @building_damage_freeze_duration = 5.0 # seconds
 
     @message_color = { red: 255, green: 200, blue: 64 } # Darkened Yellow
   end
@@ -109,6 +112,38 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       if player
         page_player(player.name, "[Tournament] A tournament game mode is active, vehicles cannot be used.")
         RenRem.cmd("eject #{player.id}")
+      end
+    end
+  end
+
+  on(:damaged) do |hash|
+    pp hash
+
+    if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_player_object])
+      damage = hash[:damage]
+
+      if damage.positive? # Ignore healing
+        @building_damage_warnings[player.name] ||= { warnings: 0, total_damage: 0, damage: 0, frozen_at: 0, frozen: false }
+        warning_hash = @building_damage_warnings[player.name]
+
+        warning_hash[:total_damage] += damage
+        warning_hash[:damage] += damage
+
+        if warning_hash[:damage] >= 15.0 && !warning_hash[:frozen]
+          warning_hash[:damage] = 0 # Reset
+          warning_hash[:warnings] += 1
+
+          if warning_hash[:warnings] >= 3
+            page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+            page_player(player.name, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
+
+            warning_hash[:frozen] = true
+            warning_hash[:frozen_at] = monotonic_time
+            RenRem.cmd("FreezePlayer #{player.id}")
+          else
+            page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+          end
+        end
       end
     end
   end
@@ -227,6 +262,23 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           end
         end
       end
+
+      # manage de-icing bad actors
+      @building_damage_warnings.each do |nickname, hash|
+        if hash[:frozen] && monotonic_time - hash[:frozen_at] >= @building_damage_freeze_duration
+          player = PlayerData.player(PlayerData.name_to_id(nickname))
+
+          if player
+            page_player(player.name, "[Tournament] You have been unfrozen!")
+            RenRem.cmd("UnFreezePlayer #{player.id}")
+
+            hash[:frozen] = false
+            hash[:frozen] = false
+            hash[:warnings] = 0
+            hash[:damage] = 0
+          end
+        end
+      end
     end
   end
 
@@ -280,7 +332,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     hunter_preset = command.arguments.first
     infected_preset = command.arguments[1]
     duration = command.arguments.last.to_i
-    duration = 5 if duration.zero? || duration.negative?
+    duration = (@infection_duration / 60) if duration.zero? || duration.negative?
 
     if hunter_preset.to_s.empty?
       reset
