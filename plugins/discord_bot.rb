@@ -8,8 +8,11 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
       if ServerStatus.total_players.zero?
         embed.description = "No players in-game."
       else
-        embed.add_field(name: "#{Teams.name(0)} - #{ServerStatus.get(:team_0_players)}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_0_bot_count).to_i} bots)_", value: "Players: #{PlayerData.players_by_team(0).map(&:name).join(", ")}")
-        embed.add_field(name: "#{Teams.name(1)} - #{ServerStatus.get(:team_1_players)}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_1_bot_count).to_i} bots)_", value: "Players: #{PlayerData.players_by_team(1).map(&:name).join(", ")}")
+        team_0_players = PlayerData.players_by_team(0).count
+        team_1_players = PlayerData.players_by_team(1).count
+
+        embed.add_field(name: "#{Teams.name(0)} - #{team_0_players}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_0_bot_count).to_i} bots)_", value: "Players: #{PlayerData.players_by_team(0).map(&:name).join(", ")}")
+        embed.add_field(name: "#{Teams.name(1)} - #{team_1_players}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_1_bot_count).to_i} bots)_", value: "Players: #{PlayerData.players_by_team(1).map(&:name).join(", ")}")
       end
     end
   end
@@ -20,9 +23,12 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
       embed.colour = 0x63452c
       embed.url = "https://w3d.cyberarm.dev/battleview/view/apb/release"
 
+      team_0_players = PlayerData.players_by_team(0).count
+      team_1_players = PlayerData.players_by_team(1).count
+
       embed.add_field(name: "Map", value: ServerStatus.get(:current_map))
-      embed.add_field(name: Teams.name(0).to_s, value: "#{ServerStatus.get(:team_0_players)}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_0_bot_count).to_i} bots)_. #{ServerStatus.get(:team_0_points)} points.")
-      embed.add_field(name: Teams.name(1).to_s, value: "#{ServerStatus.get(:team_1_players)}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_1_bot_count).to_i} bots)_. #{ServerStatus.get(:team_1_points)} points.")
+      embed.add_field(name: Teams.name(0).to_s, value: "#{team_0_players}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_0_bot_count).to_i} bots)_. #{ServerStatus.get(:team_0_points)} points.")
+      embed.add_field(name: Teams.name(1).to_s, value: "#{team_1_players}/#{ServerStatus.get(:max_players)} players _(#{PluginManager.blackboard(:team_1_bot_count).to_i} bots)_. #{ServerStatus.get(:team_1_points)} points.")
       embed.add_field(name: "Time", value: ServerStatus.get(:time_remaining))
     end
   end
