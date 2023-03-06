@@ -44,6 +44,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @recent_kills = []
     @ghost_players = []
     @infected_players = []
+
+    @infection_duration = 5 * 60.0 # 5 minutes
+    @infection_last_minute = -1
+    @infection_start_time = 0
   end
 
   def infection_survivor_count
@@ -149,10 +153,11 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:killed) do |hash|
-    if hash[:killed_type].downcase == "soldier" &&
-       hash[:killer_preset].downcase != "(null)" &&
-       (@tournament || @last_man_standing || @infection)
-      @recent_kills << hash
+    if (@tournament || @last_man_standing || @infection) && (killed_obj = hash[:_killed_object]) && (killer_obj = hash[:_killer_object])
+      killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
+      killer = PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))
+
+      @recent_kills << hash if (killed && killer) && killed.team != killer.team && killed.name != killer.name
     end
   end
 
@@ -182,6 +187,19 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           log("All players have been infected!")
 
           reset
+        else
+          time_elapsed = monotonic_time - @infection_start_time
+          current_minute = ((@infection_duration - time_elapsed) / 60.0).ceil
+
+          if time_elapsed >= @infection_duration
+            reset
+
+            broadcast_message("[Tournament] The survivors have survived!")
+          elsif current_minute != @infection_last_minute
+            @infection_last_minute = current_minute
+
+            broadcast_message("[Tournament] Survivors, hold out for another #{current_minute} minutes!")
+          end
         end
       end
     end
@@ -233,9 +251,11 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  command(:infection, arguments: 0..2, help: "!infection [<hunter_preset>, [<infected_preset>]] - Evicts all players from vehicles and forces everyone to play as <hunter_preset> and <infected_preset>, on death they become infected.", groups: [:admin, :mod, :director]) do |command|
+  command(:infection, arguments: 0..3, help: "!infection [<hunter_preset>, [<infected_preset>], [<duration in minutes>]] - Evicts all players from vehicles and forces everyone to play as <hunter_preset> and <infected_preset>, on death they become infected.", groups: [:admin, :mod, :director]) do |command|
     hunter_preset = command.arguments.first
-    infected_preset = command.arguments.last
+    infected_preset = command.arguments[1]
+    duration = command.arguments.last.to_i
+    duration = 5 if duration.zero? || duration.negative?
 
     if hunter_preset.to_s.empty?
       reset
@@ -247,6 +267,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       @last_man_standing = false
       @tournament = false
       @preset = hunter_preset
+      @infection_start_time = monotonic_time
+      @infection_duration = duration * 60 # minutes
 
       @infected_preset = infected_preset if !infected_preset.to_s.empty?
 
