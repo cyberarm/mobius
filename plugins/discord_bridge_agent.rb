@@ -143,7 +143,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
       log "---- Connection Error? #{@connection_error}"
     else
       log payload
-      @ws.send(payload.to_json)
+      @send_queue << payload.to_json
     end
   end
 
@@ -179,6 +179,8 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
       next
     end
+
+    @send_queue = []
 
     @uuid = Config.discord_bridge[:uuid]
     @send_status = true
@@ -218,7 +220,14 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     @send_status = true
   end
 
-  on(:player_left) do
+  on(:player_left) do |player|
+    @staff_pending_verification.each do |key, hash|
+      next unless hash[:player].name == player.name
+
+      log "Removing pending verification for #{player.name}"
+      @staff_pending_verification.delete(key)
+    end
+
     # Event is fired BEFORE player data is removed
     after(3) do
       @send_status = true
@@ -240,13 +249,21 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
       page_server_administrators!
     end
+
+    if @ws && !@ws.closed? && @ws.open?
+      while (message = @send_queue.shift)
+        @ws.send(message)
+      end
+    end
   end
 
   on(:_discord_bot_verify_staff) do |player, discord_id|
     next if waiting_for_reply?(discord_id)
 
     after(5) do
-      page_player(player.name, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+      if @staff_pending_verification[discord_id]
+        page_player(player.name, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+      end
     end
 
     @staff_pending_verification[discord_id] = { player: player, time: monotonic_time }
