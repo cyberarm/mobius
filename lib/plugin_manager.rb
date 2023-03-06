@@ -241,6 +241,27 @@ module Mobius
     end
 
     def self.handle_fds_command(player, parts)
+      # If part starts with magic character, assume a nickname follows and replace it with the player's ID
+      magic = parts.find { |t| t.start_with?("%") }
+      command_player = PlayerData.player(PlayerData.name_to_id(magic[1..magic.length - 1], exact_match: false)) if magic
+      parts[parts.index(magic)] = "#{command_player.id}" if command_player
+
+      # If part starts with magic characters, assume command should be issued for ALL players
+      everyone_magic = parts.find { |t| t == ("%!") }
+      if everyone_magic
+        index = parts.index(everyone_magic)
+
+        PlayerData.player_list.each do |ply|
+          # We issue the command as normal for the issuer so skip them here
+          next if ply.id == player.id
+
+          parts[index] = ply.id
+          RenRem.cmd(parts.join(" "))
+        end
+
+        parts[index] = player.id
+      end
+
       RenRem.cmd(parts.join(" ")) do |response|
         response.each_line do |line|
           next if line.strip.empty?
