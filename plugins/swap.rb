@@ -43,7 +43,7 @@ mobius_plugin(name: "Swap", version: "0.0.1") do
             requester_team = requester.team
 
             requester.change_team(command.issuer.team)
-            command.issuer.team.change_team(requester_team)
+            command.issuer.change_team(requester_team)
 
             reset
           else
