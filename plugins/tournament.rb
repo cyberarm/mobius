@@ -59,6 +59,16 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @message_color = { red: 255, green: 200, blue: 64 } # Darkened Yellow
   end
 
+  def kill_players_and_remix_teams
+    after(3) do
+      PlayerData.player_list.each do |player|
+        RenRem.cmd("kill #{player.id}")
+      end
+
+      remix_teams
+    end
+  end
+
   def infection_survivor_count
     PlayerData.players_by_team(1).count
   end
@@ -232,13 +242,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
           reset
 
-          after(3) do
-            PlayerData.player_list.each do |player|
-              RenRem.cmd("kill #{player.id}")
-            end
-
-            remix_teams
-          end
+          kill_players_and_remix_teams
 
         elsif PlayerData.players_by_team(0).count.zero? || PlayerData.players_by_team(1).count.zero?
           winning_team = if PlayerData.players_by_team(0).count.zero?
@@ -251,13 +255,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
           reset
 
-          after(3) do
-            PlayerData.player_list.each do |player|
-              RenRem.cmd("kill #{player.id}")
-            end
-
-            remix_teams
-          end
+          kill_players_and_remix_teams
         end
 
       elsif @infection
@@ -267,19 +265,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
           reset
 
-          after(3) do
-            PlayerData.player_list.each do |player|
-              RenRem.cmd("kill #{player.id}")
-            end
-
-            remix_teams
-          end
+          kill_players_and_remix_teams
         else
           time_elapsed = monotonic_time - @infection_start_time
           current_minute = ((@infection_duration - time_elapsed) / 60.0).ceil
 
           if time_elapsed >= @infection_duration
             reset
+            kill_players_and_remix_teams
 
             broadcast_message("[Tournament] The survivors have survived!", **@message_color)
           elsif current_minute != @infection_last_minute
