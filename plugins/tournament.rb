@@ -98,8 +98,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:purchased) do |hash|
-    pp [:purchased, hash]
-
     if tournament_active? && hash[:type].downcase.to_sym == :vehicle
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
 
@@ -108,8 +106,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:enter_vehicle) do |hash|
-    pp [:enter_vehicle, hash]
-
     if tournament_active? && (player_obj = hash[:_player_object])
       player = PlayerData.player(PlayerData.name_to_id(player_obj[:name]))
 
@@ -135,7 +131,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           warning_hash[:damage] = 0 # Reset
           warning_hash[:warnings] += 1
 
-          if warning_hash[:warnings] >= 3
+          # DISABLED
+          if false #warning_hash[:warnings] >= 3
             page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
             page_player(player.name, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
 
