@@ -195,6 +195,9 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
               page_player(player.name, "You have been infected, hunt down the #{infection_survivor_count} survivors!")
               log("#{player.name} has been infected!")
 
+              # Only play sound if infection has been happening for 5 or more seconds, prevents "Infection" sound for getting overlayed
+              RenRem.cmd("snda gm_infection_player_infected.wav") if monotonic_time - @infection_start_time >= 5.0
+
               if infection_survivor_count == 1
                 PlayerData.players_by_team(1).each do |ply|
                   page_player(ply.name, "You are the last survivor!")
@@ -229,6 +232,15 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           log("#{the_last_man_standing.name} won as the Last Man Standing!")
 
           reset
+
+          after(3) do
+            PlayerData.player_list.each do |player|
+              RenRem.cmd("kill #{player.id}")
+            end
+
+            remix_teams
+          end
+
         elsif PlayerData.players_by_team(0).count.zero? || PlayerData.players_by_team(1).count.zero?
           winning_team = if PlayerData.players_by_team(0).count.zero?
                            Teams.name(1)
@@ -239,6 +251,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           broadcast_message("[Tournament] The #{winning_team} have won the Last Man Standing!", **@message_color)
 
           reset
+
+          after(3) do
+            PlayerData.player_list.each do |player|
+              RenRem.cmd("kill #{player.id}")
+            end
+
+            remix_teams
+          end
         end
 
       elsif @infection
@@ -247,6 +267,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           log("All players have been infected!")
 
           reset
+
+          after(3) do
+            PlayerData.player_list.each do |player|
+              RenRem.cmd("kill #{player.id}")
+            end
+
+            remix_teams
+          end
         else
           time_elapsed = monotonic_time - @infection_start_time
           current_minute = ((@infection_duration - time_elapsed) / 60.0).ceil
@@ -351,6 +379,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       broadcast_message("[Tournament] Infection mode has been activated!", **@message_color)
       log("Infection mode has been activated!")
+
+      RenRem.cmd("snda gm_infection_infection.wav")
 
       infected = (ServerStatus.total_players / 4.0).ceil
       log "Infecting #{infected} players..."
