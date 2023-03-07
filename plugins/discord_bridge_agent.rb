@@ -83,6 +83,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
   def page_server_administrators!
     Config.staff[:admin].each do |hash|
       next unless (discord_id = hash[:discord_id])
+      next unless hash[:server_owner]
 
       server_name = ServerConfig.server_name || Config.discord_bridge[:server_short_name].upcase
 
@@ -107,6 +108,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
           ws.on(:open) do
             this.log "connected!"
+            this.schedule_status_update!
           end
 
           ws.on(:message) do |msg|
@@ -132,6 +134,10 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     self.websocket = nil
   end
 
+  def schedule_status_update!
+    @send_status = true
+  end
+
   def websocket=(ws)
     @ws = ws
   end
@@ -142,7 +148,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     if @ws.nil? || @ws&.closed?
       log "---- Connection Error? #{@connection_error}"
     else
-      log payload
+      # log payload
       @send_queue << payload.to_json
     end
   end
@@ -162,10 +168,12 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
         if verified
           PluginManager.publish_event(:_discord_bot_verified_staff, pending_staff[:player], discord_id)
           page_player(pending_staff[:player].name, "Welcome back, Commander!")
+          deliver(message_discord_id(discord_id, "Welcome back, Commander!"))
           @staff_pending_verification.delete(discord_id)
         else
           # Kick imposter
           kick_player!(pending_staff[:player].name, "Protected username: You are an imposter!")
+          deliver(message_discord_id(discord_id, "Roger, imposter has been kicked."))
           @staff_pending_verification.delete(discord_id)
         end
       end
@@ -185,7 +193,6 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     @uuid = Config.discord_bridge[:uuid]
     @send_status = true
 
-    @schedule_status_update = false
     @fds_responding = true
     @staff_pending_verification = {}
     @verification_timeout = 65 # seconds
@@ -237,14 +244,8 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
   on(:tick) do
     check_pending_staff_verifications!
 
-    if @schedule_status_update
-      @schedule_status_update = false
-
-      update_status
-    end
-
     if ServerStatus.get(:fds_responding) != @fds_responding
-      @schedule_status_update = true
+      @send_status = true
       @fds_responding = ServerStatus.get(:fds_responding)
 
       page_server_administrators!

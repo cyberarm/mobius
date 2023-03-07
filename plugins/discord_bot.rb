@@ -69,6 +69,7 @@ mobius_plugin(name: "DiscordBot", version: "0.1.0") do
 
     Config.staff[:admin].each do |hash|
       next unless (id = hash[:discord_id])
+      next unless hash[:server_owner]
 
       if (channel = @bot.pm_channel(id))
         if @fds_responding

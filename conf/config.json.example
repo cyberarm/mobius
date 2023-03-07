@@ -24,6 +24,13 @@
       "admin": [
         {
           "name":"player",
+          "server_owner": true, // Receives DM's from bot in case of server issues
+          "hostnames":[
+            "192.168.1.117"
+          ]
+        },
+        {
+          "name":"player2",
           "hostnames":[
             "192.168.1.117"
           ]
