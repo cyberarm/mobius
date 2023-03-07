@@ -117,8 +117,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:damaged) do |hash|
-    pp hash
-
     if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_player_object])
       damage = hash[:damage]
 
