@@ -98,6 +98,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:purchased) do |hash|
+    pp [:purchased, hash]
+
     if tournament_active? && hash[:type].downcase.to_sym == :vehicle
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
 
@@ -106,6 +108,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:enter_vehicle) do |hash|
+    pp [:enter_vehicle, hash]
+
     if tournament_active? && (player_obj = hash[:_player_object])
       player = PlayerData.player(PlayerData.name_to_id(player_obj[:name]))
 
