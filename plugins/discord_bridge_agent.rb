@@ -66,6 +66,26 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     }
   end
 
+  def manage_voice_channels(issuer_nickname:, lobby: false, competitive: false, move: false, discord_name: "", voice_channel: nil)
+    hash = {
+      type: :manage_voice_channels,
+      data: {
+        issuer_nickname: issuer_nickname
+      }
+    }
+
+    hash[:data][:lobby] = true if lobby
+    hash[:data][:competitive] = true if competitive
+
+    if move
+      hash[:data][:move] = true
+      hash[:data][:discord_name] = discord_name
+      hash[:data][:voice_channel] = voice_channel
+    end
+
+    hash
+  end
+
   def waiting_for_reply?(discord_id)
     @staff_pending_verification[discord_id]
   end
@@ -177,6 +197,11 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
           @staff_pending_verification.delete(discord_id)
         end
       end
+
+    when :message
+      player = PlayerData.player(PlayerData.name_to_id(hash[:data][:nickname]))
+
+      page_player(player.name, "[DiscordBridgeAgent] #{hash[:data][:message]}") if player
     end
   end
 
@@ -198,17 +223,6 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     @verification_timeout = 65 # seconds
 
     connect_to_bridge
-
-    every(5) do
-      connect_to_bridge if @connection_error || @ws.nil?
-      @connection_error = false
-
-      if @send_status
-        deliver(full_payload)
-        @send_status = false
-        @status_last_sent = monotonic_time
-      end
-    end
 
     every(15) do
       @send_status = true if monotonic_time - @status_last_sent >= 15.0
@@ -242,8 +256,13 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
   end
 
   on(:tick) do
+    # Reconnect to bridge of there is a connection error
+    connect_to_bridge if @connection_error || @ws.nil?
+
+    # Manage staff verifications
     check_pending_staff_verifications!
 
+    # Send fds status to server owner(s)
     if ServerStatus.get(:fds_responding) != @fds_responding
       @send_status = true
       @fds_responding = ServerStatus.get(:fds_responding)
@@ -251,6 +270,15 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
       page_server_administrators!
     end
 
+    # Queue full payload / status if @send_status is true
+    if @send_status
+      deliver(full_payload)
+
+      @send_status = false
+      @status_last_sent = monotonic_time
+    end
+
+    # Send queued messages
     if @ws && !@ws.closed? && @ws.open?
       while (message = @send_queue.shift)
         @ws.send(message)
@@ -274,5 +302,29 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
   on(:shutdown) do
     connection_error! if @ws
+  end
+
+  command(:vc_lobby, aliases: [:vcl], arguments: 0, help: "!vc_lobby - Moves everyone in teamed voice channels into lobby channel", groups: [:admin, :mod]) do |command|
+    deliver(manage_voice_channels(lobby: true, issuer_nickname: command.issuer.name))
+    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move all users in teamed voice channels to lobby channel, one moment...")
+  end
+
+  command(:vc_competitive, aliases: [:vcc], arguments: 0, help: "!vc_competitive - Moves known players from lobby channel into teamed voice channels", groups: [:admin, :mod]) do |command|
+    deliver(manage_voice_channels(competitive: true, issuer_nickname: command.issuer.name))
+    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move known players from lobby voice channel to teamed channels, one moment...")
+  end
+
+  command(:vc_move, aliases: [:vcm], arguments: 2, help: "!vc_move <discord name> <team or lobby> - Moves Discord user from lobby or teamed channel in to lobby or teamed channel (Moving player between teamed channels may not work if their nickname matches their Discord name and the teamed channel isn't the team they're on)", groups: [:admin, :mod]) do |command|
+    discord_name = command.arguments.first
+    channel = command.arguments.last
+
+    begin
+      channel = Integer(channel)
+    rescue ArgumentError
+      channel = Teams.id_from_name(channel)&.dig(:id) || "lobby"
+    end
+
+    deliver(manage_voice_channels(move: true, discord_name: discord_name, voice_channel: channel, issuer_nickname: command.issuer.name))
+    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move #{discord_name} to #{channel.is_a?(Integer) ? Teams.name(channel) : channel.capitalize} voice channel, one moment...")
   end
 end
