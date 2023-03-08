@@ -9,11 +9,15 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     end
 
     players = PlayerData.player_list.select(&:ingame?).map do |player|
-      {
+      h = {
         name: player.name,
         score: player.score,
         team: player.team
       }
+
+      h[:spy] = true if @known_spies[player.name]
+
+      h
     end
 
     coop = {
@@ -222,6 +226,8 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     @staff_pending_verification = {}
     @verification_timeout = 65 # seconds
 
+    @known_spies = {}
+
     connect_to_bridge
 
     every(15) do
@@ -235,6 +241,7 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
 
   on(:map_loaded) do
     @send_status = true
+    @known_spies ={}
   end
 
   on(:team_changed) do
@@ -282,6 +289,33 @@ mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
     if @ws && !@ws.closed? && @ws.open?
       while (message = @send_queue.shift)
         @ws.send(message)
+      end
+    end
+  end
+
+  on(:created) do |hash|
+    player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
+
+    next unless player
+
+    team_in_flux = false
+
+    case hash[:type].downcase
+    when "soldier"
+      if hash[:preset].downcase.include?("_spy_")
+        @known_spies[player.name] = true
+        team_in_flux = true
+      elsif @known_spies.delete(player.name)
+        team_in_flux = true
+      end
+    end
+
+    # Prevent/mitigate voice channel change spam due to player team not in sync
+    if team_in_flux
+      RenRem.cmd("pinfo")
+
+      after(1) do
+        @send_status = true
       end
     end
   end
