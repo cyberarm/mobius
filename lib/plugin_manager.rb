@@ -226,7 +226,18 @@ module Mobius
           command = command.last
 
           RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Help for command !#{command.name}:")
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{command.help}")
+          cmd_prefix_length = "cmsgp #{player.id} 255,127,0 [MOBIUS] ".length
+          if command.help.length + cmd_prefix_length > 249
+            current_chunk = 0
+            chunk_size = (249 - cmd_prefix_length)
+
+            while (chunk = command.help[current_chunk...(current_chunk + chunk_size)])
+              current_chunk += chunk_size
+              RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{chunk}")
+            end
+          else
+            RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{command.help}")
+          end
         else
           RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Command !#{parts.first} not found.")
         end
