@@ -271,6 +271,10 @@ module Mobius
         end
 
         parts[index] = player.id
+      elsif magic && !command_player
+        RenRem.cmd("ppage #{player.id} Command aborted. Could not find player with nickname matching: #{magic.sub('%', '')}")
+
+        return
       end
 
       RenRem.cmd(parts.join(" ")) do |response|
