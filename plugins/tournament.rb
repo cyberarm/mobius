@@ -22,10 +22,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  def just_killed?(player)
-    @recent_kills.find { GameLog.current_players[player.name.downcase] }
-  end
-
   def tournament_active?
     @tournament || @last_man_standing || @infection
   end
@@ -77,7 +73,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "team_1_ghost_preset is not set in config!" unless @team_1_ghost_preset
     raise "infected_preset is not set in config!" unless @infected_preset
 
-    @recent_kills = []
     @tournament_kills = { team_0: 0, team_1: 0 }
     @tournament_max_kills = 1 # 25
     @ghost_players = []
@@ -129,14 +124,17 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     }
 
     # @auto_game_mode is not reset here, only by commands
-    # What a few seconds before starting next round so that #kill_players_and_remix_teams can run
-    after(@auto_game_mode_round.positive? ? 10 : 0) { autostart_next_round } if @auto_game_mode
+    # Wait a few seconds before starting next round so that #kill_players_and_remix_teams can run
+    after(@auto_game_mode_round.positive? ? 7 : 0) { autostart_next_round } if @auto_game_mode
   end
 
   def kill_players_and_remix_teams
     after(3) do
-      PlayerData.player_list.each do |player|
-        RenRem.cmd("kill #{player.id}")
+      # Only kill players auto game mode is inactive or is on the first round
+      if !@auto_game_mode || (@auto_game_mode && @auto_game_mode_round.zero?)
+        PlayerData.player_list.each do |player|
+          RenRem.cmd("kill #{player.id}")
+        end
       end
 
       remix_teams
@@ -264,19 +262,35 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       play_sound(:infection)
 
-      infected = (ServerStatus.total_players / 4.0).ceil
+      infected = (PlayerData.player_list.count / 4.0).ceil
       log "Infecting #{infected} players..."
+
+      infected_players = []
+      survivor_players = []
 
       PlayerData.player_list.shuffle.shuffle.shuffle.each_with_index do |player, i|
         if i < infected
           @infected_players[player.id] = 0
-          RenRem.cmd("kill #{player.id}")
-          player.change_team(@infected_team)
+          player.change_team(@infected_team, kill: false)
+
+          infected_players << player
         else
-          RenRem.cmd("kill #{player.id}")
-          player.change_team(@survivor_team)
-          page_player(player.name, "Group up! The infected will try to hunt you all down!")
+          player.change_team(@survivor_team, kill: false)
+
+          survivor_players << player
         end
+      end
+
+      # Seperating out the kills so that #infection_survivor_count has a current value
+      infected_players.each do |player|
+        RenRem.cmd("kill #{player.id}")
+
+        handle_infection_death(player, true)
+      end
+
+      survivor_players.each do |player|
+        RenRem.cmd("kill #{player.id}")
+        page_player(player.name, "Group up! The infected will try to hunt you all down!")
       end
     end
   end
@@ -289,6 +303,44 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Auto #{game_mode.to_s.split("_").map(&:capitalize).join(' ')} activated!", **@message_color)
       @auto_game_mode = game_mode
       reset # reset triggers match start for auto game mode
+    end
+  end
+
+  def handle_infection_death(player, match_start = false)
+    survivor_count = infection_survivor_count
+    just_infected = @infected_players[player.id].nil? || @infected_players[player.id] == 0
+    log "Player: #{player.name} just infected? #{just_infected}"
+
+    # Mark player has "already infected" so as to not spam them with messages
+    @infected_players[player.id] = true
+
+    if just_infected
+      # Since we don't change the players team here we need to subtract 1 so that the count is accurate, but NOT on match/round start
+      survivor_count -= 1 unless match_start
+
+      if survivor_count.positive?
+        broadcast_message("[Tournament] #{player.name} has been infected, there are only #{survivor_count} survivors left!", **@message_color)
+        page_player(player.name, "You have been infected, hunt down the #{survivor_count} survivors!")
+      else
+        broadcast_message("[Tournament] #{player.name} has been infected, there are no survivors left!", **@message_color)
+      end
+      log("#{player.name} has been infected!")
+
+      # Only play sound if infection has been happening for 5 or more seconds, prevents "Infection" sound form getting overlayed
+      if monotonic_time - @round_start_time >= 5.0
+        play_team_sound(@infected_team, :infected_player_infected)
+        play_team_sound(@survivor_team, :survivors_suvivor_lost)
+      end
+
+      if survivor_count == 1
+        PlayerData.players_by_team(@survivor_team).each do |ply|
+          # Since the player is technically still on the survivor team, we need this check to avoid sending it to "both survivoring players"
+          next if @infected_players[ply.id]
+
+          page_player(ply.name, "You are the last survivor!")
+          play_player_sound(ply.name, :survivors_last_survivor)
+        end
+      end
     end
   end
 
@@ -326,9 +378,9 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  on(:player_left) do |player|
-    @recent_kills.delete_if { |h| h[:killed_object] == GameLog.current_players[player.name.downcase] }
-  end
+  # on(:player_left) do |player|
+  #   @recent_kills.delete_if { |h| h[:killed_object] == GameLog.current_players[player.name.downcase] }
+  # end
 
   on(:purchased) do |hash|
     if tournament_active? && hash[:type].downcase.to_sym == :vehicle
@@ -381,6 +433,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:created) do |hash|
+    # pp [:created, hash]
+
     # Block C4
     if hash[:type].downcase.strip.to_sym == :object && tournament_active? && hash[:preset].downcase.include?("c4")
       player_obj = hash[:_player_object]
@@ -399,80 +453,34 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       end
     end
 
-    if hash[:type].downcase.strip.to_sym == :soldier && tournament_active? && hash[:preset].downcase != @preset.downcase
-      player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
-      just_killed = player && just_killed?(player)
+    if hash[:type].downcase.strip.to_sym == :soldier && tournament_active?
+      preset_needs_changing = hash[:preset].downcase != @preset.downcase
 
-      if just_killed
-        @recent_kills.delete_if { |h| h[:killed_object] == GameLog.current_players[player.name.downcase] }
-      end
+      player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
 
       if player
         if @tournament
-          if just_killed
-            killer = PlayerData.player(PlayerData.name_to_id(just_killed[:_killer_object][:name]))
-            @tournament_kills[:"team_#{killer.team}"] += 1 if killer
-          end
-
-          change_player(player: player)
+          change_player(player: player) if preset_needs_changing
         end
 
         if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
-          if just_killed
-            just_ghosted = @ghost_players[player.id].nil?
+          @ghost_players[player.id] = true
+          change_player(player: player, ghost: true)
+          player.change_team(3, kill: false)
 
-            @ghost_players[player.id] = true
-            change_player(player: player, ghost: true)
-            player.change_team(3, kill: false)
-
-            if just_ghosted
-              broadcast_message("[Tournament] #{player.name} has become a ghost!", **@message_color)
-              page_player(player.name, "You've become a ghost, go forth and haunt the living!")
-              play_sound(:lastmanstanding_new_ghost)
-            end
-          else
-            change_player(player: player) unless @ghost_players[player.id]
-          end
+          change_player(player: player) if preset_needs_changing && !@ghost_players[player.id]
         end
 
         if @infection && hash[:preset].downcase != @infected_preset.downcase
           is_infected = @infected_players[player.id]
 
-          if just_killed || is_infected
-            just_infected = @infected_players[player.id].nil? || @infected_players[player.id] == 0
-            log "Player: #{player.name} just infected? #{just_infected}"
-
+          if is_infected
             @infected_players[player.id] = true
             player.change_team(@infected_team)
             change_player(player: player, infected: true)
-
-            if just_infected
-              if infection_survivor_count.positive?
-                broadcast_message("[Tournament] #{player.name} has been infected, there are only #{infection_survivor_count} survivors left!", **@message_color)
-                page_player(player.name, "You have been infected, hunt down the #{infection_survivor_count} survivors!")
-              else
-                broadcast_message("[Tournament] #{player.name} has been infected, there are no survivors left!", **@message_color)
-              end
-              log("#{player.name} has been infected!")
-
-              # Only play sound if infection has been happening for 5 or more seconds, prevents "Infection" sound form getting overlayed
-              if monotonic_time - @round_start_time >= 5.0
-                play_team_sound(@infected_team, :infected_player_infected)
-                play_team_sound(@survivor_team, :survivors_suvivor_lost)
-              end
-
-              if infection_survivor_count == 1
-                PlayerData.players_by_team(@survivor_team).each do |ply|
-                  page_player(ply.name, "You are the last survivor!")
-                  play_player_sound(ply.name, :survivors_last_survivor)
-                end
-              end
-            end
           else
-            unless is_infected
-              player.change_team(@survivor_team)
-              change_player(player: player)
-            end
+            player.change_team(@survivor_team)
+            change_player(player: player) if preset_needs_changing
           end
         end
       end
@@ -480,11 +488,25 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:killed) do |hash|
+    # pp [:killed, hash]
+
     if tournament_active? && (killed_obj = hash[:_killed_object]) && (killer_obj = hash[:_killer_object])
       killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
       killer = PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))
 
-      @recent_kills << hash if (killed && killer) && killed.team != killer.team && killed.name != killer.name
+      if (killed && killer) && killed.team != killer.team && killed.name != killer.name
+        if @tournament
+          @tournament_kills[:"team_#{killer.team}"] += 1
+
+        elsif @last_man_standing && @ghost_players[killed.id].nil?
+          broadcast_message("[Tournament] #{killed.name} has become a ghost!", **@message_color)
+          page_player(killed.name, "You've become a ghost, go forth and haunt the living!")
+          play_sound(:lastmanstanding_new_ghost)
+
+        elsif @infection
+          handle_infection_death(killed)
+        end
+      end
     end
   end
 
