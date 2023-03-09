@@ -130,7 +130,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
     # @auto_game_mode is not reset here, only by commands
     # What a few seconds before starting next round so that #kill_players_and_remix_teams can run
-    after(5) { autostart_next_round } if @auto_game_mode
+    after(@auto_game_mode_round.positive? ? 10 : 0) { autostart_next_round } if @auto_game_mode
   end
 
   def kill_players_and_remix_teams
@@ -148,6 +148,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @auto_game_mode_round = -1
 
     reset
+
+    @auto_game_mode_round_duration = @round_duration
   end
 
   def autostart_next_round
@@ -159,7 +161,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
     presets = nil
     begin
-      Config.tournament[:presets][@auto_game_mode][@auto_game_mode_round]
+      presets = Config.tournament[:presets][@auto_game_mode][@auto_game_mode_round]
     rescue NoMethodError # Presets missing
     end
 
@@ -281,8 +283,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
   def try_start_auto_game_mode(game_mode, duration)
     if @auto_game_mode
-      @round_duration = duration
-
       broadcast_message("[Tournament] Auto #{@auto_game_mode.to_s.split("_").map(&:capitalize).join(' ')} deactivated!", **@message_color)
       reset_auto_game_mode
     else
@@ -305,11 +305,11 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:start) do
-    reset
+    reset_auto_game_mode
   end
 
   on(:map_loaded) do |map|
-    reset
+    reset_auto_game_mode
   end
 
   on(:player_joined) do |player|
@@ -702,6 +702,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     duration = command.arguments.last.to_i
     duration = (@round_duration / 60) if duration.zero? || duration.negative?
 
+    @auto_game_mode_round_duration = duration
+
     try_start_auto_game_mode(:tournament, duration)
   end
 
@@ -709,12 +711,16 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     duration = command.arguments.last.to_i
     duration = (@round_duration / 60) if duration.zero? || duration.negative?
 
+    @auto_game_mode_round_duration = duration
+
     try_start_auto_game_mode(:last_man_standing, duration)
   end
 
   command(:auto_infection, aliases: [:autoi], arguments: 0..1, help: "!auto_infection [<duration in minutes>] - Starts an Infection game that will cycle through configured presets", groups: [:admin, :mod, :director]) do |command|
     duration = command.arguments.last.to_i
     duration = (@round_duration / 60) if duration.zero? || duration.negative?
+
+    @auto_game_mode_round_duration = duration
 
     try_start_auto_game_mode(:infection, duration)
   end
