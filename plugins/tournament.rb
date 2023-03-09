@@ -106,8 +106,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       # INFECTION
       infection: "gm_infection_infection.wav",
-      infected_victory: missing,
-      survivor_victory: missing,
+      infected_victory: "eva_victorysoviet.mp3", # PLACEHOLDER
+      survivor_victory: "eva_victoryallied.mp3", # PLACEHOLDER
         # Survivors Only
       survivors_suvivor_lost: "levelchange.wav", # PLACEHOLDER
       survivors_survive_to_win: missing,
