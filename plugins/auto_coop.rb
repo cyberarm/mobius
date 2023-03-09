@@ -126,6 +126,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   on(:start) do
+    @start_time = monotonic_time
+
     @current_side = 0
     @bot_difficulty = 3
     @support_bots = 4
@@ -254,6 +256,8 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
   end
 
   on(:player_joined) do |player|
+    baby_bot = monotonic_time - @start_time <= 1.0
+
     if @versus_started
       message_player(player.name, "[AutoCoop] Co-op for this round has been disabled. PvP active.")
 
@@ -266,7 +270,7 @@ mobius_plugin(name: "AutoCoop", version: "0.0.1") do
 
       message_player(player.name, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
       player.change_team(@current_side)
-    else
+    elsif !baby_bot
       broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.")
       broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
 

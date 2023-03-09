@@ -165,6 +165,9 @@ module Mobius
         end
       when "soldier"
         @current_players[object[:name].downcase] = object[:object]
+      when "object"
+        player_obj = @game_objects[object[:name]]
+        object[:_player_object] = player_obj
       end
 
       PluginManager.publish_event(:created, object, data)

@@ -92,6 +92,10 @@ module Mobius
       renrem_cmd("cmsg #{red},#{green},#{blue} #{message}")
     end
 
+    def message_team(team_id, message, red: 255, green: 255, blue: 255)
+      renrem_cmd("cmsgt #{team_id} #{red},#{green},#{blue} #{message}")
+    end
+
     def message_player(name, message, red: 255, green: 255, blue: 255)
       return unless (player_id = PlayerData.name_to_id(name))
 

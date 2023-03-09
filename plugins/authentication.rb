@@ -7,6 +7,9 @@ mobius_plugin(name: "Authentication", version: "0.0.1") do
 
       list.each do |hash|
         next unless hash[:name].downcase == player.name.downcase
+        next if player.administrator? && level == :admin
+        next if player.moderator? && level == :mod
+        next if player.director? && level == :director
 
         player_ip = player.address.split(";").first
 

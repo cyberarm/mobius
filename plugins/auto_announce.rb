@@ -19,6 +19,7 @@ mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
   end
 
   on(:start) do
+    @start_time = monotonic_time
     @index = 0
     @sayings = [
       "This server is running Mobius v#{Mobius::VERSION}",
@@ -35,6 +36,7 @@ mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
   end
 
   on(:player_joined) do |player|
-    announce_rules(player)
+    # Prevent spamming the server when the bot is restarted
+    announce_rules(player) unless monotonic_time - @start_time <= 1.0
   end
 end
