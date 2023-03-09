@@ -46,12 +46,16 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "infected_preset is not set in config!" unless @infected_preset
 
     @recent_kills = []
+    @tournament_kills = { team_0: 0, team_1: 0 }
+    @tournament_max_kills = 25
     @ghost_players = []
     @infected_players = []
 
-    @infection_duration = 7 * 60.0 # 7 minutes
-    @infection_last_minute = -1
-    @infection_start_time = 0
+    @round_duration = 7 * 60.0 # 7 minutes
+    @round_last_minute = -1
+    @round_start_time = 0
+    @round_30_second_warning = false
+    @round_10_second_warning = false
 
     @building_damage_warnings = {}
     @building_damage_freeze_duration = 5.0 # seconds
@@ -168,6 +172,11 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       if player
         if @tournament
+          if just_killed
+            killer = PlayerData.player(PlayerData.name_to_id(just_killed[:_killer_object][:name]))
+            @tournament_kills[:"team_#{killer.team}"] += 1 if killer
+          end
+
           change_player(player: player)
         end
 
@@ -205,7 +214,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
               log("#{player.name} has been infected!")
 
               # Only play sound if infection has been happening for 5 or more seconds, prevents "Infection" sound for getting overlayed
-              RenRem.cmd("snda gm_infection_player_infected.wav") if monotonic_time - @infection_start_time >= 5.0
+              RenRem.cmd("snda gm_infection_player_infected.wav") if monotonic_time - @round_start_time >= 5.0
 
               if infection_survivor_count == 1
                 PlayerData.players_by_team(1).each do |ply|
@@ -235,7 +244,38 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
   on(:tick) do
     if tournament_active?
-      if @last_man_standing
+      if @tournament
+        winning_team = -1 # -1 = draw, 0 and 1 are teams
+        highest_kill_count = -1
+
+        @tournament_kills.each do |team, kills|
+          team = team.to_s.split("_").last.to_i
+
+          if kills >= @tournament_max_kills
+            highest_kill_count = kills if kills > highest_kill_count
+
+            if winning_team >= 0
+              winning_team = -1
+            else
+              winning_team = team
+            end
+          end
+        end
+
+        if highest_kill_count >= @tournament_max_kills
+          if winning_team == -1
+            broadcast_message("[Tournament] The Tournament is a draw!", **@message_color)
+          else
+            losing_team = winning_team.zero? ? 1 : 0
+            broadcast_message("[Tournament] #{Teams.name(winning_team)} have won the Tournament with #{highest_kill_count} kills to the #{Teams.name(losing_team)} #{@tournament_kills[:"team_#{losing_team}"]} kills!", **@message_color)
+          end
+
+          reset
+
+          kill_players_and_remix_teams
+        end
+
+      elsif @last_man_standing
         if ghost_count == PlayerData.player_list.count - 1
           broadcast_message("[Tournament] #{the_last_man_standing.name} won as the Last Man Standing!", **@message_color)
           log("#{the_last_man_standing.name} won as the Last Man Standing!")
@@ -259,26 +299,81 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
       elsif @infection
-        if infection_survivor_count.zero? # == ServerStatus.total_players
+        if infection_survivor_count.zero?
           broadcast_message("[Tournament] All players have been infected!", **@message_color)
           log("All players have been infected!")
 
           reset
 
           kill_players_and_remix_teams
-        else
-          time_elapsed = monotonic_time - @infection_start_time
-          current_minute = ((@infection_duration - time_elapsed) / 60.0).ceil
+        end
+      end
 
-          if time_elapsed >= @infection_duration
-            reset
-            kill_players_and_remix_teams
+      # Manage round timer
+      if tournament_active?
+        time_elapsed = monotonic_time - @round_start_time
+        time_remaining = @round_duration - time_elapsed
+        current_minute = (time_remaining / 60.0).ceil
 
+        if time_elapsed >= @round_duration
+          if @tournament
+            winning_team = -1 # -1 = draw, 0 and 1 are teams
+            highest_kill_count = -1
+
+            @tournament_kills.each do |team, kills|
+              team = team.to_s.split("_").last.to_i
+
+              if kills >= highest_kill_count
+                highest_kill_count = kills if kills > highest_kill_count
+
+                if winning_team >= 0
+                  winning_team = -1
+                else
+                  winning_team = team
+                end
+              end
+            end
+
+            if winning_team == -1
+              broadcast_message("[Tournament] The Tournament is a draw!", **@message_color)
+            else
+              losing_team = winning_team.zero? ? 1 : 0
+              broadcast_message("[Tournament] #{Teams.name(winning_team)} have won the Tournament with #{highest_kill_count} kills to the #{Teams.name(losing_team)} #{@tournament_kills[:"team_#{losing_team}"]} kills!", **@message_color)
+            end
+          elsif @last_man_standing
+            broadcast_message("[Tournament] Last Man Standing is a draw!", **@message_color)
+          elsif @infection
             broadcast_message("[Tournament] The survivors have survived!", **@message_color)
-          elsif current_minute != @infection_last_minute
-            @infection_last_minute = current_minute
+          end
 
-            broadcast_message("[Tournament] Survivors, hold out for another #{current_minute} minutes!", **@message_color)
+          reset
+
+          kill_players_and_remix_teams
+
+        elsif current_minute != @round_last_minute
+          @round_last_minute = current_minute
+          minutes = current_minute > 1
+
+          if @tournament || @last_man_standing
+            broadcast_message("[Tournament] #{minutes ? "#{current_minute} minutes" : "1 minute"} remaining!", **@message_color)
+          elsif @infection
+            broadcast_message("[Tournament] Survivors, hold out for another #{minutes ? "#{current_minute} minutes" : "minute"}!", **@message_color)
+          end
+        elsif time_remaining <= 30.0 && !@round_30_second_warning
+          @round_30_second_warning = true
+
+          if @tournament || @last_man_standing
+            broadcast_message("[Tournament] 30 seconds remaining!", **@message_color)
+          elsif @infection
+            broadcast_message("[Tournament] Survivors, hold out for another 30 seconds!", **@message_color)
+          end
+        elsif time_remaining <= 10.0 && !@round_10_second_warning
+          @round_10_second_warning = true
+
+          if @tournament || @last_man_standing
+            broadcast_message("[Tournament] 10 seconds remaining!", **@message_color)
+          elsif @infection
+            broadcast_message("[Tournament] Survivors, hold out for another 10 seconds!", **@message_color)
           end
         end
       end
@@ -302,8 +397,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  command(:tournament, arguments: 0..1, help: "!tournament [<soldier_preset>] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>", groups: [:admin, :mod, :director]) do |command|
+  command(:tournament, arguments: 0..2, help: "!tournament [<soldier_preset>, [<duration in minutes>]] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>", groups: [:admin, :mod, :director]) do |command|
     preset = command.arguments.first
+    duration = command.arguments.last.to_i
+    duration = (@round_duration / 60) if duration.zero? || duration.negative?
 
     if preset.empty?
       reset
@@ -315,6 +412,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       @last_man_standing = false
       @infection = false
       @preset = preset
+      @round_start_time = monotonic_time
+      @round_duration = duration * 60 # minutes
 
       broadcast_message("[Tournament] Tournament mode has been activated!", **@message_color)
       log("Tournament mode has been activated!")
@@ -325,8 +424,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  command(:lastmanstanding, arguments: 0..1, help: "!lastmanstanding [<soldier_preset>] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>, on death they become ghosts.", groups: [:admin, :mod, :director]) do |command|
+  command(:lastmanstanding, arguments: 0..2, help: "!lastmanstanding [<soldier_preset>, [<duration in minutes>]] - Evicts all players from vehicles and forces everyone to play as <soldier_preset>, on death they become ghosts.", groups: [:admin, :mod, :director]) do |command|
     preset = command.arguments.first
+    duration = command.arguments.last.to_i
+    duration = (@round_duration / 60) if duration.zero? || duration.negative?
 
     if preset.empty?
       reset
@@ -338,6 +439,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       @tournament = false
       @infection = false
       @preset = preset
+      @round_start_time = monotonic_time
+      @round_duration = duration * 60 # minutes
 
       broadcast_message("[Tournament] Last Man Standing mode has been activated!", **@message_color)
       log("Last Man Standing mode has been activated!")
@@ -352,7 +455,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     hunter_preset = command.arguments.first
     infected_preset = command.arguments[1]
     duration = command.arguments.last.to_i
-    duration = (@infection_duration / 60) if duration.zero? || duration.negative?
+    duration = (@round_duration / 60) if duration.zero? || duration.negative?
 
     if hunter_preset.to_s.empty?
       reset
@@ -364,8 +467,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       @last_man_standing = false
       @tournament = false
       @preset = hunter_preset
-      @infection_start_time = monotonic_time
-      @infection_duration = duration * 60 # minutes
+      @round_start_time = monotonic_time
+      @round_duration = duration * 60 # minutes
 
       @infected_preset = infected_preset if !infected_preset.to_s.empty?
 
