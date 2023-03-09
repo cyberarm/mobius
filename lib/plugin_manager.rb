@@ -103,7 +103,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :enable, :reload_plugin, :disable].include?(name)
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload_plugin, :disable].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -143,6 +143,13 @@ module Mobius
       if cmd.downcase.to_sym == :fds && player.administrator?
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_fds_command(player, parts)
+
+        return
+      end
+
+      if cmd.downcase.to_sym == :reload_config && player.administrator?
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        handle_reload_config_command(player, parts)
 
         return
       end
@@ -284,6 +291,11 @@ module Mobius
           RenRem.cmd("ppage #{player.id} #{line}")
         end
       end
+    end
+
+    def self.handle_reload_config_command(player, parts)
+      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading config...")
+      Config.reload_config
     end
 
     def self.handle_plugins_command(player, parts)

@@ -27,8 +27,13 @@ module Mobius
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
+      @path = path
 
-      @data = JSON.parse(File.read(path), symbolize_names: true)
+      reload_config(reload: false)
+    end
+
+    def reload_config(reload: true)
+      @data = JSON.parse(File.read(@path), symbolize_names: true)
 
       @fds_path = @data.dig(:mobius, :fds_path)
       @server_settings_path = @data.dig(:mobius, :server_settings_path)
@@ -69,6 +74,8 @@ module Mobius
 
       @enabled_plugins = @data.dig(:mobius, :enabled_plugins)
       @disabled_plugins = @data.dig(:mobius, :disabled_plugins)
+
+      PluginManager.publish_event(:config_reloaded) if reload
     end
   end
 end
