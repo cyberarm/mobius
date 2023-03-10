@@ -26,6 +26,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @tournament || @last_man_standing || @infection
   end
 
+  def c4?(string)
+    if string.include?("c4")
+      return false if string.include?("medic")
+
+      return true
+    end
+  end
+
   def play_sound(sound)
     string = @sounds[sound]
 
@@ -78,7 +86,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "infected_preset is not set in config!" unless @infected_preset
 
     @tournament_kills = { team_0: 0, team_1: 0 }
-    @tournament_max_kills = 2 # 25
+    @tournament_max_kills = 25
     @tournament_leading_team = -1
     @tournament_last_announced_kills_remaining = -1
     @tournament_announce_kills_remaining_at = [20, 15, 10, 5, 4, 3, 2, 1]
@@ -444,7 +452,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     # pp [:created, hash]
 
     # Block C4
-    if hash[:type].downcase.strip.to_sym == :object && tournament_active? && hash[:preset].downcase.include?("c4")
+    if hash[:type].downcase.strip.to_sym == :object && tournament_active? && c4?(hash[:preset].downcase)
       player_obj = hash[:_player_object]
       ply = PlayerData.player(PlayerData.name_to_id(player_obj[:name])) if player_obj
 
@@ -718,6 +726,14 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       #     end
       #   end
       # end
+    end
+  end
+
+  command(:score, arguments: 0, help: "!score - Reports the score of the current Tournament game") do |command|
+    if tournament_active?
+      page_player(command.issuer.name, "[Tournament] The #{Teams.name(0)} have #{@tournament_kills[:team_0]} and the #{Teams.name(1)} have #{@tournament_kills[:team_1]} kills!", **@message_color)
+    else
+      page_player(command.issuer.name, "[Tournament] No active tournament game!", **@message_color)
     end
   end
 
