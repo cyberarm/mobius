@@ -5,7 +5,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
     RenRem.cmd("eject #{player.id}")
     if ghost
-      RenRem.cmd("ChangeChar #{player.id} #{player.team.zero? ? @team_0_ghost_preset : @team_1_ghost_preset}")
+      team = @ghost_players[player.id] # team of player at death
+      RenRem.cmd("ChangeChar #{player.id} #{team.zero? ? @team_0_ghost_preset : @team_1_ghost_preset}")
     elsif infected
       RenRem.cmd("ChangeChar #{player.id} #{@infected_preset}")
     else
@@ -479,13 +480,18 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
         if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
-          just_ghosted = @ghost_players[player.id] == 0
-          @ghost_players[player.id] = true
-          change_player(player: player, ghost: true)
-          player.change_team(3, kill: false)
+          is_ghost = @ghost_players[player.id]
 
-          change_player(player: player) if preset_needs_changing && !@ghost_players[player.id]
-          construction_yard!(player) unless preset_needs_changing && player.team > 1
+          if is_ghost
+            change_player(player: player, ghost: true)
+            player.change_team(3, kill: false)
+          else
+            if preset_needs_changing
+              change_player(player: player)
+            elsif !preset_needs_changing && player.team > 1
+              construction_yard!(player)
+            end
+          end
         end
 
         if @infection && hash[:preset].downcase != @infected_preset.downcase
@@ -549,13 +555,36 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
             end
           end
 
-        elsif @last_man_standing && @ghost_players[killed.id] == 0 # Just ghosted
+        elsif @last_man_standing
+          already_ghost = @ghost_players[killed.id]
+          @ghost_players[killed.id] = killed.team unless already_ghost # Team of player at death
+          is_ghost = @ghost_players[killed.id]
+
+          # Change ghost back to a teamed team so that they spawn nicely
+          # The :created event will change them back to team 3
+          log("[FULL] Ghost Original Team: #{killed.name} team #{Teams.name(@ghost_players[killed.id])}") if is_ghost
+          log("[FULL] _____ Original Team: #{killed.name} team #{Teams.name(@ghost_players[killed.id])}") unless is_ghost
+          killed.change_team(@ghost_players[killed.id]) if is_ghost
+
           broadcast_message("[Tournament] #{killed.name} has become a ghost!", **@message_color)
           page_player(killed.name, "You've become a ghost, go forth and haunt the living!")
           play_sound(:lastmanstanding_new_ghost)
 
         elsif @infection
           handle_infection_death(killed)
+        end
+      # Ghosts are on the same team
+      elsif (killed && killer) && killed.team == killer.team && killed.name != killer.name
+        killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
+
+        if @last_man_standing
+          already_ghost = @ghost_players[killed.id]
+
+          # Change ghost back to a teamed team so that they spawn nicely
+          # The :created event will change them back to team 3
+          log("[PART] Ghost Original Team: #{killed.name} team #{Teams.name(@ghost_players[killed.id])}") if already_ghost
+          log("[PART] _____ Original Team: #{killed.name}") unless already_ghost
+          killed.change_team(already_ghost) if already_ghost
         end
       end
     end

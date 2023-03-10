@@ -1,10 +1,10 @@
 mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
   def full_payload
-    teams = Teams.list.select { |t| t[:id] <= 1 }.map do |team|
+    teams = Teams.list.each.map do |team|
       {
         name: team[:name],
         team_players: PlayerData.players_by_team(team[:id]).count,
-        score: ServerStatus.get(:"team_#{team[:id]}_points") || 0
+        score: team[:id] <= 1 ? ServerStatus.get(:"team_#{team[:id]}_points") : PlayerData.players_by_team(2).map(&:score).sum
       }
     end
 

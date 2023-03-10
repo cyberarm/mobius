@@ -249,7 +249,7 @@ module Mobius
       player_obj = @game_objects[object[:player_object]]
       vehicle_obj = @game_objects[object[:vehicle_object]]
 
-      if (player_obj && vehicle_obj)
+      if player_obj && vehicle_obj
         player_obj[:vehicle] = object[:vehicle_object]
         vehicle_obj[:drivers] += 1
 
@@ -277,10 +277,10 @@ module Mobius
             vehicle_obj[:last_team] = player_obj[:team]
           end
         end
-
-        object[:_player_object] = player_obj
-        object[:_vehicle_object] = vehicle_obj
       end
+
+      object[:_player_object] = player_obj if player_obj
+      object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:enter_vehicle, object, data)
 
@@ -303,7 +303,10 @@ module Mobius
       object[:player_y]       = data[9].to_f
       object[:player_z]       = data[10].to_f
 
-      if (player_obj = @game_objects[object[:player_object]] && vehicle_obj = @game_objects[object[:vehicle_object]])
+      player_obj = @game_objects[object[:player_object]]
+      vehicle_obj = @game_objects[object[:vehicle_object]]
+
+      if player_obj && vehicle_obj
         player_obj[:vehicle] = nil
         vehicle_obj[:drivers] -= 1
 
@@ -311,10 +314,10 @@ module Mobius
           vehicle_obj[:driver] = nil
           vehicle_obj[:team] = -1 # Neutral Team
         end
-
-        object[:_player_object] = player_obj
-        object[:_vehicle_object] = vehicle_obj
       end
+
+      object[:_player_object] = player_obj if player_obj
+      object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:exit_vehicle, object, data)
 
@@ -391,7 +394,10 @@ module Mobius
       object[:killer_direction] = data[13].to_f # facing?
       object[:killer_weapon]    = data[14]
 
-      if (killed_obj = @game_objects[object[:killed_object]]) && (killer_obj = @game_objects[object[:killer_object]])
+      killed_obj = @game_objects[object[:killed_object]]
+      killer_obj = @game_objects[object[:killer_object]]
+
+      if killed_obj && killer_obj
         killed_obj[:killed] = true
 
         case object[:killed_type].downcase
@@ -402,10 +408,10 @@ module Mobius
         when "soldier"
           killed_soldier(object, killed_obj, killer_obj)
         end
-
-        object[:_killed_object] = killed_obj
-        object[:_killer_object] = killer_obj
       end
+
+      object[:_killed_object] = killed_obj if killed_obj
+      object[:_killer_object] = killer_obj if killer_obj
 
       PluginManager.publish_event(:killed, object, data)
 
