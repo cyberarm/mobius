@@ -51,9 +51,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     return unless string
 
     log "Sound: #{sound.inspect}"
-    PlayerData.players_by_team(team_id).each do |ply|
-      RenRem.cmd("sndt #{team_id} #{string}")
-    end
+    RenRem.cmd("sndt #{team_id} #{string}")
   end
 
   def play_player_sound(player_id, sound)
