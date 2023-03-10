@@ -189,7 +189,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
 
     if tournament_active?
-      broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} has started round #{@auto_game_mode_round + 1} of #{presets.count}!", **@message_color)
+      presets_list = Config.tournament[:presets][@auto_game_mode]
+      broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} has started round #{@auto_game_mode_round + 1} of #{presets_list.count}!", **@message_color)
 
       ensure_game_clock_time!
     else
