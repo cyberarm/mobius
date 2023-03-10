@@ -86,7 +86,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "infected_preset is not set in config!" unless @infected_preset
 
     @tournament_kills = { team_0: 0, team_1: 0 }
-    @tournament_max_kills = 25
+    @tournament_max_kills = 15
     @tournament_leading_team = -1
     @tournament_last_announced_kills_remaining = -1
     @tournament_announce_kills_remaining_at = [20, 15, 10, 5, 4, 3, 2, 1]
