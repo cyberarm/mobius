@@ -189,6 +189,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
 
     if tournament_active?
+      broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} has started round #{@auto_game_mode_round + 1} of #{presets.count}!", **@message_color)
+
       ensure_game_clock_time!
     else
       broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} is out of presets, deactivated!", **@message_color)
