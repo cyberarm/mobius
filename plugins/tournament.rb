@@ -58,6 +58,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     RenRem.cmd("sndp #{player_id} #{string}")
   end
 
+  def construction_yard!(player)
+    RenRem.cmd("attachscript #{player.id} dp88_buildingScripts_functionRepairBuildings 50,None,false")
+  end
+
   def reset
     @tournament = false
     @last_man_standing = false
@@ -74,7 +78,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "infected_preset is not set in config!" unless @infected_preset
 
     @tournament_kills = { team_0: 0, team_1: 0 }
-    @tournament_max_kills = 1 # 25
+    @tournament_max_kills = 2 # 25
+    @tournament_leading_team = -1
+    @tournament_last_announced_kills_remaining = -1
+    @tournament_announce_kills_remaining_at = [20, 15, 10, 5, 4, 3, 2, 1]
     @ghost_players = []
     @infected_players = []
 
@@ -86,9 +93,6 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @round_start_time = 0
     @round_30_second_warning = false
     @round_10_second_warning = false
-
-    @building_damage_warnings = {}
-    @building_damage_freeze_duration = 5.0 # seconds
 
     @message_color = { red: 255, green: 200, blue: 64 } # Darkened Yellow
 
@@ -210,6 +214,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       @round_duration = duration * 60 # minutes
 
       broadcast_message("[Tournament] Tournament mode has been activated!", **@message_color)
+      broadcast_message("[Tournament] Collectively get #{@tournament_max_kills} kills to win!", **@message_color)
       log("Tournament mode has been activated!")
 
       PlayerData.player_list.each do |player|
@@ -401,36 +406,36 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     end
   end
 
-  on(:damaged) do |hash|
-    if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_player_object])
-      damage = hash[:damage]
+  # on(:damaged) do |hash|
+  #   if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_player_object])
+  #     damage = hash[:damage]
 
-      if damage.positive? # Ignore healing
-        @building_damage_warnings[player.name] ||= { warnings: 0, total_damage: 0, damage: 0, frozen_at: 0, frozen: false }
-        warning_hash = @building_damage_warnings[player.name]
+  #     if damage.positive? # Ignore healing
+  #       @building_damage_warnings[player.name] ||= { warnings: 0, total_damage: 0, damage: 0, frozen_at: 0, frozen: false }
+  #       warning_hash = @building_damage_warnings[player.name]
 
-        warning_hash[:total_damage] += damage
-        warning_hash[:damage] += damage
+  #       warning_hash[:total_damage] += damage
+  #       warning_hash[:damage] += damage
 
-        if warning_hash[:damage] >= 15.0 && !warning_hash[:frozen]
-          warning_hash[:damage] = 0 # Reset
-          warning_hash[:warnings] += 1
+  #       if warning_hash[:damage] >= 15.0 && !warning_hash[:frozen]
+  #         warning_hash[:damage] = 0 # Reset
+  #         warning_hash[:warnings] += 1
 
-          # DISABLED
-          if false #warning_hash[:warnings] >= 3
-            page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
-            page_player(player.name, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
+  #         # DISABLED
+  #         if false #warning_hash[:warnings] >= 3
+  #           page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+  #           page_player(player.name, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
 
-            warning_hash[:frozen] = true
-            warning_hash[:frozen_at] = monotonic_time
-            RenRem.cmd("FreezePlayer #{player.id}")
-          else
-            page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
-          end
-        end
-      end
-    end
-  end
+  #           warning_hash[:frozen] = true
+  #           warning_hash[:frozen_at] = monotonic_time
+  #           RenRem.cmd("FreezePlayer #{player.id}")
+  #         else
+  #           page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+  #         end
+  #       end
+  #     end
+  #   end
+  # end
 
   on(:created) do |hash|
     # pp [:created, hash]
@@ -461,6 +466,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       if player
         if @tournament
           change_player(player: player) if preset_needs_changing
+          construction_yard!(player) unless preset_needs_changing
         end
 
         if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
@@ -469,6 +475,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           player.change_team(3, kill: false)
 
           change_player(player: player) if preset_needs_changing && !@ghost_players[player.id]
+          construction_yard!(player) unless preset_needs_changing && player.team > 1
         end
 
         if @infection && hash[:preset].downcase != @infected_preset.downcase
@@ -481,7 +488,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           else
             player.change_team(@survivor_team)
             change_player(player: player) if preset_needs_changing
+            construction_yard!(player) unless preset_needs_changing
           end
+        elsif @infection && hash[:preset].downcase == @infected_preset.downcase
+          construction_yard!(player)
         end
       end
     end
@@ -497,6 +507,37 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       if (killed && killer) && killed.team != killer.team && killed.name != killer.name
         if @tournament
           @tournament_kills[:"team_#{killer.team}"] += 1
+
+          team_0_kills = @tournament_kills[:team_0]
+          team_1_kills = @tournament_kills[:team_1]
+          winning_team = team_0_kills > team_1_kills ? 0 : 1
+          winning_team = -1 if team_0_kills == team_1_kills
+          kills_remaining = @tournament_max_kills - (team_0_kills > team_1_kills ? team_0_kills : team_1_kills)
+
+          if @tournament_last_announced_kills_remaining != kills_remaining && @tournament_announce_kills_remaining_at.find { |i| i == kills_remaining }
+            @tournament_last_announced_kills_remaining = kills_remaining
+
+            broadcast_message("[Tournament] The #{Teams.name(killer.team)} need #{kills_remaining} more kills to win!", **@message_color)
+          end
+
+          if @tournament_leading_team != winning_team
+            last_winning_team = @tournament_leading_team
+            @tournament_leading_team = winning_team
+
+            case winning_team
+            when -1
+              if last_winning_team != -1
+                last_losing_team = (last_winning_team + 1) % 2
+                broadcast_message("[Tournament] The #{Teams.name(last_losing_team)} have tied the game with #{@tournament_kills[:"team_#{last_losing_team}"]} kills!", **@message_color)
+              else
+                broadcast_message("[Tournament] Game tied with #{team_0_kills} kills!", **@message_color)
+              end
+            when 0
+              broadcast_message("[Tournament] The #{Teams.name(0)} have taken the lead with #{team_0_kills} kills!", **@message_color)
+            when 1
+              broadcast_message("[Tournament] The #{Teams.name(1)} have taken the lead with #{team_1_kills} kills!", **@message_color)
+            end
+          end
 
         elsif @last_man_standing && @ghost_players[killed.id].nil?
           broadcast_message("[Tournament] #{killed.name} has become a ghost!", **@message_color)
@@ -536,7 +577,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
             play_sound(:round_draw)
           else
             losing_team = winning_team.zero? ? 1 : 0
-            broadcast_message("[Tournament] #{Teams.name(winning_team)} have won the Tournament with #{highest_kill_count} kills to the #{Teams.name(losing_team)} #{@tournament_kills[:"team_#{losing_team}"]} kills!", **@message_color)
+            broadcast_message("[Tournament] The #{Teams.name(winning_team)} have won the Tournament with #{highest_kill_count} kills to the #{Teams.name(losing_team)} #{@tournament_kills[:"team_#{losing_team}"]} kills!", **@message_color)
             play_sound(:"team_#{winning_team}_victory")
           end
 
@@ -659,21 +700,21 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       end
 
       # manage de-icing bad actors
-      @building_damage_warnings.each do |nickname, hash|
-        if hash[:frozen] && monotonic_time - hash[:frozen_at] >= @building_damage_freeze_duration
-          player = PlayerData.player(PlayerData.name_to_id(nickname))
+      # @building_damage_warnings.each do |nickname, hash|
+      #   if hash[:frozen] && monotonic_time - hash[:frozen_at] >= @building_damage_freeze_duration
+      #     player = PlayerData.player(PlayerData.name_to_id(nickname))
 
-          if player
-            page_player(player.name, "[Tournament] You have been unfrozen!")
-            RenRem.cmd("UnFreezePlayer #{player.id}")
+      #     if player
+      #       page_player(player.name, "[Tournament] You have been unfrozen!")
+      #       RenRem.cmd("UnFreezePlayer #{player.id}")
 
-            hash[:frozen] = false
-            hash[:frozen] = false
-            hash[:warnings] = 0
-            hash[:damage] = 0
-          end
-        end
-      end
+      #       hash[:frozen] = false
+      #       hash[:frozen] = false
+      #       hash[:warnings] = 0
+      #       hash[:damage] = 0
+      #     end
+      #   end
+      # end
     end
   end
 
