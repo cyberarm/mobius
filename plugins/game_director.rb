@@ -23,6 +23,27 @@ mobius_plugin(name: "GameDirector", version: "0.0.1") do
     @spectators = {}
   end
 
+  command(:conyard, arguments: 1..2, help: "!conyard <nickname> [<repair amount>] - Make player a living Construction Yard that repairs their teams buildings by <repair amount> until they're killed.", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    repair_amount = 3.5
+
+    begin
+      repair_amount = Float(command.arguments.last)
+    rescue ArgumentError
+    end
+
+    if player
+      if repair_amount.positive?
+        RenRem.cmd("attachscript #{player.id} dp88_buildingScripts_functionRepairBuildings #{repair_amount},None,false")
+        broadcast_message("[GameDirector] #{player.name} has been made a living Construction Yard!")
+      else
+        page_player(command.issuer.name, "Repair amount must be positive, got #{repair_amount.round(4)}")
+      end
+    else
+      page_player(command.issuer.name, "Failed to find player.")
+    end
+  end
+
   command(:remix, arguments: 0, help: "!remix NOW - Shuffle teams", groups: [:admin, :mod]) do |command|
     if command.arguments.first == "NOW"
       log "#{command.issuer.name} remixed teams"

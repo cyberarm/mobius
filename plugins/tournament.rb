@@ -479,6 +479,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
         end
 
         if @last_man_standing && (hash[:preset].downcase != @team_0_ghost_preset.downcase && hash[:preset].downcase != @team_1_ghost_preset.downcase)
+          just_ghosted = @ghost_players[player.id] == 0
           @ghost_players[player.id] = true
           change_player(player: player, ghost: true)
           player.change_team(3, kill: false)
@@ -548,7 +549,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
             end
           end
 
-        elsif @last_man_standing && @ghost_players[killed.id].nil?
+        elsif @last_man_standing && @ghost_players[killed.id] == 0 # Just ghosted
           broadcast_message("[Tournament] #{killed.name} has become a ghost!", **@message_color)
           page_player(killed.name, "You've become a ghost, go forth and haunt the living!")
           play_sound(:lastmanstanding_new_ghost)
