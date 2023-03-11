@@ -574,9 +574,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           handle_infection_death(killed)
         end
       # Ghosts are on the same team
+      # Handles ghosts killing each other
       elsif (killed && killer) && killed.team == killer.team && killed.name != killer.name
-        killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
-
         if @last_man_standing
           already_ghost = @ghost_players[killed.id]
 
@@ -587,6 +586,15 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
           killed.change_team(already_ghost) if already_ghost
         end
       end
+    # Handles !killme while a ghost (hash[:_killed_object] is nil)
+    elsif @last_man_standing && (killed_obj = hash[:_killed_object]) && (killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name])))
+      already_ghost = @ghost_players[killed.id]
+
+      # Change ghost back to a teamed team so that they spawn nicely
+      # The :created event will change them back to team 3
+      log("[PART] Ghost Original Team: #{killed.name} team #{Teams.name(@ghost_players[killed.id])}") if already_ghost
+      log("[PART] _____ Original Team: #{killed.name}") unless already_ghost
+      killed.change_team(already_ghost) if already_ghost
     end
   end
 
