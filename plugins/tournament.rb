@@ -27,6 +27,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @tournament || @last_man_standing || @infection
   end
 
+  def tournament_scheduled?
+    @round_pending_game_mode
+  end
+
   def c4?(string)
     if string.include?("c4")
       return false if string.include?("medic")
@@ -84,8 +88,8 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     raise "team_1_ghost_preset is not set in config!" unless @team_1_ghost_preset
     raise "infected_preset is not set in config!" unless @infected_preset
 
-    @tournament_kills = { team_0: 0, team_1: 0 }
-    @tournament_max_kills = 15
+    @tournament_kills = { team_0: 0, team_1: 0, team_2: 0 }
+    @tournament_max_kills = 2 #15
     @tournament_leading_team = -1
     @tournament_last_announced_kills_remaining = -1
     @tournament_announce_kills_remaining_at = [20, 15, 10, 5, 4, 3, 2, 1]
@@ -100,6 +104,10 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
     @round_start_time = 0
     @round_30_second_warning = false
     @round_10_second_warning = false
+    @round_start_delay = 5 # seconds
+    @round_started = false
+    @round_callback = nil
+    @round_pending_game_mode = nil
 
     @message_color = { red: 255, green: 200, blue: 64 } # Darkened Yellow
 
@@ -141,7 +149,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
   def kill_players_and_remix_teams
     after(3) do
-      # Only kill players auto game mode is inactive or is on the first round
+      # Only kill players if auto game mode is inactive or is on the first round
       if !@auto_game_mode || (@auto_game_mode && @auto_game_mode_round.zero?)
         PlayerData.player_list.each do |player|
           RenRem.cmd("kill #{player.id}")
@@ -195,9 +203,9 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       end
     end
 
-    if tournament_active?
+    if tournament_active? || tournament_scheduled?
       presets_list = Config.tournament[:presets][@auto_game_mode]
-      broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} has started round #{@auto_game_mode_round + 1} of #{presets_list.count}!", **@message_color)
+      broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} starting round #{@auto_game_mode_round + 1} of #{presets_list.count}!", **@message_color)
 
       ensure_game_clock_time!
     else
@@ -216,19 +224,24 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Tournament mode has been deactivated!", **@message_color)
       log("Tournament mode has been deactivated!")
     else
-      @tournament = true
-      @last_man_standing = false
-      @infection = false
-      @preset = preset
-      @round_start_time = monotonic_time
-      @round_duration = duration * 60 # minutes
+      broadcast_message("[Tournament] Tournament mode has been scheduled!", **@message_color)
 
-      broadcast_message("[Tournament] Tournament mode has been activated!", **@message_color)
-      broadcast_message("[Tournament] Collectively get #{@tournament_max_kills} kills to win!", **@message_color)
-      log("Tournament mode has been activated!")
+      @round_pending_game_mode = :tournament
+      @round_callback = lambda do
+        @tournament = true
+        @last_man_standing = false
+        @infection = false
+        @preset = preset
+        @round_start_time = monotonic_time
+        @round_duration = duration * 60 # minutes
 
-      PlayerData.player_list.each do |player|
-        RenRem.cmd("kill #{player.id}")
+        broadcast_message("[Tournament] Tournament mode has been activated!", **@message_color)
+        broadcast_message("[Tournament] Collectively get #{@tournament_max_kills} kills to win!", **@message_color)
+        log("Tournament mode has been activated!")
+
+        PlayerData.player_list.each do |player|
+          RenRem.cmd("kill #{player.id}")
+        end
       end
     end
   end
@@ -240,18 +253,23 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Last Man Standing mode has been deactivated!", **@message_color)
       log("Last Man Standing mode has been deactivated!")
     else
-      @last_man_standing = true
-      @tournament = false
-      @infection = false
-      @preset = preset
-      @round_start_time = monotonic_time
-      @round_duration = duration * 60 # minutes
+      broadcast_message("[Tournament] Last Man Standing mode has been scheduled!", **@message_color)
 
-      broadcast_message("[Tournament] Last Man Standing mode has been activated!", **@message_color)
-      log("Last Man Standing mode has been activated!")
+      @round_pending_game_mode = :last_man_standing
+      @round_callback = lambda do
+        @last_man_standing = true
+        @tournament = false
+        @infection = false
+        @preset = preset
+        @round_start_time = monotonic_time
+        @round_duration = duration * 60 # minutes
 
-      PlayerData.player_list.each do |player|
-        RenRem.cmd("kill #{player.id}")
+        broadcast_message("[Tournament] Last Man Standing mode has been activated!", **@message_color)
+        log("Last Man Standing mode has been activated!")
+
+        PlayerData.player_list.each do |player|
+          RenRem.cmd("kill #{player.id}")
+        end
       end
     end
   end
@@ -263,49 +281,54 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       broadcast_message("[Tournament] Infection mode has been deactivated!", **@message_color)
       log("Infection mode has been deactivated!")
     else
-      @infection = true
-      @last_man_standing = false
-      @tournament = false
-      @preset = survivor_preset
-      @round_start_time = monotonic_time
-      @round_duration = duration * 60 # minutes
+      broadcast_message("[Tournament] Infection mode has been scheduled!", **@message_color)
 
-      @infected_preset = infected_preset if !infected_preset.to_s.empty?
+      @round_pending_game_mode = :infection
+      @round_callback = lambda do
+        @infection = true
+        @last_man_standing = false
+        @tournament = false
+        @preset = survivor_preset
+        @round_start_time = monotonic_time
+        @round_duration = duration * 60 # minutes
 
-      broadcast_message("[Tournament] Infection mode has been activated!", **@message_color)
-      log("Infection mode has been activated!")
+        @infected_preset = infected_preset if !infected_preset.to_s.empty?
 
-      play_sound(:infection)
+        broadcast_message("[Tournament] Infection mode has been activated!", **@message_color)
+        log("Infection mode has been activated!")
 
-      infected = (PlayerData.player_list.count / 4.0).ceil
-      log "Infecting #{infected} players..."
+        play_sound(:infection)
 
-      infected_players = []
-      survivor_players = []
+        infected = (PlayerData.player_list.count / 4.0).ceil
+        log "Infecting #{infected} players..."
 
-      PlayerData.player_list.shuffle.shuffle.shuffle.each_with_index do |player, i|
-        if i < infected
-          @infected_players[player.id] = 0
-          player.change_team(@infected_team, kill: false)
+        infected_players = []
+        survivor_players = []
 
-          infected_players << player
-        else
-          player.change_team(@survivor_team, kill: false)
+        PlayerData.player_list.shuffle.shuffle.shuffle.each_with_index do |player, i|
+          if i < infected
+            @infected_players[player.id] = 0
+            player.change_team(@infected_team, kill: false)
 
-          survivor_players << player
+            infected_players << player
+          else
+            player.change_team(@survivor_team, kill: false)
+
+            survivor_players << player
+          end
         end
-      end
 
-      # Seperating out the kills so that #infection_survivor_count has a current value
-      infected_players.each do |player|
-        RenRem.cmd("kill #{player.id}")
+        # Seperating out the kills so that #infection_survivor_count has a current value
+        infected_players.each do |player|
+          RenRem.cmd("kill #{player.id}")
 
-        handle_infection_death(player, true)
-      end
+          handle_infection_death(player, true)
+        end
 
-      survivor_players.each do |player|
-        RenRem.cmd("kill #{player.id}")
-        page_player(player.name, "Group up! The infected will try to hunt you all down!")
+        survivor_players.each do |player|
+          RenRem.cmd("kill #{player.id}")
+          page_player(player.name, "Group up! The infected will try to hunt you all down!")
+        end
       end
     end
   end
@@ -349,7 +372,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
       if survivor_count == 1
         PlayerData.players_by_team(@survivor_team).each do |ply|
-          # Since the player is technically still on the survivor team, we need this check to avoid sending it to "both survivoring players"
+          # Since the player is technically still on the survivor team, we need this check to avoid sending it to both "surviving players"
           next if @infected_players[ply.id]
 
           page_player(ply.name, "You are the last survivor!")
@@ -521,9 +544,9 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
       killer = PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))
 
       if (killed && killer) && killed.team != killer.team && killed.name != killer.name
-        if @tournament
-          @tournament_kills[:"team_#{killer.team}"] += 1
+        @tournament_kills[:"team_#{killer.team}"] += 1
 
+        if @tournament
           team_0_kills = @tournament_kills[:team_0]
           team_1_kills = @tournament_kills[:team_1]
           winning_team = team_0_kills > team_1_kills ? 0 : 1
@@ -599,6 +622,20 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
   end
 
   on(:tick) do
+    # Manage round start countdown
+    if @round_pending_game_mode && !@round_started
+      if @round_start_delay < 0 # +1 second to let the text breath
+        @round_started = true
+
+        # Assume that the @round_callback will emit broadcast messages
+        @round_callback.call
+      else
+        broadcast_message("[Tournament] Round starting in #{@round_start_delay} seconds...", **@message_color) if @round_start_delay.positive?
+
+        @round_start_delay -= 1
+      end
+    end
+
     if tournament_active?
       if @tournament
         winning_team = -1 # -1 = draw, 0 and 1 are teams
@@ -767,7 +804,7 @@ mobius_plugin(name: "Tournament", version: "0.0.1") do
 
   command(:score, arguments: 0, help: "!score - Reports the score of the current Tournament game") do |command|
     if tournament_active?
-      page_player(command.issuer.name, "[Tournament] The #{Teams.name(0)} have #{@tournament_kills[:team_0]} and the #{Teams.name(1)} have #{@tournament_kills[:team_1]} kills!", **@message_color)
+      broadcast_message("[Tournament] #{Teams.name(0)}: #{@tournament_kills[:team_0]} kills, #{Teams.name(1)}: #{@tournament_kills[:team_1]} kills, #{Teams.name(2)}: #{@tournament_kills[:team_2]} kills", **@message_color)
     else
       page_player(command.issuer.name, "[Tournament] No active tournament game!", **@message_color)
     end
