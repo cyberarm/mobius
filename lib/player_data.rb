@@ -124,6 +124,7 @@ module Mobius
         end
       else
         # TODO: Check bans, kicks, etc.
+        # FIXME: Not that we have the technology, actually do this now!
 
         @player_data[id] = Player.new(
           origin: origin,
@@ -145,6 +146,11 @@ module Mobius
         )
 
         player = @player_data[id]
+
+        # Only create IP record for new name/ip combos
+        unless (known_ip = Database::IP.first(name: name.downcase, ip: address.split(";").first))
+          Database::IP.create(name: name.downcase, ip: address.split(";").first)
+        end
 
         log "PlayerData", "#{player.name} has joined the game"
 

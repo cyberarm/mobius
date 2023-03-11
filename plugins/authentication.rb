@@ -24,10 +24,25 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
           break
         end
 
+        if (known_ip = Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first, authenticated: true))
+          if (Time.now.utc.to_i - known_ip.updated_at.to_i) >= 7 * 24 * 60 * 60 # 1 week
+            # Last authentication was a week ago, IP no longer trusted
+
+            known_ip.update(authenticated: false)
+          else
+            # Known and trusted IP
+            granted_role = grant(level, player)
+            found = true
+          end
+        end
+
+
         granted_role = grant(level, player) if hash[:force_grant]
 
         if !granted_role && hash[:discord_id]
           PluginManager.publish_event(:_discord_bot_verify_staff, player, hash[:discord_id])
+
+          break
         end
 
         break if found
@@ -90,8 +105,11 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
         announce_staff(player, role)
 
         # Remember player ip to auto authenticate them next time
-        player_ip = player.address.split(";").first
-        hash[:hostnames] << player_ip unless hash[:hostnames].include?(player_ip)
+        if (known_ip = Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first))
+          known_ip.update(authenticated: true)
+        end
+
+        break
       end
     end
   end

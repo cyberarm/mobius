@@ -6,8 +6,8 @@ Sequel.migration do
       String  :ip, null: false
       Boolean :authenticated, default: false
 
-      DataTime :created_at
-      DataTime :updated_at
+      Time :created_at
+      Time :updated_at
 
       index :name
       index :ip

@@ -6,8 +6,8 @@ Sequel.migration do
       String :key, null: false
       Text   :value, null: false
 
-      DataTime :created_at
-      DataTime :updated_at
+      Time :created_at
+      Time :updated_at
 
       index :plugin_name
       index :key

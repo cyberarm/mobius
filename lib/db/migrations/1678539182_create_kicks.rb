@@ -8,8 +8,8 @@ Sequel.migration do
       String :banner, null: false
       String :reason, null: false
 
-      DataTime :created_at
-      DataTime :updated_at
+      Time :created_at
+      Time :updated_at
 
       index :name
       index :ip

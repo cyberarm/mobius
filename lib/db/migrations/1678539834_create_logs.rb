@@ -5,8 +5,8 @@ Sequel.migration do
       Integer :log_code, null: false
       String  :log, null: false
 
-      DataTime :created_at
-      DataTime :updated_at
+      Time :created_at
+      Time :updated_at
 
       index :log_code
     end
