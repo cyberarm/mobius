@@ -162,11 +162,9 @@ module Mobius
         if (dataset = database_get(key))
           dataset.update(value: value)
         else
-          Database::PluginData.insert(plugin_name: @___database_name, key: key, value: value)
+          Database::PluginData.create(plugin_name: @___database_name, key: key, value: value)
         end
       end
-
-      puts :reached
     end
 
     def database_get(key)

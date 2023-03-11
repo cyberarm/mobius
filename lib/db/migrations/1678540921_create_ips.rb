@@ -2,8 +2,9 @@ Sequel.migration do
   change do
     create_table(:ips) do
       primary_key :id
-      String :name, null: false
-      String :ip, null: false
+      String  :name, null: false
+      String  :ip, null: false
+      Boolean :authenticated, default: false
 
       DataTime :created_at
       DataTime :updated_at

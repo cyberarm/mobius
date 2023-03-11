@@ -4,7 +4,6 @@ module Mobius
       log "INIT", "Connecting to Database..."
 
       Sequel.extension(:migration)
-      Sequel::Model.plugin(:timestamps, update_on_create: true)
 
       @db = Sequel.sqlite(Config.database_path)
       migrations_path = File.expand_path("./db/migrations", __dir__)
