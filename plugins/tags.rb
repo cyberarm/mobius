@@ -1,27 +1,18 @@
-mobius_plugin(name: "Tags", version: "0.0.1") do
-  def create_db_table
-    database("create table if not exists tags (name text primary key, tagger text, tag text)")
-  end
-
+mobius_plugin(name: "Tags", database_name: "tags", version: "0.0.1") do
   def query(name)
-    Database.execute("select tag from tags where name = ?", name.downcase)
-  end
-
-  def insert(player, tagger, tag)
-    if query(player.name.downcase).count.positive?
-      # Attempt to update first
-      Database.execute("update tags set tagger=?, tag=? where name = ?", tagger.name.downcase, tag, player.name.downcase)
-    else
-      # Then fall back to inserting
-      Database.execute("insert into tags (name, tagger, tag) values (?, ?, ?)", player.name.downcase, tagger.name.downcase, tag)
+    if (data = database_get(name))
+      data.value.split(",", 2)
     end
   end
 
-  def tag_player(player)
-    result = query(player.name)
+  def insert(player, tagger, tag)
+    database_set(player, "#{tagger},#{tag}")
+  end
 
-    if result.count.positive?
-      tag = result.flatten.first
+  def tag_player(player)
+    tagger, tag = query(player.name.downcase)
+
+    if tag
       log "Set #{player.name}'s TAG: #{tag}"
 
       RenRem.cmd("tag #{player.id} #{tag}")
@@ -29,8 +20,6 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
   end
 
   on(:start) do
-    create_db_table
-
     log "Tags online"
 
     after(5) do
@@ -53,7 +42,7 @@ mobius_plugin(name: "Tags", version: "0.0.1") do
       player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
       if player
-        insert(player, command.issuer, tag)
+        insert(player.name.downcase, command.issuer.name.downcase, tag)
         RenRem.cmd("tag #{player.id} #{tag}")
       else
         page_player(command.issuer.name, "Player #{command.arguments.first} was not found ingame, or is not unique.")

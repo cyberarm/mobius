@@ -1,4 +1,4 @@
-mobius_plugin(name: "Bounty", version: "0.0.1") do
+mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
   def reset
     @bounties = {}
   end

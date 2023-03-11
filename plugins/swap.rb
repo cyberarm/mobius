@@ -1,4 +1,4 @@
-mobius_plugin(name: "Swap", version: "0.0.1") do
+mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
   def reset
     @requester = nil
     @request_time = nil

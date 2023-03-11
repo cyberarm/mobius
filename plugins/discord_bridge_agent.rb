@@ -1,4 +1,4 @@
-mobius_plugin(name: "DiscordBridgeAgent", version: "0.0.1") do
+mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent", version: "0.0.1") do
   def full_payload
     teams = Teams.list.each.map do |team|
       {

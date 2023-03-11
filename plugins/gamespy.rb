@@ -1,4 +1,4 @@
-mobius_plugin(name: "GameSpy", version: "0.0.1") do
+mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
   MasterServer = Struct.new(:socket)
 
   on(:start) do

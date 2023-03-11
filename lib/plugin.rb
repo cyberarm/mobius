@@ -3,7 +3,7 @@ module Mobius
     Timer = Struct.new(:type, :ticks, :delay, :block)
     Command = Struct.new(:plugin, :name, :aliases, :arguments, :help, :groups, :block)
 
-    attr_reader :___name, :___version, :___event_handlers, :___timers, :___data, :___plugin_file
+    attr_reader :___name, :___database_name, :___version, :___event_handlers, :___timers, :___data, :___plugin_file
 
     # RESERVED
     def initialize(plugin_file)
@@ -40,8 +40,9 @@ module Mobius
     end
 
     # RESERVED
-    def mobius_plugin(name:, version:, &block)
+    def mobius_plugin(name:, database_name:, version:, &block)
       @___name = name
+      @___database_name = database_name
       @___version = version
 
       @___block = block
@@ -156,10 +157,20 @@ module Mobius
       Kernel.log("PLUGIN: #{@___name}", message)
     end
 
-    def database(sql)
+    def database_set(key, value)
       Database.transaction do
-        Database.execute(sql)
+        if (dataset = database_get(key))
+          dataset.update(value: value)
+        else
+          Database::PluginData.insert(plugin_name: @___database_name, key: key, value: value)
+        end
       end
+
+      puts :reached
+    end
+
+    def database_get(key)
+      Database::PluginData.first(plugin_name: @___database_name, key: key)
     end
   end
 end

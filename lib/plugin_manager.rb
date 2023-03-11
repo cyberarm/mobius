@@ -33,8 +33,11 @@ module Mobius
           register_plugin(plugin)
         rescue => e
           puts "Failed to load plugin: #{File.basename(plugin)}"
-          raise
-          puts e.backtrace
+          log "ERROR", "#{e.class}: #{e}"
+          formatted_backtrace(plugin, e.backtrace)
+
+          # Don't raise again since we want to use our own backtrace printer
+          exit
         end
       end
     end
@@ -407,7 +410,7 @@ module Mobius
       rescue StandardError => e
         log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
-        puts e.backtrace
+        formatted_backtrace(plugin, e.backtrace)
       end
 
       handlers = plugin.___event_handlers[event]
@@ -420,7 +423,7 @@ module Mobius
         rescue StandardError => e
           log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
           log "ERROR", "#{e.class}: #{e}"
-          puts e.backtrace
+          formatted_backtrace(plugin, e.backtrace)
         end
       end
     end
@@ -436,6 +439,14 @@ module Mobius
     # Delay delivery of event/block until the backend has done it's thing
     def self.defer(seconds, &block)
       @deferred << Plugin::Timer.new(:after, 0, seconds, block)
+    end
+
+    def self.formatted_backtrace(plugin_or_filename, backtrace)
+      backtrace.each do |line|
+        line = line.sub("(eval)", "-> #{plugin_or_filename.is_a?(String) ? plugin_or_filename : plugin_or_filename.___plugin_file}")
+
+        puts "        #{line}"
+      end
     end
   end
 end

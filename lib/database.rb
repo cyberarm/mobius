@@ -3,66 +3,28 @@ module Mobius
     def self.init
       log "INIT", "Connecting to Database..."
 
-      # @env = LMDB.new(Config.database_path)
-      @db = SQLite3::Database.new(Config.database_path)
+      Sequel.extension(:migration)
+      Sequel::Model.plugin(:timestamps, update_on_create: true)
 
-      create_default_tables!
-    end
+      @db = Sequel.sqlite(Config.database_path)
+      migrations_path = File.expand_path("./db/migrations", __dir__)
 
-    def self.execute(query, *args)
-      @db.execute(query, *args)
+      unless Sequel::Migrator.is_current?(@db, migrations_path)
+        log "DATABASE", "Applying new migrations..."
+        Sequel::Migrator.run(@db, migrations_path)
+        log "DATABASE", "Done migrating."
+      end
+
+      require_relative "db/models/plugin_data"
+      require_relative "db/models/log"
+      require_relative "db/models/ip"
+      require_relative "db/models/ban"
+      require_relative "db/models/kick"
     end
 
     def self.transaction(&block)
       @db.transaction do
         block&.call
-      end
-    end
-
-    def self.create_default_tables!
-      transaction do
-        # Authed Users
-        execute <<-SQL
-          create table if not exists auth_users (
-            id integer primary key autoincrement,
-            name text unique,
-            password text
-          );
-        SQL
-
-        # Bans
-        execute <<-SQL
-          create table if not exists bans (
-            id integer primary key autoincrement,
-            name text,
-            ip text,
-            serial text,
-            banner text,
-            reason text,
-            timestamp integer
-          );
-        SQL
-
-        # Kicks
-        execute <<-SQL
-          create table if not exists kicks (
-            id integer primary key autoincrement,
-            name text,
-            ip text,
-            serial text,
-            banner text,
-            reason text,
-            timestamp integer
-          );
-        SQL
-
-        # Plugins
-        execute <<-SQL
-          create table if not exists auth_users (
-            name integer primary key,
-            enabled integer
-          );
-        SQL
       end
     end
 

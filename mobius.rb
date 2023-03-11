@@ -4,6 +4,8 @@ require "resolv"
 require "fileutils"
 
 # require "lmdb"
+require "sequel"
+require "sequel/core"
 require "sqlite3"
 require "excon"
 require "ld-eventsource"

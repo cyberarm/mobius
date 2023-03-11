@@ -1,4 +1,4 @@
-mobius_plugin(name: "Authentication", version: "0.0.1") do
+mobius_plugin(name: "Authentication", database_name: "authentication", version: "0.0.1") do
   def auto_authenticate(player)
     granted_role = nil
 

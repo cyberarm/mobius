@@ -1,4 +1,4 @@
-mobius_plugin(name: "GameDirector", version: "0.0.1") do
+mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.0.1") do
   def donations_available?(player)
     donate_limit = MapSettings.get_map_setting(:donatelimit)
     map = ServerStatus.get(:current_map)

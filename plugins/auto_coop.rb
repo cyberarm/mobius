@@ -1,4 +1,4 @@
-mobius_plugin(name: "AutoCoop", version: "0.0.1") do
+mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   def configure_bots
     player_count = ServerStatus.total_players
     bot_count = player_count * @bot_difficulty

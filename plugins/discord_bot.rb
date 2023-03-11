@@ -1,4 +1,4 @@
-mobius_plugin(name: "DiscordBot", version: "0.1.0") do
+mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0") do
   def handle_player_list(event)
     event.channel.send_embed do |embed|
       embed.title = ServerConfig.server_name

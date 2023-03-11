@@ -1,4 +1,4 @@
-mobius_plugin(name: "Tournament", version: "0.0.1") do
+mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1") do
   def change_player(player:, ghost: false, infected: false)
     return unless @tournament || @last_man_standing || @infection
     return unless @preset

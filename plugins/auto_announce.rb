@@ -1,4 +1,4 @@
-mobius_plugin(name: "AutoAnnounce", version: "0.0.1") do
+mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.0.1") do
   def broadcast_announcement
     saying = @sayings[@index]
     @index += 1

@@ -1,4 +1,4 @@
-mobius_plugin(name: "Moderation", version: "0.0.1") do
+mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1") do
   def player_granted_authority?(player, target)
     granter = (PlayerData.player(PlayerData.name_to_id(target.value(:given_director_power_from))) ||
                PlayerData.player(PlayerData.name_to_id(target.value(:given_moderator_power_from))))
