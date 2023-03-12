@@ -4,6 +4,7 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
 
     Config.staff.each do |level, list|
       found = false
+      data = nil
 
       list.each do |hash|
         next unless hash[:name].downcase == player.name.downcase
@@ -21,6 +22,7 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
           granted_role = grant(level, player)
 
           found = true
+          data = hash
           break
         end
 
@@ -33,9 +35,9 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
             # Known and trusted IP
             granted_role = grant(level, player)
             found = true
+            data = hash
           end
         end
-
 
         granted_role = grant(level, player) if hash[:force_grant]
 
@@ -49,10 +51,11 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
       end
     end
 
-    announce_staff(player, granted_role)
+    announce_staff(player, granted_role, hash)
   end
 
-  def announce_staff(player, role)
+  def announce_staff(player, role, hash)
+    # TODO: Allow silient mode for staff alt accounts
     return unless role && Config.messages[:staff]
 
     case role
@@ -102,15 +105,57 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
     Config.staff.each do |level, list|
       if (hash = list.find { |h| h[:name].downcase == player.name.downcase })
         role = grant(level, player)
-        announce_staff(player, role)
+        announce_staff(player, role, hash)
 
         # Remember player ip to auto authenticate them next time
-        if (known_ip = Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first))
-          known_ip.update(authenticated: true)
-        end
+        Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first)&.update(authenticated: true)
 
         break
       end
+    end
+  end
+
+  command(:auth, arguments: 1, help: "!auth <nickname> - Authenticates <nickname>, if their permissions level is below or the same as your own.", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    issuer = command.issuer
+
+    if player == issuer
+      page_player(issuer.name, "[Authentication] You cannot authenticate yourself.")
+
+      next
+    end
+
+    found = false
+
+    if player
+      Config.staff.each do |level, list|
+        if (hash = list.find { |h| h[:name].downcase == player.name.downcase })
+          found = level
+
+          if issuer.administrator? || (issuer.moderator? && [:mod, :director].include?(level))
+            if (role = grant(level, player))
+              announce_staff(player, role, hash)
+              page_player(issuer.name, "[Authentication] Authenticated #{player.name}")
+              # Rmember players IP as authenticated
+              Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first)&.update(authenticated: true)
+
+              PluginManager.publish_event(:_authenticated, player, hash)
+            else
+              page_player(issuer.name, "[Authentication] Unknown permission level, #{level}, failed to authenticate player.")
+            end
+          else
+            page_player(issuer.name, "[Authentication] You do not have permission to authenticate #{player.name}")
+          end
+
+          break
+        end
+      end
+
+      unless found
+        page_player(issuer.name, "[Authentication] Failed to authenticate player, no permission level configured.")
+      end
+    else
+      page_player(issuer.name, "[Authentication] Player not found on name not unique.")
     end
   end
 end

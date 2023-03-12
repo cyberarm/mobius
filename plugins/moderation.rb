@@ -6,7 +6,36 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     granter if granter == player
   end
 
+  def untrusted_ip?(test_ip)
+    @untrusted_ips&.find { |ip| ip.include?(test_ip) }
+  end
+
+  on(:start) do
+    @untrusted_ips = []
+
+    file_path = File.expand_path("./conf/untrusted_ips.dat")
+    if File.exist?(file_path)
+      File.read(file_path).lines.each do |line|
+        line = line.strip
+
+        next if line.empty? || line.start_with?("#")
+
+        @untrusted_ips << IPAddr.new(line)
+      end
+    else
+      log("Warning: Untrusted IP list is missing! (#{file_path})")
+    end
+  end
+
   on(:player_joined) do |player|
+    after(1) do
+      player_ip = player.address.split(";").first
+
+      if untrusted_ip?(player_ip)
+        notify_moderators("[Moderation] #{player.name} might be using a VPN!")
+        notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{untrusted_ip?(player_ip)}")
+      end
+    end
   end
 
   on(:player_left) do |player|
