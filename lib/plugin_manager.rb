@@ -220,7 +220,7 @@ module Mobius
       rescue StandardError => e
         log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
-        formatted_backtrace(e.backtrace)
+        formatted_backtrace(command.plugin, e.backtrace)
       end
     end
 
