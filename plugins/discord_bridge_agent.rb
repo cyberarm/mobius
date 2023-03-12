@@ -335,6 +335,13 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     deliver(verify_staff(discord_id, player.name))
   end
 
+  on(:_authenticated) do |player, hash|
+    if (discord_id = hash[:discord_id])
+      # FIXME: Tell Bridge to update or delete confirmation prompt
+      log "#{player.name} externally authenticated." if @staff_pending_verification.delete(discord_id)
+    end
+  end
+
   on(:shutdown) do
     connection_error! if @ws
   end
