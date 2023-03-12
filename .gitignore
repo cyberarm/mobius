@@ -1,4 +1,5 @@
 conf/*.json
 *.db
+*.bak
 data/*
 _*
