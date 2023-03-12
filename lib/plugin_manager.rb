@@ -325,11 +325,13 @@ module Mobius
         return
       end
 
+      exact_match_plugin = @plugins.find { |plugin| !plugin.___enabled? && plugin.___name.downcase == name.downcase }
       found_plugins = @plugins.select { |plugin| !plugin.___enabled? && plugin.___name.downcase.include?(name.downcase) }
 
-      if found_plugins.size == 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Enabling plugin: #{found_plugins.first.___name}")
-        enable_plugin(found_plugins.first)
+      if found_plugins.size == 1 || exact_match_plugin
+        plugin = exact_match_plugin || found_plugins.first
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Enabling plugin: #{plugin.___name}")
+        enable_plugin(plugin)
 
       elsif found_plugins.size > 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
@@ -348,11 +350,13 @@ module Mobius
         return
       end
 
+      exact_match_plugin = @plugins.find { |plugin| plugin.___name.downcase == name.downcase }
       found_plugins = @plugins.select { |plugin| plugin.___name.downcase.include?(name.downcase) }
 
-      if found_plugins.size == 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading plugin: #{found_plugins.first.___name}")
-        reload_plugin(found_plugins.first)
+      if found_plugins.size == 1 || exact_match_plugin
+        plugin = exact_match_plugin || found_plugins.first
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading plugin: #{plugin.___name}")
+        reload_plugin(plugin)
 
       elsif found_plugins.size > 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
@@ -371,11 +375,13 @@ module Mobius
         return
       end
 
+      exact_match_plugin = @plugins.find { |plugin| plugin.___enabled? && plugin.___name.downcase == name.downcase }
       found_plugins = @plugins.select { |plugin| plugin.___enabled? && plugin.___name.downcase.include?(name.downcase) }
 
-      if found_plugins.size == 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabling plugin: #{found_plugins.first.___name}")
-        disable_plugin(found_plugins.first)
+      if found_plugins.size == 1 || exact_match_plugin
+        plugin = exact_match_plugin || found_plugins.first
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabling plugin: #{plugin.___name}")
+        disable_plugin(plugin)
 
       elsif found_plugins.size > 1
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
