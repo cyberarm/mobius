@@ -42,6 +42,12 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
   end
 
   command(:ban, arguments: 2, help: "!ban <nickname> <reason>", groups: [:admin, :mod]) do |command|
+    if command.issuer.value(:given_moderator_power_from)
+      page_player(command.issuer.name, "Temporarily moderators may not ban players.")
+
+      next
+    end
+
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -60,7 +66,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           name: player.name.downcase,
           ip: ip,
           serial: "00000000000000000000000000000000",
-          banner: command.issuer.name,
+          banner: command.issuer.name.downcase,
           reason: command.arguments.last
         )
 
@@ -75,6 +81,12 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
   end
 
   command(:unban, arguments: 1, help: "!unban <nickname>", groups: [:admin, :mod]) do |command|
+    if command.issuer.value(:given_moderator_power_from)
+      page_player(command.issuer.name, "Temporarily moderators may not unban players.")
+
+      next
+    end
+
     nickname = command.arguments.first.strip
     db_ban = Database::Ban.first(name: nickname.downcase)
 
