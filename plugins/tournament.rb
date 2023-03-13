@@ -136,7 +136,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
       # LAST MAN STANDING
       lastmanstanding: missing,
-      lastmanstanding_new_ghost: missing, # TODO, have sound, will travel.
+      lastmanstanding_new_ghost: "gm_lms_wasted.wav",
 
       # TOURNAMENT
       tournament: missing
