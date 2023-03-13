@@ -29,5 +29,6 @@ module Mobius
     kicklog:  1,
     banlog:   2,
     unbanlog: 3,
+    stafflog: 5,
   }.freeze
 end

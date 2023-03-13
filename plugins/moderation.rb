@@ -209,13 +209,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if command.issuer != player
         log "Granting #{player.name} Moderator powers, temporarily."
 
-        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Moderator")
-        RenRem.cmd("ppage #{player.id} You've been made a temporary Moderator")
+        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Server Moderator")
+        RenRem.cmd("ppage #{player.id} You've been made a temporary Server Moderator")
 
         player.set_value(:given_moderator_power_from, command.issuer.name)
         player.set_value(:moderator, true)
 
         broadcast_message("[MOBIUS] #{player.name} is a temporary Server Moderator", red: 127, green: 255, blue: 127) if Config.messages[:staff]
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:stafflog],
+          log: "[STAFF] #{player.name} was made a temporarily Server Moderator by #{command.issuer.name}."
+        )
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
       end
@@ -231,13 +236,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if command.issuer != player
         log "Granting #{player.name} Director powers, temporarily."
 
-        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Director")
-        RenRem.cmd("ppage #{player.id} You've been made a temporary Director")
+        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Game Director")
+        RenRem.cmd("ppage #{player.id} You've been made a temporary Game Director")
 
         player.set_value(:given_director_power_from, command.issuer.name)
         player.set_value(:director, true)
 
         broadcast_message("[MOBIUS] #{player.name} has been made a temporary Game Director", red: 127, green: 255, blue: 127) if Config.messages[:staff]
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:stafflog],
+          log: "[STAFF] #{player.name} was made a temporary Game Director by #{command.issuer.name}."
+        )
       else
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
       end
@@ -286,7 +296,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
   end
 
-  command(:mods, arguments: 0, help: "!mods - shows list of in game staff") do |command|
+  command(:mods, aliases: [:staff, :m], arguments: 0, help: "!mods - shows list of in game staff") do |command|
     admins    = PlayerData.player_list.select(&:administrator?)
     mods      = PlayerData.player_list.select(&:moderator?)
     directors = PlayerData.player_list.select(&:director?)
