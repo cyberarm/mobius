@@ -21,7 +21,7 @@ module Mobius
       end
     end
 
-    attr_reader :fds_path, :server_settings_path, :database_path, :renrem_address, :renrem_port, :renrem_password,
+    attr_reader :fds_path, :server_settings_path, :database_path, :banlist_path, :renrem_address, :renrem_port, :renrem_password,
                 :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level,
                 :record_gamelog, :discord_bot, :discord_bridge, :tournament, :enabled_plugins, :disabled_plugins
 
@@ -38,6 +38,7 @@ module Mobius
       @fds_path = @data.dig(:mobius, :fds_path)
       @server_settings_path = @data.dig(:mobius, :server_settings_path)
       @database_path = @data.dig(:mobius, :database_path)
+      @banlist_path = @data.dig(:mobius, :banlist_path)
 
       ServerConfig.read_server_config
       ServerConfig.read_server_settings

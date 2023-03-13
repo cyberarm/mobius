@@ -54,6 +54,20 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         page_player(command.issuer.name, "#{player.name} has been banned!")
 
         RenRem.cmd("ban #{player.id} #{command.arguments.last}")
+
+        ip = player.address.split(";").first
+        ban = Database::Ban.create(
+          name: player.name.downcase,
+          ip: ip,
+          serial: "00000000000000000000000000000000",
+          banner: command.issuer.name,
+          reason: command.arguments.last
+        )
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:banlog],
+          log: "[BAN] #{player.name} (#{ip}) was banned by #{command.issuer.name} for \"#{command.arguments.last}\". (Ban ID #{ban.id})"
+        )
       end
     else
       page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
@@ -61,18 +75,48 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
   end
 
   command(:unban, arguments: 1, help: "!unban <nickname>", groups: [:admin, :mod]) do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    nickname = command.arguments.first.strip
+    db_ban = Database::Ban.first(name: nickname.downcase)
 
-    if player
-      if command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot unban yourself!")
+    if File.exist?(Config.banlist_path)
+      # Finding the ban line index could probably be optimized, a LOT...
+      raw_banlist = File.read(Config.banlist_path)
+      ban = nil
+
+      raw_banlist.lines.each_with_index do |text, line|
+        next if text.strip.empty?
+
+        nick, ip, serial, reason = text.strip.split("	")
+        next unless nickname.downcase == nick.downcase
+
+        ban = { line: line, nickname: nick, ip: ip, serial: serial, reason: reason }
+      end
+
+      if ban
+        # Is this check really needed?
+        if command.issuer.name.downcase == nickname.downcase
+          page_player(command.issuer.name, "#{player.name} Cannot unban yourself!")
+        else
+          lines = raw_banlist.lines
+          lines.delete_at(ban[:line])
+          File.write(Config.banlist_path, lines.join)
+
+          page_player(command.issuer.name, "#{nickname} has been unbanned.")
+          RenRem.cmd("rehash_ban_list")
+          db_ban&.destroy
+
+          Database::Log.create(
+            log_code: Mobius::LOG_CODE[:unbanlog],
+            log: "[UNBAN] #{nickname} was unbanned by #{command.issuer.name}."
+          )
+        end
       else
-        # FIXME: Update banList.tsv before calling rehash
-        page_player(command.issuer.name, "Not Implemented. Contact server adminstrator.")
-        RenRem.cmd("rehash_ban_list")
+        page_player(command.issuer.name, "Failed to find banned player: #{nickname}")
+        db_ban&.destroy
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer.name, "BanList.tsv does not exist. #{db_ban ? 'Removing database ban' : ''}")
+      db_ban&.destroy
     end
   end
 
@@ -89,6 +133,20 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         page_player(command.issuer.name, "#{player.name} has been kicked!")
 
         RenRem.cmd("kick #{player.id} #{command.arguments.last}")
+
+        ip = player.address.split(";").first
+        kick = Database::Kick.create(
+          name: player.name.downcase,
+          ip: player.address.split(";").first,
+          serial: "00000000000000000000000000000000",
+          banner: command.issuer.name.downcase,
+          reason: command.arguments.last
+        )
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:kicklog],
+          log: "[KICK] #{player.name} (#{ip}) was kicked by #{command.issuer.name} for \"#{command.arguments.last}\". (Kick ID #{kick.id})"
+        )
       end
     else
       page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")

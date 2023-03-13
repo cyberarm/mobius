@@ -23,3 +23,11 @@ module Kernel
     puts "[#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}] #{msg}"
   end
 end
+
+module Mobius
+  LOG_CODE = {
+    kicklog:  1,
+    banlog:   2,
+    unbanlog: 3,
+  }.freeze
+end
