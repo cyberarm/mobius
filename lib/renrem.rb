@@ -186,6 +186,8 @@ module Mobius
         end
       rescue IO::WaitReadable # Done receiving response from FDS/RenRem
         return buffer.join
+      rescue Errno::ECONNREFUSED
+        log "RENREM", "Unable to connect to RemRem!"
       rescue => e
         puts e
         puts e.backtrace

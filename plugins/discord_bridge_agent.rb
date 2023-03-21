@@ -123,7 +123,9 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   def connect_to_bridge
     this = self
     @connection_error = false
+    @last_connection_attempt = monotonic_time
 
+    log "Connecting..."
     log "WEBSOCKET ALREADY EXISTS: #{@ws}" if @ws
 
     Thread.new do
@@ -141,21 +143,29 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
             this.handle_message(msg.data)
           end
 
+          ws.on(:close) do |error|
+            this.log error
+
+            this.connection_error!
+          end
+
           ws.on(:error) do |error|
             this.log error
 
             this.connection_error!
           end
         end
-      rescue Errno::ECONNREFUSED, Errno::ECONNRESET
-        connection_error!
+      rescue Errno::ECONNREFUSED, Errno::ECONNRESET => error
+        this.log error
+
+        this.connection_error!
       end
     end
   end
 
   def connection_error!
     @connection_error = true
-    @ws.close
+    @ws&.close
     self.websocket = nil
   end
 
@@ -169,13 +179,9 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   def deliver(payload)
     payload[:uuid] = @uuid
+    payload[:_queued_time] = monotonic_time
 
-    if @ws.nil? || @ws&.closed?
-      log "---- Connection Error? #{@connection_error}"
-    else
-      # log payload
-      @send_queue << payload.to_json
-    end
+    @send_queue << payload unless @ws.nil? || @ws&.closed?
   end
 
   def handle_message(msg)
@@ -227,6 +233,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @staff_pending_verification = {}
     @verification_timeout = 65 # seconds
 
+    @last_connection_attempt = 0.0
+
     @known_spies = {}
 
     connect_to_bridge
@@ -264,8 +272,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   end
 
   on(:tick) do
-    # Reconnect to bridge of there is a connection error
-    connect_to_bridge if @connection_error || @ws.nil?
+    # Reconnect to bridge if there is a connection error
+    connect_to_bridge if @connection_error && monotonic_time - @last_connection_attempt >= 7.0
 
     # Manage staff verifications
     check_pending_staff_verifications!
@@ -286,10 +294,18 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       @status_last_sent = monotonic_time
     end
 
+    # Don't send and drop old messages
+    @send_queue.each do |message|
+      next unless monotonic_time - message[:_queued_time] >= 60.0
+
+      @send_queue.delete(message)
+    end
+
+
     # Send queued messages
     if @ws && !@ws.closed? && @ws.open?
       while (message = @send_queue.shift)
-        @ws.send(message)
+        @ws.send(message.to_json)
       end
     end
   end
