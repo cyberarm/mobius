@@ -419,7 +419,7 @@ module Mobius
     end
 
     def killed_building(object, killed_obj, killer_obj)
-      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.") if Config.messages[:building_killed]
+      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{Presets.translate(object[:killed_preset])}.") if Config.messages[:building_killed]
     end
 
     def killed_vehicle(object, killed_obj, killer_obj)
@@ -437,7 +437,7 @@ module Mobius
           PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
         end
       when "vehicle"
-        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killed_obj[:name]} was ran over by a #{object[:killer_preset]}.") if Config.messages[:soldier_killed]
+        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killed_obj[:name]} was ran over by a #{Presets.translate(object[:killer_preset])}.") if Config.messages[:soldier_killed]
       end
     end
 

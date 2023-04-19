@@ -11,6 +11,7 @@ module Mobius
       Database,
       RenRem,
       SSGM,
+      Presets,
       GameLog,
       RenLog,
       ServerStatus,
