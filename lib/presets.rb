@@ -11,11 +11,12 @@ module Mobius
     end
 
     def self.translate(preset)
-      @presets[preset] || preset
+      @presets[preset.to_sym] || preset
     end
 
     def self.learn(preset:, name:)
-      @presets[preset] = name
+      # Soldiers that are human players also have their *current* weapon name included, we drop that
+      @presets[preset.to_sym] = name.split("/", 2).first
     end
 
     def self.teardown
@@ -24,10 +25,14 @@ module Mobius
       save_presets
     end
 
-    private def self.load_presets
+    def self.load_presets
       return unless File.exist?(PATH)
 
       @presets = JSON.parse(File.read(PATH), symbolize_names: true)
+    end
+
+    def self.save_presets
+      File.write(PATH, JSON.pretty_generate(@presets.sort_by { |key, _value| key.to_s.downcase }.to_h))
     end
   end
 end

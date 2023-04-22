@@ -187,16 +187,20 @@ module Mobius
       object[:z]      = data[6].to_f
       object[:health] = data[7].to_f
 
-      case object[:type].downcase
-      when "soldier"
-        @current_players.delete(@current_players.find { |name, obj| obj == object[:object] } )
-      end
-
       if @game_objects[object[:object]]
         @game_objects[object[:object]][:destroyed] = true
       end
 
       PluginManager.publish_event(:destroyed, object, data)
+
+      case object[:type].downcase
+      when "soldier"
+        @current_players.delete(@current_players.find { |_name, obj| obj == object[:object] })
+      when "vehicle"
+        occupants = @current_players.select { |_name, obj| @game_objects[obj][:vehicle] == object[:object] }
+
+        occupants.each { |o| o.delete(:vehicle) }
+      end
 
       pp object if Config.debug_verbose
     end
@@ -384,15 +388,24 @@ module Mobius
       object[:killed_x]         = data[4].to_f
       object[:killed_y]         = data[5].to_f
       object[:killed_z]         = data[6].to_f
-      object[:killed_direction] = data[7].to_f # facing?
+      object[:killed_facing]    = data[7].to_f
 
       object[:killer_object]    = data[8]
       object[:killer_preset]    = data[9]
       object[:killer_x]         = data[10].to_f
       object[:killer_y]         = data[11].to_f
       object[:killer_z]         = data[12].to_f
-      object[:killer_direction] = data[13].to_f # facing?
+      object[:killer_facing]    = data[13].to_f
       object[:killer_weapon]    = data[14]
+
+      # Additions
+      object[:killed_preset_name] = data[15]
+      object[:killer_preset_name] = data[16]
+      object[:killer_name]        = data[17] # Yes, it's killeR [2023-04-21]
+      object[:killed_name]        = data[18] # then killeD
+
+      Presets.learn(preset: object[:killed_preset], name: object[:killed_preset_name])
+      Presets.learn(preset: object[:killer_preset], name: object[:killer_preset_name])
 
       killed_obj = @game_objects[object[:killed_object]]
       killer_obj = @game_objects[object[:killer_object]]
@@ -452,6 +465,8 @@ module Mobius
       object[:preset]      = data[3]
       object[:preset_name] = data[4]
 
+      Presets.learn(preset: object[:preset], name: object[:preset_name])
+
       game_obj = @game_objects[@current_players[object[:name]]]
 
       return unless game_obj
@@ -492,6 +507,7 @@ module Mobius
       # TODO: RESET DATA FOR NEXT GAME
 
       PluginManager.publish_event(:win)
+      Presets.save_presets
 
       clear_data
     end

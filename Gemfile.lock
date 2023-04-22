@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.1)
+    addressable (2.8.4)
       public_suffix (>= 2.0.2, < 6.0)
     bcrypt (3.1.18)
     concurrent-ruby (1.2.2)
@@ -49,9 +49,9 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    sequel (5.66.0)
-    sqlite3 (1.6.1-x64-mingw-ucrt)
-    sqlite3 (1.6.1-x86_64-linux)
+    sequel (5.67.0)
+    sqlite3 (1.6.2-x64-mingw-ucrt)
+    sqlite3 (1.6.2-x86_64-linux)
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8.2)

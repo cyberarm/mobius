@@ -12,6 +12,7 @@ require "ld-eventsource"
 require "bcrypt"
 require "discordrb"
 
+require_relative "lib/constants"
 require_relative "lib/log"
 require_relative "lib/config"
 require_relative "lib/teams"
