@@ -267,11 +267,16 @@ module Mobius
           # Vehicle has been stolen
           if vehicle_obj[:last_team] != player_obj[:team]
             if vehicle_obj[:last_team] != 2
-              # FIXME: implement translate_preset
-              vehicle_name = vehicle_obj[:preset] # translate_preset(vehicle_obj[:preset])
+              vehicle_name = Presets.translate(vehicle_obj[:preset])
 
               # FIXME: Add a mobius annnouncement method to simplify these sorts of broadcasts
               if last_driver
+                captured_by = PlayerData.player(PlayerData.name_to_id(player_obj[:name].to_s.downcase))
+                stolen_from = PlayerData.player(PlayerData.name_to_id(last_driver[:name].to_s.downcase))
+
+                captured_by&.increment_value(:stats_vehicles_captured)
+                stolen_from&.increment_value(:stats_vehicles_stolen)
+
                 RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!") if Config.messages[:vehicle_stolen]
               else
                 RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!") if Config.messages[:vehicle_stolen]
@@ -363,9 +368,20 @@ module Mobius
         if object[:damage].negative?
           case object[:type].downcase.strip
           when "building"
-            player.increment_value(:stats_building_repair, -object[:damage])
+            player.increment_value(:stats_building_repairs, -object[:damage])
           when "vehicle"
-            player.increment_value(:stats_vehicle_repair, -object[:damage]) if obj && obj[:drivers].positive?
+            player.increment_value(:stats_vehicle_repairs, -object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
+          when "soldier"
+            player.increment_value(:stats_healed, -object[:damage])
+          end
+        else
+          case object[:type].downcase.strip
+          when "building"
+            player.increment_value(:stats_building_damage, object[:damage])
+          when "vehicle"
+            player.increment_value(:stats_vehicle_damage, object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
+          when "soldier"
+            player.increment_value(:stats_damage, object[:damage])
           end
         end
 
@@ -433,10 +449,21 @@ module Mobius
 
     def killed_building(object, killed_obj, killer_obj)
       RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{Presets.translate(object[:killed_preset])}.") if Config.messages[:building_killed]
+
+      killer_player_data = PlayerData.player(PlayerData.name_to_id(killer_obj[:name].to_s.downcase))
+
+      killer_player_data&.increment_value(:stats_buildings_destroyed)
     end
 
     def killed_vehicle(object, killed_obj, killer_obj)
       # RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.") if Config.messages[:vehicle_killed]
+
+      _killed_obj = @game_objects[killed_obj[:driver]]
+      killed_player_data = PlayerData.player(PlayerData.name_to_id(_killed_obj[:name].to_s.downcase)) if _killed_obj
+      killer_player_data = PlayerData.player(PlayerData.name_to_id(killer_obj[:name].to_s.downcase)) if killer_obj
+
+      killed_player_data&.increment_value(:stats_vehicles_lost)
+      killer_player_data&.increment_value(:stats_vehicles_destroyed)
     end
 
     def killed_soldier(object, killed_obj, killer_obj)
@@ -449,7 +476,7 @@ module Mobius
         else
           PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
         end
-      when "vehicle"
+      when "vehicle" # THIS ONLY TRIGGERS WITH AI HARVESTERS for some reason...
         RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killed_obj[:name]} was ran over by a #{Presets.translate(object[:killer_preset])}.") if Config.messages[:soldier_killed]
       end
     end
@@ -504,12 +531,19 @@ module Mobius
     end
 
     def win(line)
-      # TODO: RESET DATA FOR NEXT GAME
+      data = line.split(";")
 
-      PluginManager.publish_event(:win)
+      object = {
+        winning_team_name: data[1],
+        win_type: data[2],
+        team_0_score: data[3],
+        team_1_score: data[4]
+      }
+
+      PluginManager.publish_event(:win, object, data)
       Presets.save_presets
 
-      clear_data
+      clear_data(object)
     end
 
     def maploaded(line)
@@ -561,9 +595,30 @@ module Mobius
       # end
     end
 
-    def clear_data
+    def clear_data(win_data = nil)
       @game_objects.clear
       @current_players.clear
+
+      # ignore CONFIG gamelog event
+      if win_data
+        # Create a dummy playerdata player object
+        tally = PlayerData::Player.new(origin: "NULL", id: "", name: "", join_time: nil, score: 0, team: -1, ping: 0, address: ";", kbps: 0, rank: 0, kills: 0, deaths: 0, money: 0, kd: 0, time: nil, last_updated: nil)
+        player_list = PlayerData.player_list
+
+        player_list.each do |player|
+          player.increment_value(:stats_score, player.score)
+
+          player.score = 0
+
+          player.data.each do |key, value|
+            tally.increment_value(key, value)
+          end
+        end
+
+        player_list.each do |player|
+          player.update_rank_data(win_data, tally)
+        end
+      end
 
       PlayerData.player_list.each(&:reset)
 

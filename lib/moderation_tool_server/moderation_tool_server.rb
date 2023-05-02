@@ -3,6 +3,10 @@ require "sinatra/reloader"
 require "slim"
 require "sassc"
 
+def monotonic_time
+  Process.clock_gettime(Process::CLOCK_MONOTONIC)
+end
+
 module Mobius
   class ModerationToolApp < Sinatra::Base
     Client = Struct.new(:socket, :send_queue, :last_delivery, :keep_alive_interval)

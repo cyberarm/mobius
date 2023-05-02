@@ -1,7 +1,9 @@
 module Mobius
   class PlayerData
     class Player
-      attr_reader :origin
+      DEFAULT_ELO = 25.0
+
+      attr_reader :origin, :data
       attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :rank, :kills, :deaths, :money, :kd, :time, :last_updated
 
       def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
@@ -25,6 +27,7 @@ module Mobius
         @last_updated = last_updated # Time
 
         @data = { banned: false } # Hash
+        reset
       end
 
       def value(key)
@@ -48,13 +51,24 @@ module Mobius
       end
 
       def reset
-        @data.delete(:stats_kills)
-        @data.delete(:stats_deaths)
-        @data.delete(:stats_building_kills)
-        @data.delete(:stats_building_kills_building_a) # ???
-        @data.delete(:stats_building_repairs)
-        @data.delete(:stats_vehicle_kills)
-        @data.delete(:stats_vehicle_repairs)
+        # INFANTRY
+        @data[:stats_kills] = 0
+        @data[:stats_deaths] = 0
+        @data[:stats_damage] = 0.0
+        @data[:stats_healed] = 0.0
+
+        # BUILDINGS
+        @data[:stats_buildings_destroyed] = 0
+        @data[:stats_building_repairs] = 0.0
+        @data[:stats_building_damage] = 0.0 # damage dealt _to_ building
+
+        # VEHICLES
+        @data[:stats_vehicles_lost] = 0
+        @data[:stats_vehicles_destroyed] = 0
+        @data[:stats_vehicle_repairs] = 0.0
+        @data[:stats_vehicle_damage] = 0.0 # damage dealt _to_ vehicle
+        @data[:stats_vehicles_captured] = 0
+        @data[:stats_vehicles_stolen] = 0
 
         @data.delete(:manual_team)
       end
@@ -98,6 +112,69 @@ module Mobius
         RenRem.enqueue("pinfo")
 
         PlayerData.process_team_change(id, old_team, @team) if old_team != @team
+      end
+
+      def update_rank_data(win_data, tally)
+        model = Database::Rank.first(name: @name.downcase) || Database::Rank.create(name: @name.downcase, elo: DEFAULT_ELO)
+
+        winning_team = Teams.id_from_name(win_data[:winning_team_name])[:id]
+        round_rating = 0.0
+
+        tally_total_damage = tally.data[:stats_damage] + tally.data[:stats_building_damage] + tally.data[:stats_vehicle_damage]
+        tally_total_repairs = tally.data[:stats_healed] + tally.data[:stats_building_repairs] + tally.data[:stats_vehicle_repairs]
+
+        player_total_damage = @data[:stats_damage] + @data[:stats_building_damage] + @data[:stats_vehicle_damage]
+        player_total_repairs = @data[:stats_healed] + @data[:stats_building_repairs] + @data[:stats_vehicle_repairs]
+
+        # Round is not worth consideration.
+        return if tally_total_damage <= 100
+        return if tally_total_repairs <= 25
+
+        excellent = 1.0
+        okay      = 0.5
+        bad       = excellent * -2.0
+
+        if player_total_damage >= tally_total_damage * 0.08
+          round_rating += excellent
+        elsif player_total_damage >= tally_total_damage * 0.03
+          round_rating += okay
+        elsif player_total_damage <= tally_total_damage * 0.01
+          round_rating += bad
+        end
+
+        if player_total_repairs >= tally_total_repairs * 0.10
+          round_rating += excellent
+        elsif player_total_repairs >= tally_total_repairs * 0.05
+          round_rating += okay
+        elsif player_total_repairs <= tally_total_repairs * 0.01
+          round_rating += bad
+        end
+
+        elo = model.elo
+        elo += round_rating
+        elo = 0.0 if elo < 0
+        elo = 100.0 if elo > 100.0
+
+        model.update(
+          elo: elo,
+          stats_total_matches: model.stats_total_matches + 1,
+          stats_matches_won: model.stats_matches_won + (winning_team ? 1 : 0),
+          stats_matches_lost: model.stats_matches_lost + (!winning_team ? 1 : 0),
+          stats_score: model.stats_score + @score,
+          stats_kills: model.stats_kills + @data[:stats_kills],
+          stats_deaths: model.stats_deaths + @data[:stats_deaths],
+          stats_damage: model.stats_damage + @data[:stats_damage],
+          stats_healed: model.stats_healed + @data[:stats_healed],
+          stats_buildings_destroyed: model.stats_buildings_destroyed + @data[:stats_buildings_destroyed],
+          stats_building_repairs: model.stats_building_repairs + @data[:stats_building_repairs],
+          stats_building_damage: model.stats_building_damage + @data[:stats_building_damage],
+          stats_vehicles_lost: model.stats_vehicles_lost + @data[:stats_vehicles_lost],
+          stats_vehicles_destroyed: model.stats_vehicles_destroyed + @data[:stats_vehicles_destroyed],
+          stats_vehicle_repairs: model.stats_vehicle_repairs + @data[:stats_vehicle_repairs],
+          stats_vehicle_damage: model.stats_vehicle_damage + @data[:stats_vehicle_damage],
+          stats_vehicles_captured: model.stats_vehicles_captured + @data[:stats_vehicles_captured],
+          stats_vehicles_stolen: model.stats_vehicles_stolen + @data[:stats_vehicles_stolen]
+        )
       end
     end
 
@@ -151,6 +228,8 @@ module Mobius
         unless (known_ip = Database::IP.first(name: name.downcase, ip: address.split(";").first))
           Database::IP.create(name: name.downcase, ip: address.split(";").first)
         end
+
+        Database::Rank.first(name: name.downcase) || Database::Rank.create(name: name.downcase, elo: Player::DEFAULT_ELO)
 
         log "PlayerData", "#{player.name} has joined the game"
 

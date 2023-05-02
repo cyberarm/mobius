@@ -19,6 +19,7 @@ module Mobius
       require_relative "db/models/ip"
       require_relative "db/models/ban"
       require_relative "db/models/kick"
+      require_relative "db/models/rank"
     end
 
     def self.transaction(&block)
