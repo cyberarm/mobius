@@ -4,7 +4,9 @@ Sequel.migration do
       primary_key :id
       String :name, null: false
 
-      Float :elo, default: 25.0
+      Integer :rank, default: 0
+      Float   :skill, default: 0.0
+      Float   :confidence, default: 25.0
 
       Integer :stats_total_matches, default: 0
       Integer :stats_matches_won, default: 0
