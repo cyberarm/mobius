@@ -44,11 +44,11 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
   end
 
-  command(:remix, arguments: 0, help: "!remix NOW - Shuffle teams", groups: [:admin, :mod]) do |command|
+  command(:remix, arguments: 0, help: "!remix NOW - Remix teams", groups: [:admin, :mod]) do |command|
     if command.arguments.first == "NOW"
       log "#{command.issuer.name} remixed teams"
       remix_teams
-      broadcast_message("Teams have been remixed")
+      broadcast_message("[GameDirector] Teams have been remixed")
     else
       page_player(command.issuer.name, "Use !remix NOW, to truely remix teams!")
     end

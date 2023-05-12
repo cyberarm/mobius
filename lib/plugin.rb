@@ -6,6 +6,16 @@ module Mobius
     attr_reader :___name, :___database_name, :___version, :___event_handlers, :___timers, :___data, :___plugin_file
 
     # RESERVED
+    def self.__remix_teams_first_pick
+      @__remix_teams_first_pick ||= 0
+    end
+
+    # RESERVED
+    def self.__remix_teams_first_pick=(n)
+      @__remix_teams_first_pick = n
+    end
+
+    # RESERVED
     def initialize(plugin_file)
       @___name = ""
       @___version = ""
@@ -146,10 +156,29 @@ module Mobius
     def remix_teams
       return unless ServerStatus.total_players.positive?
 
-      PlayerData.player_list.select { |ply| ply.ingame? }.shuffle.each_with_index do |player, i|
-        side = i % 2
+      team_zero = []
+      team_one = []
+      list = []
 
-        player.change_team(side)
+      PlayerData.player_list.select(&:ingame?).each do |player|
+        rating = Database::Rank.first(name: player.name.downcase)&.skill || 0.0
+
+        list << [player, rating]
+      end
+
+      list.sort_by! { |l| [l[1], l[0].name.downcase] }.reverse
+
+      list.each do |player, _rating|
+        (Plugin.__remix_teams_first_pick.zero? ? team_zero : team_one) << player
+        Plugin.__remix_teams_first_pick = Plugin.__remix_teams_first_pick.zero? ? 1 : 0
+      end
+
+      team_zero.each do |player|
+        player.change_team(0)
+      end
+
+      team_one.each do |player|
+        player.change_team(1)
       end
     end
 
