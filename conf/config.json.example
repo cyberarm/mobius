@@ -60,7 +60,7 @@
       "server_color": null,
       "battleview_url": null,
       "server_short_name": "APB",
-      "announce_voice_changes":true # Announce when a player joins/leaves discord voice channel
+      "announce_voice_channel_changes":true # Announce when a player joins/changes/leaves discord voice channel
     },
     "tournament": {
       "team_0_ghost_preset": "Allied_Ghost",

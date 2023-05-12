@@ -7,7 +7,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
   end
 
   def untrusted_ip?(test_ip)
-    @untrusted_ips&.find { |ip| ip.include?(test_ip) }
+    @untrusted_ips&.find { |ip, line| ip.include?(test_ip) }
   end
 
   on(:start) do
@@ -20,7 +20,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
         next if line.empty? || line.start_with?("#")
 
-        @untrusted_ips << IPAddr.new(line)
+        @untrusted_ips << [IPAddr.new(line), line]
       end
     else
       log("Warning: Untrusted IP list is missing! (#{file_path})")
@@ -31,9 +31,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     after(1) do
       player_ip = player.address.split(";").first
 
-      if untrusted_ip?(player_ip)
+      if (ip = untrusted_ip?(player_ip))
         notify_moderators("[Moderation] #{player.name} might be using a VPN!")
-        notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{untrusted_ip?(player_ip)}")
+        notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
       end
     end
   end
@@ -302,18 +302,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     directors = PlayerData.player_list.select(&:director?)
 
     if admins.size.positive?
-      broadcast_message("Administrators:")
-      broadcast_message(admins.sort_by(&:name).map(&:name).join(", "))
+      broadcast_message("Administrators:", red: 127, green: 255, blue: 127)
+      broadcast_message("    #{admins.sort_by(&:name).map(&:name).join(", ")}", red: 127, green: 255, blue: 127)
     end
 
     if mods.size.positive?
-      broadcast_message("Moderators:")
-      broadcast_message(mods.sort_by(&:name).map(&:name).join(", "))
+      broadcast_message("Moderators:", red: 127, green: 255, blue: 127)
+      broadcast_message("    #{mods.sort_by(&:name).map(&:name).join(", ")}", red: 127, green: 255, blue: 127)
     end
 
     if directors.size.positive?
-      broadcast_message("Game Directors:")
-      broadcast_message(directors.sort_by(&:name).map(&:name).join(", "))
+      broadcast_message("Game Directors:", red: 127, green: 255, blue: 127)
+      broadcast_message("    #{directors.sort_by(&:name).map(&:name).join(", ")}", red: 127, green: 255, blue: 127)
     end
 
     if [admins + mods + directors].flatten.size.zero?

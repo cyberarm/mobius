@@ -95,6 +95,14 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @staff_pending_verification[discord_id]
   end
 
+  def verify_timeout(discord_id)
+    pending_staff = @staff_pending_verification[discord_id]
+
+    return 0 unless pending_staff
+
+    (@verification_timeout - (monotonic_time - pending_staff[:time])).round
+  end
+
   def check_pending_staff_verifications!
     @staff_pending_verification.each do |discord_id, hash|
       if (monotonic_time - hash[:time]) >= @verification_timeout
@@ -409,18 +417,24 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   on(:_discord_bot_verify_staff) do |player, discord_id|
     next if waiting_for_reply?(discord_id)
 
-    after(5) do
+    after(5) do # 60 seconds left
       if @staff_pending_verification[discord_id]
-        page_player(player.name, "[MOBIUS] I've sent you an important DM on DISCORD")
+        page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD")
 
-        after(5) do
+        after(10) do # 50 seconds left
           if @staff_pending_verification[discord_id]
-            page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{@verification_timeout - 10} seconds or you will be kicked.")
-          end
+            page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
 
-          after(10) do
-            if @staff_pending_verification[discord_id]
-              page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{@verification_timeout - 10} seconds or you will be kicked.")
+            after(20) do # 30 seconds left
+              if @staff_pending_verification[discord_id]
+                page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
+
+                after(20) do # 10 seconds left
+                  if @staff_pending_verification[discord_id]
+                    page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
+                  end
+                end
+              end
             end
           end
         end
