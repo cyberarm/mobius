@@ -161,7 +161,7 @@ module Mobius
       list = []
 
       PlayerData.player_list.select(&:ingame?).each do |player|
-        rating = Database::Rank.first(name: player.name.downcase)&.skill || 0.0
+        rating = Database::Rank.first(name: player.name.downcase)&.skill || PlayerData::DEFAULT_SKILL
 
         list << [player, rating]
       end
