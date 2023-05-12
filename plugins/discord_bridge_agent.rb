@@ -71,7 +71,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     }
   end
 
-  def manage_voice_channels(issuer_nickname:, lobby: false, competitive: false, move: false, discord_name: "", voice_channel: nil)
+  def manage_voice_channels(issuer_nickname:, lobby: false, teamed: false, move: false, discord_name: "", voice_channel: nil)
     hash = {
       type: :manage_voice_channels,
       data: {
@@ -80,7 +80,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     }
 
     hash[:data][:lobby] = true if lobby
-    hash[:data][:competitive] = true if competitive
+    hash[:data][:teamed] = true if teamed
 
     if move
       hash[:data][:move] = true
@@ -246,7 +246,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
         in_voice_channel = in_voice_channels.include?(player.name.downcase)
 
         next if in_voice_channel
-        channel = player.get_value(:discord_voice_channel)
+        channel = player.value(:discord_voice_channel)
 
         player.delete_value(:discord_voice_channel)
 
@@ -254,17 +254,19 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       end
 
       counter = [
-        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
-        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
-        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
+        PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+        PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
+        PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
       ].flatten.sum
 
       joined_voice.each do |player, channel|
-        broadcast_message("[MOBIUS] #{player.name} joined the #{player.get_value(:discord_voice_channel)} voice channel (#{counter}/#{PlayerData.player_list.size})", red: 255, green: 127, blue: 0)
+        count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+        broadcast_message("[MOBIUS] #{player.name} joined the #{channel} voice channel #{count_string}", red: 255, green: 127, blue: 0)
       end
 
       left_voice.each do |player, channel|
-        broadcast_message("[MOBIUS] #{player.name} left the #{channel} voice channel (#{counter}/#{PlayerData.player_list.size})", red: 255, green: 127, blue: 0)
+        count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+        broadcast_message("[MOBIUS] #{player.name} left the #{channel} voice channel (#{count_string})", red: 255, green: 127, blue: 0)
       end
     end
   end
@@ -416,9 +418,9 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   command(:vc_info, aliases: [:vci], arguments: 0, help: "!vc_info - List players in voice channels") do |command|
     counter = {
-      lobby:  PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
-      team_0: PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
-      team_1: PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
+      lobby:  PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+      team_0: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
+      team_1: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
     }
 
     team_0_str = "#{Teams.name(0)}: #{counter[:team_0]}/#{PlayerData.players_by_team(0).size}"
