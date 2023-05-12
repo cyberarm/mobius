@@ -1,7 +1,7 @@
 module Mobius
   class PlayerData
     class Player
-      DEFAULT_ELO = 25.0
+      DEFAULT_SKILL = 0.0
 
       attr_reader :origin, :data
       attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :rank, :kills, :deaths, :money, :kd, :time, :last_updated
@@ -115,7 +115,7 @@ module Mobius
       end
 
       def update_rank_data(win_data, tally)
-        model = Database::Rank.first(name: @name.downcase) || Database::Rank.create(name: @name.downcase, elo: DEFAULT_ELO)
+        model = Database::Rank.first(name: @name.downcase) || Database::Rank.create(name: @name.downcase, skill: DEFAULT_SKILL)
 
         winning_team = Teams.id_from_name(win_data[:winning_team_name])[:id]
         round_rating = 0.0
@@ -150,13 +150,13 @@ module Mobius
           round_rating += bad
         end
 
-        elo = model.elo
-        elo += round_rating
-        elo = 0.0 if elo < 0
-        elo = 100.0 if elo > 100.0
+        skill = model.skill
+        skill += round_rating
+        skill = 0.0 if skill < 0
+        skill = 100.0 if skill > 100.0
 
         model.update(
-          elo: elo,
+          skill: skill,
           stats_total_matches: model.stats_total_matches + 1,
           stats_matches_won: model.stats_matches_won + (winning_team ? 1 : 0),
           stats_matches_lost: model.stats_matches_lost + (!winning_team ? 1 : 0),
@@ -229,7 +229,7 @@ module Mobius
           Database::IP.create(name: name.downcase, ip: address.split(";").first)
         end
 
-        Database::Rank.first(name: name.downcase) || Database::Rank.create(name: name.downcase, elo: Player::DEFAULT_ELO)
+        Database::Rank.first(name: name.downcase) || Database::Rank.create(name: name.downcase, skill: Player::DEFAULT_SKILL)
 
         log "PlayerData", "#{player.name} has joined the game"
 

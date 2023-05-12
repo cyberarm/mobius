@@ -213,6 +213,59 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       player = PlayerData.player(PlayerData.name_to_id(hash[:data][:nickname]))
 
       page_player(player.name, "[DiscordBridgeAgent] #{hash[:data][:message]}") if player
+
+    when :voice_channel_changed
+      joined_voice = []
+      left_voice   = []
+
+      # Detect joins and sync active channel
+      [:lobby, :team_0, :team_1].each do |list|
+        hash[:data][:players][list].each do |username|
+          player = PlayerData.player(PlayerData.name_to_id(username))
+
+          next unless player
+
+          channel = case list
+                    when :lobby
+                      "Lobby"
+                    when :team_0
+                      Teams.name(0)
+                    when :team_1
+                      Teams.name(1)
+                    end
+
+          player.set_value(:discord_voice_channel, channel)
+
+          joined_voice << [player, channel]
+        end
+      end
+
+      # Detect leaves
+      in_voice_channels = hash[:data][:players].values.flatten.uniq.map(&:downcase)
+      PlayerData.player_list.each do |player|
+        in_voice_channel = in_voice_channels.include?(player.name.downcase)
+
+        next if in_voice_channel
+        channel = player.get_value(:discord_voice_channel)
+
+        player.delete_value(:discord_voice_channel)
+
+        left_voice << [player, channel]
+      end
+
+      counter = [
+        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
+        PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
+      ].flatten.sum
+
+      joined_voice.each do |player, channel|
+        broadcast_message("[MOBIUS] #{player.name} joined the #{player.get_value(:discord_voice_channel)} voice channel (#{counter}/#{PlayerData.player_list.size})", red: 255, green: 127, blue: 0)
+      end
+
+      left_voice.each do |player, channel|
+        broadcast_message("[MOBIUS] #{player.name} left the #{channel} voice channel (#{counter}/#{PlayerData.player_list.size})", red: 255, green: 127, blue: 0)
+      end
     end
   end
 
@@ -250,7 +303,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   on(:map_loaded) do
     @send_status = true
-    @known_spies ={}
+    @known_spies = {}
   end
 
   on(:team_changed) do
@@ -300,7 +353,6 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
       @send_queue.delete(message)
     end
-
 
     # Send queued messages
     if @ws && !@ws.closed? && @ws.open?
@@ -362,13 +414,27 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     connection_error! if @ws
   end
 
+  command(:vc_info, aliases: [:vci], arguments: 0, help: "!vc_info - List players in voice channels") do |command|
+    counter = {
+      lobby:  PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+      team_0: PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
+      team_1: PlayerData.player_list.select { |ply| ply.get_value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
+    }
+
+    team_0_str = "#{Teams.name(0)}: #{counter[:team_0]}/#{PlayerData.players_by_team(0).size}"
+    team_1_str = "#{Teams.name(1)}: #{counter[:team_1]}/#{PlayerData.players_by_team(1).size}"
+    string = "Lobby: #{counter[:lobby]}, #{team_0_str}, #{team_1_str}"
+
+    broadcast_message("[MOBIUS] Players in voice channels: #{string}", red: 255, green: 127, blue: 0)
+  end
+
   command(:vc_lobby, aliases: [:vcl], arguments: 0, help: "!vc_lobby - Moves everyone in teamed voice channels into lobby channel", groups: [:admin, :mod]) do |command|
     deliver(manage_voice_channels(lobby: true, issuer_nickname: command.issuer.name))
     page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move all users in teamed voice channels to lobby channel, one moment...")
   end
 
-  command(:vc_competitive, aliases: [:vcc], arguments: 0, help: "!vc_competitive - Moves known players from lobby channel into teamed voice channels", groups: [:admin, :mod]) do |command|
-    deliver(manage_voice_channels(competitive: true, issuer_nickname: command.issuer.name))
+  command(:vc_teamed, aliases: [:vct], arguments: 0, help: "!vc_teamed - Moves known players from lobby channel into teamed voice channels", groups: [:admin, :mod]) do |command|
+    deliver(manage_voice_channels(teamed: true, issuer_nickname: command.issuer.name))
     page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move known players from lobby voice channel to teamed channels, one moment...")
   end
 
