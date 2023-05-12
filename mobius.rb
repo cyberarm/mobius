@@ -36,4 +36,4 @@ def monotonic_time
   Process.clock_gettime(Process::CLOCK_MONOTONIC)
 end
 
-Mobius.init
+Mobius.init unless defined?(MOBIUS_NO_INIT)
