@@ -261,12 +261,12 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
       joined_voice.each do |player, channel|
         count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
-        broadcast_message("[MOBIUS] #{player.name} joined the #{channel} voice channel #{count_string}", red: 255, green: 127, blue: 0)
+        broadcast_message("[DiscordBridgeAgent] #{player.name} joined the #{channel} voice channel #{count_string}", red: 255, green: 127, blue: 0)
       end
 
       left_voice.each do |player, channel|
         count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
-        broadcast_message("[MOBIUS] #{player.name} left the #{channel} voice channel (#{count_string})", red: 255, green: 127, blue: 0)
+        broadcast_message("[DiscordBridgeAgent] #{player.name} left the #{channel} voice channel (#{count_string})", red: 255, green: 127, blue: 0)
       end
     end
   end
@@ -396,7 +396,19 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     after(5) do
       if @staff_pending_verification[discord_id]
-        page_player(player.name, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+        page_player(player.name, "[MOBIUS] I've sent you an important DM on DISCORD")
+
+        after(5) do
+          if @staff_pending_verification[discord_id]
+            page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{@verification_timeout - 10} seconds or you will be kicked.")
+          end
+
+          after(10) do
+            if @staff_pending_verification[discord_id]
+              page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{@verification_timeout - 10} seconds or you will be kicked.")
+            end
+          end
+        end
       end
     end
 

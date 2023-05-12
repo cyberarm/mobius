@@ -137,7 +137,8 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
               announce_staff(player, role, hash)
               page_player(issuer.name, "[Authentication] Authenticated #{player.name}")
               # Rmember players IP as authenticated
-              Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first)&.update(authenticated: true)
+              # NOTE: Disabled marking IP as trusted
+              # Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first)&.update(authenticated: true)
 
               PluginManager.publish_event(:_authenticated, player, hash)
             else
