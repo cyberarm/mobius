@@ -21,6 +21,8 @@ module Mobius
       }
     ]
 
+    @team_first_picking = 0
+
     def self.init
       log "INIT", "Loading Teams..."
 
@@ -101,6 +103,41 @@ module Mobius
 
     def self.colorize_abbreviation(team)
       IRC.colorize(color(team), abbreviation(team))
+    end
+
+    def self.skill_sort_teams
+      team_zero = []
+      team_one = []
+      team_zero_rating = 0.0
+      team_one_rating = 0.0
+      list = []
+      team_picking = @team_first_picking
+
+      PlayerData.player_list.select(&:ingame?).each do |player|
+        rating = Database::Rank.first(name: player.name.downcase)&.skill || PlayerData::DEFAULT_SKILL
+
+        list << [player, rating]
+      end
+
+      list.sort_by! { |l| [l[1], l[0].name.downcase] }.reverse
+
+      list.each do |player, rating|
+        (team_picking.zero? ? team_zero : team_one) << player
+        team_zero_rating += rating if team_picking.zero?
+        team_one_rating += rating unless team_picking.zero?
+
+        team_picking = team_picking.zero? ? 1 : 0
+      end
+
+      [team_zero, team_one, team_zero_rating, team_one_rating]
+    end
+
+    def self.team_first_picking
+      @team_first_picking
+    end
+
+    def self.team_first_picking=(n)
+      @team_first_picking = n
     end
   end
 end

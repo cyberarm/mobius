@@ -547,6 +547,8 @@ module Mobius
     end
 
     def maploaded(line)
+      PluginManager.publish_event(:maploaded, line.strip)
+
       return unless Config.record_gamelog
 
       @data_recorder&.close
