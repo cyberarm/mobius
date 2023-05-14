@@ -278,12 +278,12 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     ].flatten.sum
 
     joined_voice.each do |player, channel|
-      count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+      count_string = channel.to_s.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
       broadcast_message("[DiscordBridgeAgent] #{player.name} joined the #{channel} voice channel #{count_string}", red: 255, green: 127, blue: 0)
     end
 
     left_voice.each do |player, channel|
-      count_string = channel.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+      count_string = channel.to_s.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
       broadcast_message("[DiscordBridgeAgent] #{player.name} left the #{channel} voice channel (#{count_string})", red: 255, green: 127, blue: 0)
     end
   end

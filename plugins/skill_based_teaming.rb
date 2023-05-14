@@ -1,5 +1,5 @@
 mobius_plugin(name: "SkillBasedTeaming", database_name: "skill_based_teaming", version: "0.0.1") do
-  on(:maploaded) do |mapname|
+  on(:map_loaded) do |mapname|
     next unless Config.remix_teams_by_skill
 
     log "Assigning players to teams based on skill..."
