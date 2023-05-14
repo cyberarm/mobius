@@ -248,6 +248,9 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
                     Teams.name(1)
                   end
 
+        # Player cannot join the same channel repeatedly
+        next if player.value(:discord_voice_channel) == channel
+
         player.set_value(:discord_voice_channel, channel)
 
         joined_voice << [player, channel]
@@ -259,8 +262,13 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     PlayerData.player_list.each do |player|
       in_voice_channel = in_voice_channels.include?(player.name.downcase)
 
+      # Player is in a voice channel, as such they haven't left
       next if in_voice_channel
+
       channel = player.value(:discord_voice_channel)
+
+      # Player can only leave if they've been in a voice channel
+      next unless channel
 
       player.delete_value(:discord_voice_channel)
 
@@ -271,21 +279,41 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     return unless @announce_voice_channel_changes
 
-    counter = [
-      PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+    counters = [
       PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
-      PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
-    ].flatten.sum
+      PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size,
+      PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size
+    ]
+
+    if @suppress_voice_channel_changes
+      broadcast_voice_channel_info
+
+      return
+    end
 
     joined_voice.each do |player, channel|
-      count_string = channel.to_s.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+      count_string = channel.to_s.downcase == "lobby" ? "(#{counters[2]}/#{PlayerData.player_list.size})" : "(#{counters[player.team] || 0}/#{PlayerData.players_by_team(player.team).size})"
       broadcast_message("[DiscordBridgeAgent] #{player.name} joined the #{channel} voice channel #{count_string}", red: 255, green: 127, blue: 0)
     end
 
     left_voice.each do |player, channel|
-      count_string = channel.to_s.downcase == "lobby" ? "(#{counter}/#{PlayerData.player_list.size})" : "(#{counter}/#{PlayerData.players_by_team(player.team).size})"
+      count_string = channel.to_s.downcase == "lobby" ? "(#{counters[2]}/#{PlayerData.player_list.size})" : "(#{counters[player.team] || 0}/#{PlayerData.players_by_team(player.team).size})"
       broadcast_message("[DiscordBridgeAgent] #{player.name} left the #{channel} voice channel (#{count_string})", red: 255, green: 127, blue: 0)
     end
+  end
+
+  def broadcast_voice_channel_info
+    counter = {
+      lobby:  PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
+      team_0: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
+      team_1: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
+    }
+
+    team_0_str = "#{Teams.name(0)}: #{counter[:team_0]}/#{PlayerData.players_by_team(0).size}"
+    team_1_str = "#{Teams.name(1)}: #{counter[:team_1]}/#{PlayerData.players_by_team(1).size}"
+    string = "Lobby: #{counter[:lobby]}, #{team_0_str}, #{team_1_str}"
+
+    broadcast_message("[MOBIUS] Players in voice channels: #{string}", red: 255, green: 127, blue: 0)
   end
 
   on(:start) do
@@ -300,6 +328,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     @uuid = Config.discord_bridge[:uuid]
     @announce_voice_channel_changes = Config.discord_bridge[:announce_voice_channel_changes]
+    @suppress_voice_channel_changes = false
     @voice_channel_data = nil
     @voice_channel_data_updated = false
     @send_status = true
@@ -326,6 +355,12 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   on(:map_loaded) do
     @send_status = true
     @known_spies = {}
+
+    @suppress_voice_channel_changes = true
+
+    after(15) do
+      @suppress_voice_channel_changes = false
+    end
   end
 
   on(:team_changed) do
@@ -458,17 +493,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   end
 
   command(:vc_info, aliases: [:vci], arguments: 0, help: "!vc_info - List players in voice channels") do |command|
-    counter = {
-      lobby:  PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == "lobby" }.size,
-      team_0: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(0).downcase }.size,
-      team_1: PlayerData.player_list.select { |ply| ply.value(:discord_voice_channel).to_s.downcase == Teams.name(1).downcase }.size
-    }
-
-    team_0_str = "#{Teams.name(0)}: #{counter[:team_0]}/#{PlayerData.players_by_team(0).size}"
-    team_1_str = "#{Teams.name(1)}: #{counter[:team_1]}/#{PlayerData.players_by_team(1).size}"
-    string = "Lobby: #{counter[:lobby]}, #{team_0_str}, #{team_1_str}"
-
-    broadcast_message("[MOBIUS] Players in voice channels: #{string}", red: 255, green: 127, blue: 0)
+    broadcast_voice_channel_info
   end
 
   command(:vc_lobby, aliases: [:vcl], arguments: 0, help: "!vc_lobby - Moves everyone in teamed voice channels into lobby channel", groups: [:admin, :mod]) do |command|
