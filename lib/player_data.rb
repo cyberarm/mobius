@@ -182,6 +182,17 @@ module Mobius
 
     def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, last_updated:)
       if (player = @player_data[id])
+        player_updated = player.score != score ||
+                         player.team != team ||
+                         player.ping != ping ||
+                         player.kbps != kbps ||
+                         player.rank != rank ||
+                         player.kills != kills ||
+                         player.deaths != deaths ||
+                         player.money != money ||
+                         player.kd != kd
+                         # Time is not a useful metric
+
         old_team = player.team
 
         player.score = score
@@ -198,6 +209,13 @@ module Mobius
 
         if old_team != team
           process_team_change(id, old_team, team)
+        end
+
+        if player_updated
+          PluginManager.publish_event(
+            :player_updated,
+            player
+          )
         end
       else
         # TODO: Check bans, kicks, etc.

@@ -41,4 +41,21 @@ mobius_plugin(name: "SkillBasedTeaming", database_name: "skill_based_teaming", v
       end
     end
   end
+
+  on(:player_updated) do |player|
+    next unless Config.remix_teams_by_skill
+
+    assigned_team = player.value(:skill_assigned_team)
+
+    if assigned_team
+      player.delete_value(:skill_assigned_team)
+
+      if assigned_team && player.team != assigned_team
+        log "Assigned #{player.name} to team #{Teams.name(assigned_team)}"
+        player.change_team(assigned_team)
+      else
+        log "#{player.name} already on assigned team #{Teams.name(assigned_team)}"
+      end
+    end
+  end
 end
