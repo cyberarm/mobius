@@ -72,17 +72,13 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   end
 
   def check_coop_votes(silent:)
-    missing = []
-
     return if ServerStatus.total_players.zero?
 
-    PlayerData.player_list.each do |player|
-      next if @coop_votes[player.name] || !player.ingame?
+    player_list = PlayerData.player_list.select(&:ingame?)
+    required_votes = (player_list.size * @vote_required_percentage).round
+    total_votes = player_list.select { |ply| @coop_votes[ply] }.size
 
-      missing << player
-    end
-
-    if missing.size.zero?
+    if total_votes >= required_votes
       broadcast_message("[AutoCoop] Co-op will be enabled after this round.") unless silent
       log("Co-op will be enabled after this round by player vote") unless silent
 
@@ -91,22 +87,18 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       @coop_votes.clear
       @versus_votes.clear
     else
-      broadcast_message("[AutoCoop] Still need #{missing.count} to vote to start coop!") unless silent
+      broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote to start coop!") unless silent
     end
   end
 
   def check_versus_votes(silent:)
-    missing = []
-
     return if ServerStatus.total_players.zero?
 
-    PlayerData.player_list.each do |player|
-      next if @versus_votes[player.name] || !player.ingame?
+    player_list = PlayerData.player_list.select(&:ingame?)
+    required_votes = (player_list.size * @vote_required_percentage).round
+    total_votes = player_list.select { |ply| @coop_votes[ply] }.size
 
-      missing << player
-    end
-
-    if missing.size.zero?
+    if total_votes >= required_votes
       broadcast_message("[AutoCoop] Co-op will be disabled after this round.") unless silent
       log("PvP will be enabled after this round by player vote") unless silent
 
@@ -115,7 +107,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       @versus_votes.clear
       @coop_votes.clear
     else
-      broadcast_message("[AutoCoop] Still need #{missing.count} to vote for PvP!") unless silent
+      broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote for PvP!") unless silent
     end
   end
 
@@ -142,6 +134,8 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @default_bot_difficulty = 3
     @default_max_bot_count = 64
     @default_friendless_player_count = 12
+
+    @vote_required_percentage = 0.69 # 69% => (number_of_players * 0.69).round
 
     @coop_started = false
     @manual_bot_count = false
@@ -175,16 +169,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
         configure_bots
 
         broadcast_message("[AutoCoop] Resumed co-op on team #{Teams.name(@current_side)}")
-      end
-    end
-
-    every(60 * 5) do
-      if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_versus_player_count
-        broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
-        broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !request_versus (!vs), 100% of players must request it.")
-      elsif !@coop_started && @next_round_mode != :coop
-        broadcast_message("[AutoCoop] Want to switch back to co-op?")
-        broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), 100% of players must request it.")
       end
     end
 
@@ -251,6 +235,16 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
         RenRem.cmd("botcount 0")
         @coop_started = false
+      end
+    end
+
+    after(15) do
+      if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_versus_player_count
+        broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
+        broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !request_versus (!vs), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
+      elsif !@coop_started && @next_round_mode != :coop
+        broadcast_message("[AutoCoop] Want to switch back to co-op?")
+        broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
       end
     end
   end
