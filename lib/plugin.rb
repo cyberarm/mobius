@@ -146,6 +146,17 @@ module Mobius
     def remix_teams
       return unless ServerStatus.total_players.positive?
 
+      noise = Perlin::Noise.new(1, seed: Time.now.to_i)
+      players = PlayerData.player_list.select(&:ingame?).sort { noise[rand(-1024.1024..1024.1024)] }
+
+      players.each_with_index do |player, i|
+        player.change_team(i % 2)
+      end
+    end
+
+    def remix_teams_by_skill
+      return unless ServerStatus.total_players.positive?
+
       team_zero, team_one = Teams.skill_sort_teams
       Teams.team_first_picking = Teams.team_first_picking.zero? ? 1 : 0
 

@@ -42,6 +42,7 @@ GEM
     netrc (0.11.0)
     opus-ruby (1.0.1)
       ffi
+    perlin_noise (0.1.3)
     public_suffix (5.0.1)
     rake (13.0.6)
     rest-client (2.1.0)
@@ -49,7 +50,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    sequel (5.67.0)
+    sequel (5.68.0)
     sqlite3 (1.6.2-x64-mingw-ucrt)
     sqlite3 (1.6.2-x86_64-linux)
     unf (0.1.4)
@@ -69,6 +70,7 @@ DEPENDENCIES
   discordrb
   excon
   ld-eventsource
+  perlin_noise
   sequel
   sqlite3
 

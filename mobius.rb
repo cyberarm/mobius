@@ -11,6 +11,7 @@ require "excon"
 require "ld-eventsource"
 require "bcrypt"
 require "discordrb"
+require "perlin_noise"
 
 require_relative "lib/constants"
 require_relative "lib/log"
