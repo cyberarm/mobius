@@ -394,14 +394,14 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       @fds_responding = ServerStatus.get(:fds_responding)
 
       page_server_administrators!
-    end
+    else
+      # Queue full payload / status if @send_status is true
+      if @send_status
+        deliver(full_payload)
 
-    # Queue full payload / status if @send_status is true
-    if @send_status
-      deliver(full_payload)
-
-      @send_status = false
-      @status_last_sent = monotonic_time
+        @send_status = false
+        @status_last_sent = monotonic_time
+      end
     end
 
     # Don't send and drop old messages

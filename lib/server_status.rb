@@ -68,7 +68,7 @@ module Mobius
         ServerConfig.fetch_available_maps
       end
 
-      @data[:last_request_time] = monotonic_time.to_i # FIXME: Use monotonic time!
+      @data[:last_request_time] = monotonic_time.to_i
 
       RenRem.cmd("mapnum") if @data[:current_map_number] == -1
 
