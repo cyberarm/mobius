@@ -13,7 +13,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
     @master_servers = []
     @query_socket = UDPSocket.new
     @query_port = Config.gamespy[:query_port]
-    @game_name = Config.gamespy[:game_name] || "cncrenegade"
+    @game_name = Config.gamespy[:game_name] || "ccrenegade"
 
     failure = false
 
