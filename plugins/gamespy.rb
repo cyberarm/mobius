@@ -13,6 +13,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
     @master_servers = []
     @query_socket = UDPSocket.new
     @query_port = Config.gamespy[:query_port]
+    @game_name = Config.gamespy[:game_name] || "cncrenegade"
 
     failure = false
 
@@ -94,11 +95,11 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
   end
 
   def send_heartbeat_to_master(socket)
-    socket.send("\\heartbeat\\#{@query_port}\\gamename\\cncrenegade", 0)
+    socket.send("\\heartbeat\\#{@query_port}\\gamename\\#{@game_name}", 0)
   end
 
   def send_heartbeat_stop_to_master(socket)
-    socket.send("\\heartbeat\\#{@query_port}\\gamename\\cncrenegade\\statechanged\\2", 0)
+    socket.send("\\heartbeat\\#{@query_port}\\gamename\\#{@game_name}\\statechanged\\2", 0)
   end
 
   def query_server_receive(message, addrinfo)
