@@ -396,7 +396,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       page_server_administrators!
     else
       # Queue full payload / status if @send_status is true
-      if @send_status
+      if @send_status && @fds_responding
         deliver(full_payload)
 
         @send_status = false
