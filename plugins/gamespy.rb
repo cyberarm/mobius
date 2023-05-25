@@ -15,6 +15,13 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
     @query_port = Config.gamespy[:query_port]
     @game_name = Config.gamespy[:game_name] || "ccrenegade"
 
+    # Manually track team total kills/deaths
+    @team_0_kills = 0
+    @team_0_deaths = 0
+
+    @team_1_kills = 0
+    @team_1_deaths = 0
+
     failure = false
 
     after(5) do
@@ -53,6 +60,31 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
         end
       end
     end
+  end
+
+  on(:killed) do |hash|
+    if (killed_obj = hash[:_killed_object]) && (killer_obj = hash[:_killer_object])
+      killed = PlayerData.player(PlayerData.name_to_id(killed_obj[:name]))
+      killer = PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))
+
+      if (killed && killer) && killed.team != killer.team && killed.name != killer.name
+        if killer.team == 0
+          @team_0_kills += 1
+          @team_1_deaths += 1
+        elsif killer.team == 1
+          @team_1_kills += 1
+          @team_0_deaths += 1
+        end
+      end
+    end
+  end
+
+  on(:map_loaded) do
+    @team_0_kills = 0
+    @team_0_deaths = 0
+
+    @team_1_kills = 0
+    @team_1_deaths = 0
   end
 
   on(:shutdown) do
@@ -122,7 +154,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
       append_fragment("\\echo\\#{message[6..message.length - 1]}") # echo back received message less \echo\
     end
 
-    @query_socket.send("#{@buffer.string}\\final\\queryid\\#{@query_id}.#{@fragment_id}", 0, @query_address[2], @query_address[1])
+    @query_socket.send("#{@buffer.string}\\final\\\\queryid\\#{@query_id}.#{@fragment_id}", 0, @query_address[2], @query_address[1])
 
     @buffer.string = ""
     @query_address = nil
@@ -174,10 +206,12 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
   end
 
   def generate_players
-    [0, 1].each do |team|
+    2.times do |team|
       append_fragment(
         "\\team_t#{team}\\#{Teams.name(team)}" \
-        "\\score_t#{team}\\#{ServerStatus.get(:"team_#{team}_points")}"
+        "\\score_t#{team}\\#{ServerStatus.get(:"team_#{team}_points")}" \
+        "\\kills_t#{team}\\#{instance_variable_get(:"@team_#{team}_kills")}" \
+        "\\deaths_t#{team}\\#{instance_variable_get(:"@team_#{team}_deaths")}"
       )
     end
 
