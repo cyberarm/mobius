@@ -466,6 +466,15 @@ module Mobius
 
     def handle_player_lost_connection(line)
       # TODO: send raw line to IRC/mod tool
+      return false unless (match_data = line.match(/\AConnection broken to client. (.+)\z/))
+
+      player = PlayerData.player(match_data.to_a[1].to_i)
+      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player&.name || "?"} left the game. Game crashed or ping was too high.") if Config.messages[:player_lost_connection]
+
+      # NOTE: {player} variable might be nil
+      PluginManager.publish_event(:player_lost_connection, player)
+
+      return true
     end
 
     def handle_player_was_kicked(line)

@@ -43,6 +43,7 @@
     "messages": {
       "staff": true,
       "crate": true,
+      "player_lost_connection":true,
       "soldier_killed": true,
       "soldier_purchase": true,
       "building_killed": true,
