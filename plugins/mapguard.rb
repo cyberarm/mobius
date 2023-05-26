@@ -60,6 +60,13 @@ mobius_plugin(name: "MapGuard", database_name: "mapguard", version: "0.0.1") do
   end
 
   on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
     @bots_player_count_maps = config[:bots_player_count_maps]
     @low_player_count_maps = config[:low_player_count_maps]
     @high_player_count_maps = config[:high_player_count_maps]
@@ -80,7 +87,7 @@ mobius_plugin(name: "MapGuard", database_name: "mapguard", version: "0.0.1") do
 
   on(:map_loaded) do |mapname|
     @cached_current_map = File.basename(mapname, ".mix")
-    player_count = PlayerData.players.select(&:ingame?)
+    player_count = PlayerData.player_list.select(&:ingame?).size
 
     if coop_enabled? && player_count < @low_player_count
       auto_set_next_map(:bots_player_count)
@@ -90,22 +97,23 @@ mobius_plugin(name: "MapGuard", database_name: "mapguard", version: "0.0.1") do
       auto_set_next_map(:high_player_count)
     end
 
+    mapnum = ServerStatus.get(:current_map_number)
     after(30) do
-    map = ServerConfig.rotation.rotate(ServerStatus.get(:current_map_number) + 1)&.first
+      map = ServerConfig.rotation.rotate(ServerStatus.get(:current_map_number) + 1)&.first
 
-    broadcast_message("[MapGuard] The next map will be: #{map}")
+      broadcast_message("[MapGuard] The next map will be: #{map}") if mapnum == ServerStatus.get(:current_map_number)
     end
   end
 
-  command(:botmapqueue, aliases: [:bmq], arguments: 1, help: "!newsetnextmap <map name> - Displays bots playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
+  command(:botmapqueue, aliases: [:bmq], arguments: 0, help: "!bmq - Displays bots playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
     display_maps_left(command.issuer, @bots_player_count_maps_queue)
   end
 
-  command(:lowplayermapqueue, aliases: [:lmq], arguments: 1, help: "!newsetnextmap <map name> - Displays low playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
+  command(:lowplayermapqueue, aliases: [:lmq], arguments: 0, help: "!lmq - Displays low playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
     display_maps_left(command.issuer, @low_player_count_maps_queue)
   end
 
-  command(:highplayermapqueue, aliases: [:hmq], arguments: 1, help: "!newsetnextmap <map name> - Displays high playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
+  command(:highplayermapqueue, aliases: [:hmq], arguments: 0, help: "!hmq - Displays high playercount queue remaining maps.", groups: [:admin, :mod, :director]) do |command|
     display_maps_left(command.issuer, @high_player_count_maps_queue)
   end
 end
