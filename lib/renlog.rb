@@ -334,10 +334,22 @@ module Mobius
 
         MapSettings.apply_map_settings(apply_time: true)
 
-        PluginManager.publish_event(
-          :map_loaded,
-          ServerStatus.get(:current_map)
-        )
+        # ENSURE that the mapnum has been handled **BEFORE** sending :map_loaded event
+        RenRem.cmd("mapnum") do |response|
+          result = response.strip
+
+          if result.start_with?("The Current Map Number is ")
+            match_data = result.match(/The Current Map Number is (\d+)/)
+            map_number = match_data[1].to_i
+
+            ServerStatus.update_map_number(map_number)
+          end
+
+          PluginManager.publish_event(
+            :map_loaded,
+            ServerStatus.get(:current_map)
+          )
+        end
 
         # TODO: Auto balance teams, if enabled.
 
