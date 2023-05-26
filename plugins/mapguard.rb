@@ -55,6 +55,10 @@ mobius_plugin(name: "MapGuard", database_name: "mapguard", version: "0.0.1") do
     end
   end
 
+  def coop_enabled?
+    (PluginManager.blackboard(:team_0_bot_count).to_i + PluginManager.blackboard(:team_1_bot_count).to_i).positive?
+  end
+
   on(:start) do
     @bots_player_count_maps = config[:bots_player_count_maps]
     @low_player_count_maps = config[:low_player_count_maps]
