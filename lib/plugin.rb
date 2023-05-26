@@ -186,5 +186,16 @@ module Mobius
     def database_get(key)
       Database::PluginData.first(plugin_name: @___database_name, key: key)
     end
+
+    def config
+      config_path = "#{ROOT_PATH}/plugins/configs/#{File.basename(@___plugin_file, ".rb")}.json"
+      @___config || File.exist?(config_path) ? @___config = JSON.parse(File.read(config_path), symbolize_names: true) : {}
+    rescue JSON::ParserError => e
+      log "Failed to parse config: #{config_path}"
+      puts e
+      puts e.backtrace
+
+      {}
+    end
   end
 end

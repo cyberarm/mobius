@@ -1,4 +1,5 @@
 conf/*.json
+plugins/configs/*.json
 *.db
 *.bak
 data/*
