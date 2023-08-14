@@ -76,7 +76,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     player_list = PlayerData.player_list.select(&:ingame?)
     required_votes = (player_list.size * @vote_required_percentage).round
-    total_votes = player_list.select { |ply| @coop_votes[ply] }.size
+    total_votes = player_list.select { |ply| @coop_votes[ply.name] }.size
 
     if total_votes >= required_votes
       broadcast_message("[AutoCoop] Co-op will be enabled after this round.") unless silent
@@ -87,6 +87,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       @coop_votes.clear
       @versus_votes.clear
     else
+      log "CO-OP votes required: #{required_votes}, total: #{total_votes}, voted: #{@coop_votes}"
       broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote to start coop!") unless silent
     end
   end
@@ -96,7 +97,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     player_list = PlayerData.player_list.select(&:ingame?)
     required_votes = (player_list.size * @vote_required_percentage).round
-    total_votes = player_list.select { |ply| @coop_votes[ply] }.size
+    total_votes = player_list.select { |ply| @versus_votes[ply.name] }.size
 
     if total_votes >= required_votes
       broadcast_message("[AutoCoop] Co-op will be disabled after this round.") unless silent
@@ -107,6 +108,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       @versus_votes.clear
       @coop_votes.clear
     else
+      log "VERSUS votes required: #{required_votes}, total: #{total_votes}, voted: #{@versus_votes}"
       broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote for PvP!") unless silent
     end
   end
