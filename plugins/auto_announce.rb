@@ -24,6 +24,7 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
     @sayings = [
       "This server is running Mobius v#{Mobius::VERSION}",
       "Remember to join voice chat on Discord! (https://discord.gg/jMmmRa2)",
+      "APB with 100% more coop!",
       "Report issues or concerns to @cyberarm on the W3D Hub discord server",
       proc { "The server time is: #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S')} UTC" }
     ]
