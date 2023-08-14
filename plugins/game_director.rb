@@ -69,7 +69,8 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
 
     # Exact match
-    maps = [command.arguments.first.downcase] if maps.count > 1 && maps.find { |map| map.downcase == command.arguments.first.downcase }
+    exact_match = maps.find { |map| map.downcase == command.arguments.first.downcase }
+    maps = [exact_match] if maps.count > 1 && exact_match
 
     if maps.count > 1
       page_player(command.issuer.name, "More than one map matched search, found: #{maps.join(', ')}")
