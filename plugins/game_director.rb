@@ -68,6 +68,9 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       map.downcase.include?(command.arguments.first.downcase)
     end
 
+    # Exact match
+    maps = [command.arguments.first.downcase] if maps.count > 1 && maps.find { |map| map.downcase == command.arguments.first.downcase }
+
     if maps.count > 1
       page_player(command.issuer.name, "More than one map matched search, found: #{maps.join(', ')}")
     elsif maps.count.zero?
