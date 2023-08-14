@@ -75,7 +75,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     return if ServerStatus.total_players.zero?
 
     player_list = PlayerData.player_list.select(&:ingame?)
-    required_votes = (player_list.size * @vote_required_percentage).round
+    required_votes = (player_list.size * @vote_required_percentage).ceil
     total_votes = player_list.select { |ply| @coop_votes[ply.name] }.size
 
     if total_votes >= required_votes
@@ -96,7 +96,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     return if ServerStatus.total_players.zero?
 
     player_list = PlayerData.player_list.select(&:ingame?)
-    required_votes = (player_list.size * @vote_required_percentage).round
+    required_votes = (player_list.size * @vote_required_percentage).ceil
     total_votes = player_list.select { |ply| @versus_votes[ply.name] }.size
 
     if total_votes >= required_votes
