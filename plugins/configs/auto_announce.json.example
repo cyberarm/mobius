@@ -1,0 +1,19 @@
+{
+  "join_announcements": [
+    "All players are expected to follow W3D Hub's server rules",
+    "This is not an official W3D Hub server"
+  ],
+  "messages": [
+    "!This server is running Mobius v#{Mobius::VERSION}",
+    "Remember to join voice chat on Discord! (https://discord.gg/jMmmRa2)",
+    "APB with 100% more co-op!",
+    "Report issues or concerns to @cyberarm on the W3D Hub discord server",
+    "!proc \"The server time is: #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S')} UTC\""
+  ],
+  "rules": [
+    "Respect staff and moderators. Please use English when using public or team chat. No racism, sexism, harassment, or abusive language of any sort. No spamming or extreme swearing. No advertising.",
+    "No offensive usernames. No cheating. No team-hampering. No blocking AI Ore Trucks. No bug abuse. No ban or kick evading. No killwhoring or any other kind of whoring. No impersonation of any form.",
+    "There are no loopholes. Do not intentionally circumvent the rules listed above.",
+    "Visit: w3d.cyberarm.dev/servers/ for more details."
+  ]
+}

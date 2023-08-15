@@ -13,21 +13,36 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
     end
   end
 
-  def announce_rules(player)
-    RenRem.cmd("cmsg 255,127,0 [MOBIUS] All players are expected to follow W3D Hub's server rules")
-    RenRem.cmd("cmsg 255,127,0 [MOBIUS] This is not an official W3D Hub server")
+  def join_announcements(player)
+    @join_announcements.each do |message|
+      broadcast_message("[MOBIUS] #{message}", red: 255, green: 127, blue: 0)
+    end
   end
 
   on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
     @start_time = monotonic_time
     @index = 0
-    @sayings = [
-      "This server is running Mobius v#{Mobius::VERSION}",
-      "Remember to join voice chat on Discord! (https://discord.gg/jMmmRa2)",
-      "APB with 100% more coop!",
-      "Report issues or concerns to @cyberarm on the W3D Hub discord server",
-      proc { "The server time is: #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S')} UTC" }
-    ]
+    @sayings = []
+
+    config[:messages]&.each do |message|
+      if message.start_with?("!proc ")
+        @sayings << proc { message.sub("!proc ", "") }
+      elsif message.start_with?("!")
+        @sayings << instance_eval("\"#{message.sub("!", "")}\"")
+      else
+        @sayings << message
+      end
+    end
+
+    @rules = config[:rules] || []
+    @join_announcements = config[:join_announcements] || []
 
     broadcast_announcement
 
@@ -38,6 +53,12 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
 
   on(:player_joined) do |player|
     # Prevent spamming the server when the bot is restarted
-    announce_rules(player) unless monotonic_time - @start_time <= 1.0
+    join_announcements(player) unless monotonic_time - @start_time <= 1.0
+  end
+
+  command(:rules, help: "Show server rules") do |command|
+    @rules.each do |line|
+      broadcast_message("[MOBIUS] #{line}", red: 255, green: 127, blue: 0)
+    end
   end
 end
