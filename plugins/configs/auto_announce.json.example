@@ -11,9 +11,12 @@
     "!proc \"The server time is: #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S')} UTC\""
   ],
   "rules": [
-    "Respect staff and moderators. Please use English when using public or team chat. No racism, sexism, harassment, or abusive language of any sort. No spamming or extreme swearing. No advertising.",
-    "No offensive usernames. No cheating. No team-hampering. No blocking AI Ore Trucks. No bug abuse. No ban or kick evading. No killwhoring or any other kind of whoring. No impersonation of any form.",
+    "Respect staff and moderators. Please use English when using public or team chat.",
+    "No racism, sexism, harassment, or abusive language of any sort. No spamming or extreme swearing. No advertising.",
+    "No offensive usernames. No cheating. No team-hampering. No blocking AI Ore Trucks. No bug abuse. No ban or kick evading.",
+    "No killwhoring or any other kind of whoring. No impersonation of any form.",
     "There are no loopholes. Do not intentionally circumvent the rules listed above.",
+    "",
     "Visit: w3d.cyberarm.dev/servers/ for more details."
   ]
 }
