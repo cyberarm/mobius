@@ -33,7 +33,7 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
 
     config[:messages]&.each do |message|
       if message.start_with?("!proc ")
-        @sayings << proc { message.sub("!proc ", "") }
+        @sayings << proc { instance_eval("\"#{message.sub("!proc ", "")}\"") }
       elsif message.start_with?("!")
         @sayings << instance_eval("\"#{message.sub("!", "")}\"")
       else
