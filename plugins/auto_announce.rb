@@ -32,12 +32,18 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
     @sayings = []
 
     config[:messages]&.each do |message|
-      if message.start_with?("!proc ")
-        @sayings << proc { instance_eval("\"#{message.sub("!proc ", "")}\"") }
-      elsif message.start_with?("!")
-        @sayings << instance_eval("\"#{message.sub("!", "")}\"")
-      else
-        @sayings << message
+      begin
+        if message.start_with?("!proc ")
+          @sayings << proc { instance_eval("\"#{message.sub("!proc ", "")}\"") }
+        elsif message.start_with?("!")
+          @sayings << instance_eval("\"#{message.sub("!", "")}\"")
+        else
+          @sayings << message
+        end
+      rescue => e
+        log "Invalid message: #{message}"
+        log e
+        puts e.backtrace
       end
     end
 
