@@ -8,17 +8,17 @@ module Mobius
       @db = Sequel.sqlite(Config.database_path)
       migrations_path = File.expand_path("./db/migrations", __dir__)
 
-      require_relative "db/models/plugin_data"
-      require_relative "db/models/log"
-      require_relative "db/models/ip"
-      require_relative "db/models/rank"
-      require_relative "db/models/moderator_action"
-
       unless Sequel::Migrator.is_current?(@db, migrations_path)
         log "DATABASE", "Applying new migrations..."
         Sequel::Migrator.run(@db, migrations_path)
         log "DATABASE", "Done migrating."
       end
+
+      require_relative "db/models/plugin_data"
+      require_relative "db/models/log"
+      require_relative "db/models/ip"
+      require_relative "db/models/rank"
+      require_relative "db/models/moderator_action"
     end
 
     def self.transaction(&block)
