@@ -31,7 +31,7 @@ module Mobius
 
         begin
           register_plugin(plugin)
-        rescue => e
+        rescue StandardError, ScriptError => e
           puts "Failed to load plugin: #{File.basename(plugin)}"
           log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)
@@ -217,7 +217,7 @@ module Mobius
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
 
         command.block&.call(CommandResult.new(player, arguments))
-      rescue StandardError => e
+      rescue StandardError, ScriptError => e
         log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(command.plugin, e.backtrace)
@@ -413,7 +413,7 @@ module Mobius
     def self.deliver_event(plugin, event, *args)
       begin
         plugin.___tick if event == :tick
-      rescue StandardError => e
+      rescue StandardError, ScriptError => e
         log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(plugin, e.backtrace)
@@ -426,7 +426,7 @@ module Mobius
       handlers.each do |handler|
         begin
           handler.call(*args)
-        rescue StandardError => e
+        rescue StandardError, ScriptError => e
           log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
           log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)

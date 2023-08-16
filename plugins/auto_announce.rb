@@ -40,7 +40,7 @@ mobius_plugin(name: "AutoAnnounce", database_name: "auto_announce", version: "0.
         else
           @sayings << message
         end
-      rescue => e
+      rescue StandardError, ScriptError => e
         log "Invalid message: #{message}"
         log e
         puts e.backtrace
