@@ -62,17 +62,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ban #{player.id} #{command.arguments.last}")
 
         ip = player.address.split(";").first
-        ban = Database::Ban.create(
+        ban = Database::ModeratorAction.create(
           name: player.name.downcase,
           ip: ip,
           serial: "00000000000000000000000000000000",
-          banner: command.issuer.name.downcase,
-          reason: command.arguments.last
+          moderator: command.issuer.name.downcase,
+          reason: command.arguments.last,
+          action: Mobius::MODERATOR_ACION[:ban]
         )
 
         Database::Log.create(
           log_code: Mobius::LOG_CODE[:banlog],
-          log: "[BAN] #{player.name} (#{ip}) was banned by #{command.issuer.name} for \"#{command.arguments.last}\". (Ban ID #{ban.id})"
+          log: "[BAN] #{player.name} (#{ip}) was banned by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{ban.id})"
         )
       end
     else
@@ -88,7 +89,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
 
     nickname = command.arguments.first.strip
-    db_ban = Database::Ban.first(name: nickname.downcase)
+    db_ban = Database::ModeratorAction.first(name: nickname.downcase, action: Mobius::MODERATOR_ACION[:ban])
 
     if File.exist?(Config.banlist_path)
       # Finding the ban line index could probably be optimized, a LOT...
@@ -147,17 +148,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("kick #{player.id} #{command.arguments.last}")
 
         ip = player.address.split(";").first
-        kick = Database::Kick.create(
+        kick = Database::ModeratorAction.create(
           name: player.name.downcase,
           ip: player.address.split(";").first,
           serial: "00000000000000000000000000000000",
-          banner: command.issuer.name.downcase,
-          reason: command.arguments.last
+          moderator: command.issuer.name.downcase,
+          reason: command.arguments.last,
+          action: Mobius::MODERATOR_ACION[:kick]
         )
 
         Database::Log.create(
           log_code: Mobius::LOG_CODE[:kicklog],
-          log: "[KICK] #{player.name} (#{ip}) was kicked by #{command.issuer.name} for \"#{command.arguments.last}\". (Kick ID #{kick.id})"
+          log: "[KICK] #{player.name} (#{ip}) was kicked by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{kick.id})"
         )
       end
     else
@@ -181,17 +183,18 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         page_player(command.issuer.name, "#{player.name} has been warned!")
 
         ip = player.address.split(";").first
-        warning = Database::Warning.create(
+        warning = Database::ModeratorAction.create(
           name: player.name.downcase,
           ip: player.address.split(";").first,
           serial: "00000000000000000000000000000000",
-          banner: command.issuer.name.downcase,
-          reason: reason
+          moderator: command.issuer.name.downcase,
+          reason: reason,
+          action: Mobius::MODERATOR_ACION[:warning]
         )
 
         Database::Log.create(
           log_code: Mobius::LOG_CODE[:warnlog],
-          log: "[WARN] #{player.name} (#{ip}) was warned by #{command.issuer.name} for \"#{reason}\". (Warning ID #{warning.id})"
+          log: "[WARN] #{player.name} (#{ip}) was warned by #{command.issuer.name} for \"#{reason}\". (ID #{warning.id})"
         )
       end
     else
