@@ -29,20 +29,5 @@ Sequel.migration do
         )
       end
     end
-
-    if Mobius::Database.const_defined?(:Warning)
-      Mobius::Database::Warning.all.each do |warning|
-        Mobius::Database::ModeratorAction.create(
-          name: warning.name,
-          ip: warning.ip,
-          serial: warning.serial,
-          moderator: warning.banner,
-          reason: warning.reason,
-          action: Mobius::MODERATOR_ACION[:warning],
-          created_at: warning.created_at,
-          updated_at: warning.updated_at
-        )
-      end
-    end
   end
 end
