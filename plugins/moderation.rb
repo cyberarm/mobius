@@ -165,6 +165,37 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
   end
 
+  command(:warn, arguments: 2, help: "!warn <nickname> <reason>", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+    if player
+      if (granter = player_granted_authority?(player, command.issuer))
+        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to warn you!")
+        RenRem.cmd("ppage #{command.issuer.id} you may not issue a warning against your benefactor!")
+      elsif command.issuer.id == player.id
+        page_player(command.issuer.name, "#{player.name} Cannot issue a warning against yourself!")
+      else
+        page_player(command.issuer.name, "#{player.name} has been warned!")
+
+        ip = player.address.split(";").first
+        warning = Database::Warning.create(
+          name: player.name.downcase,
+          ip: player.address.split(";").first,
+          serial: "00000000000000000000000000000000",
+          banner: command.issuer.name.downcase,
+          reason: command.arguments.last
+        )
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:warnlog],
+          log: "[WARN] #{player.name} (#{ip}) was warned by #{command.issuer.name} for \"#{command.arguments.last}\". (Warning ID #{warning.id})"
+        )
+      end
+    else
+      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+    end
+  end
+
   command(:mute, arguments: 2, help: "!mute <nickname> <reason>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
@@ -178,6 +209,11 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         page_player(command.issuer.name, "#{player.name} has been muted!")
 
         RenRem.cmd("mute #{player.id} #{command.arguments.last}")
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:mutelog],
+          log: "[MUTE] #{player.name} (#{ip}) was muted by #{command.issuer.name} for \"#{command.arguments.last}\"."
+        )
       end
     else
       page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")

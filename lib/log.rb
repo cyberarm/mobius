@@ -29,6 +29,14 @@ module Mobius
     kicklog:  1,
     banlog:   2,
     unbanlog: 3,
+    warnlog:  4,
     stafflog: 5,
+    mutelog: 6,
+  }.freeze
+
+  MODERATOR_ACION = {
+    ban: 0,
+    kick: 1,
+    warning: 2,
   }.freeze
 end
