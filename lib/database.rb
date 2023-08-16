@@ -11,10 +11,7 @@ module Mobius
       require_relative "db/models/plugin_data"
       require_relative "db/models/log"
       require_relative "db/models/ip"
-      require_relative "db/models/ban"
-      require_relative "db/models/kick"
       require_relative "db/models/rank"
-      require_relative "db/models/warning"
       require_relative "db/models/moderator_action"
 
       unless Sequel::Migrator.is_current?(@db, migrations_path)
