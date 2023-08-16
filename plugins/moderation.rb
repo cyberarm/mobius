@@ -165,6 +165,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
   end
 
+  # TODO: Make this command check to see if player has received n (~3) warnings in the last 24/32 hours and auto kick/temp ban them
   command(:warn, arguments: 2, help: "!warn <nickname> <reason>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
@@ -175,6 +176,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       elsif command.issuer.id == player.id
         page_player(command.issuer.name, "#{player.name} Cannot issue a warning against yourself!")
       else
+        reason = command.arguments.last
+        page_player(player.name, "[Moderation] You've been issued a warning for: #{reason}")
         page_player(command.issuer.name, "#{player.name} has been warned!")
 
         ip = player.address.split(";").first
@@ -183,12 +186,12 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           ip: player.address.split(";").first,
           serial: "00000000000000000000000000000000",
           banner: command.issuer.name.downcase,
-          reason: command.arguments.last
+          reason: reason
         )
 
         Database::Log.create(
           log_code: Mobius::LOG_CODE[:warnlog],
-          log: "[WARN] #{player.name} (#{ip}) was warned by #{command.issuer.name} for \"#{command.arguments.last}\". (Warning ID #{warning.id})"
+          log: "[WARN] #{player.name} (#{ip}) was warned by #{command.issuer.name} for \"#{reason}\". (Warning ID #{warning.id})"
         )
       end
     else
