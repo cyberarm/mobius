@@ -32,6 +32,9 @@ module Mobius
     end
 
     def self.save_presets
+      # Don't attempt to record presets if we've crashed on start up
+      return unless @presets
+
       File.write(PATH, JSON.pretty_generate(@presets.sort_by { |key, _value| key.to_s.downcase }.to_h))
     end
   end

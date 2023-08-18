@@ -39,6 +39,7 @@ module Mobius
       @server_settings_path = @data.dig(:mobius, :server_settings_path)
       @database_path = @data.dig(:mobius, :database_path)
       @banlist_path = @data.dig(:mobius, :banlist_path)
+      raise "'banlist_path' is not specified in config!" unless @banlist_path
       @remix_teams_by_skill = @data.dig(:mobius, :remix_teams_by_skill)
 
       ServerConfig.read_server_config

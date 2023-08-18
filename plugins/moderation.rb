@@ -34,6 +34,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if (ip = untrusted_ip?(player_ip))
         notify_moderators("[Moderation] #{player.name} might be using a VPN!")
         notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
+
+        log("#{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
       end
     end
   end
@@ -372,6 +374,51 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       end
     else
       page_player(command.issuer.name, "Failed to find player or name not unique.")
+    end
+  end
+
+  command(:audit, aliases: [:a], arguments: 1, help: "!audit <nickname> - Print out all data for matching nickname(s) and associated ip(s)", groups: [:admin, :mod]) do |command|
+    name_search = Database::IP.where(Sequel.ilike(:name, "#{command.arguments.first}%")).all
+
+    if name_search.count.positive?
+      ip_search = Database::IP.select.where(ip: name_search.map(&:ip).uniq).all
+
+      usernames = ip_search.map(&:name).uniq
+      all_usernames_match = usernames.size == 1
+
+      page_player(command.issuer.name, "[Moderation: Audit] Found #{usernames.size} matching username(s) in database...")
+      page_player(command.issuer.name, "[Moderation: Audit] #{usernames.join(', ')}") unless all_usernames_match
+
+      # List all usernames, their ips, and moderator actions
+      usernames.each do |username|
+        moderator_actions = Database::ModeratorAction.select.where(name: username).all
+        ips = ip_search.select { |ip| ip.name.downcase == username.downcase }
+
+        page_player(command.issuer.name, "[Moderation: Audit] #{username}")
+        page_player(command.issuer.name, "[Moderation: Audit]     IP(s)")
+        ips.each_slice(3) do |ips|
+          # checking for untrusted ips takes too long... cache/save to database?
+          # chunk = ips.map { |ip| "#{ip.ip}#{untrusted_ip?(ip.ip) ? '[*]' : ''}" }.join(', ')
+          page_player(command.issuer.name, "[Moderation: Audit]         #{ips.map(&:ip).join(', ')}")
+        end
+
+        if moderator_actions.size.positive?
+          page_player(command.issuer.name, "[Moderation: Audit]     Moderator Action(s)")
+          moderator_actions.each do |action|
+            type = action.action
+            MODERATOR_ACION.each do |key, value|
+              if value == action.action
+                type = key.to_s
+                break
+              end
+            end
+
+            page_player(command.issuer.name, "[Moderation: Audit]         [#{action.created_at.strftime('%Y-%m-%d')}] [#{type.to_s.upcase}] (mod: #{action.moderator}) #{action.reason}")
+          end
+        end
+      end
+    else
+      page_player(command.issuer.name, "Failed to name \"#{command.arguments.first}\" in database.")
     end
   end
 end
