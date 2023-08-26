@@ -173,7 +173,7 @@ module Mobius
       command.block&.call(response)
       # log "Completed command after: #{(monotonic_time - t.round(2))}s"
 
-      ServerStatus.fds_renrem_response_okay unless response
+      ServerStatus.fds_renrem_response_okay if response
     rescue Errno::ECONNREFUSED
       log "RENREM", "Failed to send command '#{command.command}' to RenRem!"
       ServerStatus.fds_renrem_no_communication!
