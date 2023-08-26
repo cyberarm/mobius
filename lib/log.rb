@@ -34,9 +34,10 @@ module Mobius
     mutelog: 6,
   }.freeze
 
-  MODERATOR_ACION = {
+  MODERATOR_ACTION = {
     ban: 0,
     kick: 1,
     warning: 2,
+    mute: 3
   }.freeze
 end

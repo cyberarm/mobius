@@ -55,13 +55,13 @@ module Mobius
     def self.probe_fds
       if @data[:last_response_time] < @data[:last_request_time] - @data[:update_interval] && @data[:fds_responding]
         # ISSUE warning to IRC/mod tool
-        @data[:fds_responding] = false
+        fds_not_responding!
 
       elsif @data[:last_response_time] > @data[:last_request_time] && !@data[:fds_responding]
         # Connection to FDS restored
         # ISSUE notice to IRC/mod tool
 
-        @data[:fds_responding] = true
+        fds_okay!
 
         RenRem.cmd("mapnum")
         RenRem.cmd("sversion")
@@ -76,6 +76,14 @@ module Mobius
 
       RenRem.cmd("pinfo")
       RenRem.cmd("game_info")
+    end
+
+    def self.fds_not_responding!
+      @data[:fds_responding] = false
+    end
+
+    def self.fds_okay!
+      @data[:fds_responding] = true
     end
 
     def self.update_mode(mode)

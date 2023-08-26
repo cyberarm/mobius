@@ -8,7 +8,7 @@ Sequel.migration do
           serial: ban.serial,
           moderator: ban.banner,
           reason: ban.reason,
-          action: Mobius::MODERATOR_ACION[:ban],
+          action: Mobius::MODERATOR_ACTION[:ban],
           created_at: ban.created_at,
           updated_at: ban.updated_at
         )
@@ -23,7 +23,7 @@ Sequel.migration do
           serial: kick.serial,
           moderator: kick.banner,
           reason: kick.reason,
-          action: Mobius::MODERATOR_ACION[:kick],
+          action: Mobius::MODERATOR_ACTION[:kick],
           created_at: kick.created_at,
           updated_at: kick.updated_at
         )

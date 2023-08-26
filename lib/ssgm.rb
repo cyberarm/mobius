@@ -27,6 +27,10 @@ module Mobius
       end
     end
 
+    def self.parse_tt_rotation
+      @@instance&.parse_tt_rotation
+    end
+
     def initialize(address:, port:)
       raise "SSGM instance already active!" if @@instance
 
@@ -102,6 +106,13 @@ module Mobius
 
           @socket&.close unless @socket&.closed?
           @socket = nil
+
+          # Soft re-init Mobius on server crash
+          if e.class == Errno::ECONNREFUSED
+            parse_tt_rotation
+            Config.reload_config(reload: true)
+            ServerStatus.fds_not_responding!
+          end
 
           sleep 10
 

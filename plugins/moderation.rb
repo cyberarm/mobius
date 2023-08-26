@@ -70,7 +70,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           serial: "00000000000000000000000000000000",
           moderator: command.issuer.name.downcase,
           reason: command.arguments.last,
-          action: Mobius::MODERATOR_ACION[:ban]
+          action: Mobius::MODERATOR_ACTION[:ban]
         )
 
         Database::Log.create(
@@ -91,7 +91,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
 
     nickname = command.arguments.first.strip
-    db_ban = Database::ModeratorAction.first(name: nickname.downcase, action: Mobius::MODERATOR_ACION[:ban])
+    db_ban = Database::ModeratorAction.first(name: nickname.downcase, action: Mobius::MODERATOR_ACTION[:ban])
 
     if File.exist?(Config.banlist_path)
       # Finding the ban line index could probably be optimized, a LOT...
@@ -156,7 +156,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           serial: "00000000000000000000000000000000",
           moderator: command.issuer.name.downcase,
           reason: command.arguments.last,
-          action: Mobius::MODERATOR_ACION[:kick]
+          action: Mobius::MODERATOR_ACTION[:kick]
         )
 
         Database::Log.create(
@@ -191,7 +191,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           serial: "00000000000000000000000000000000",
           moderator: command.issuer.name.downcase,
           reason: reason,
-          action: Mobius::MODERATOR_ACION[:warning]
+          action: Mobius::MODERATOR_ACTION[:warning]
         )
 
         Database::Log.create(
@@ -218,9 +218,19 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
         RenRem.cmd("mute #{player.id} #{command.arguments.last}")
 
+        ip = player.address.split(";").first
+        mute = Database::ModeratorAction.create(
+          name: player.name.downcase,
+          ip: ip,
+          serial: "00000000000000000000000000000000",
+          moderator: command.issuer.name.downcase,
+          reason: command.arguments.last,
+          action: Mobius::MODERATOR_ACTION[:mute]
+        )
+
         Database::Log.create(
           log_code: Mobius::LOG_CODE[:mutelog],
-          log: "[MUTE] #{player.name} (#{ip}) was muted by #{command.issuer.name} for \"#{command.arguments.last}\"."
+          log: "[MUTE] #{player.name} (#{ip}) was muted by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{mute.id})"
         )
       end
     else
@@ -406,7 +416,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           page_player(command.issuer.name, "[Moderation: Audit]     Moderator Action(s)")
           moderator_actions.each do |action|
             type = action.action
-            MODERATOR_ACION.each do |key, value|
+            MODERATOR_ACTION.each do |key, value|
               if value == action.action
                 type = key.to_s
                 break
