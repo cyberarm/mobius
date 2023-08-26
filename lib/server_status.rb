@@ -68,7 +68,7 @@ module Mobius
       unless @data[:fds_responding]
         # Soft re-init Mobius on server crash
         SSGM.parse_tt_rotation
-        Config.reload_config(reload: true)
+        Config.reload_config
         ServerConfig.fetch_available_maps
 
         # prevent infinite loop
