@@ -338,6 +338,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @verification_timeout = 65 # seconds
 
     @last_connection_attempt = 0.0
+    @status_last_sent = 0
 
     @known_spies = {}
 
