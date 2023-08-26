@@ -172,8 +172,11 @@ module Mobius
 
       command.block&.call(response)
       # log "Completed command after: #{(monotonic_time - t.round(2))}s"
+
+      ServerStatus.fds_renrem_response_okay
     rescue Errno::ECONNREFUSED
       log "RENREM", "Failed to send command '#{command.command}' to RenRem!"
+      ServerStatus.fds_renrem_no_communication!
     end
 
     def drain_socket(timeout: 1.0)
@@ -188,6 +191,7 @@ module Mobius
         return buffer.join
       rescue Errno::ECONNREFUSED
         log "RENREM", "Unable to connect to RemRem!"
+        ServerStatus.fds_renrem_no_communication!
       rescue => e
         puts e
         puts e.backtrace

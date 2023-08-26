@@ -53,23 +53,6 @@ module Mobius
     end
 
     def self.probe_fds
-      if @data[:last_response_time] < @data[:last_request_time] - @data[:update_interval] && @data[:fds_responding]
-        # ISSUE warning to IRC/mod tool
-        fds_not_responding!
-
-      elsif @data[:last_response_time] > @data[:last_request_time] && !@data[:fds_responding]
-        # Connection to FDS restored
-        # ISSUE notice to IRC/mod tool
-
-        fds_okay!
-
-        RenRem.cmd("mapnum")
-        RenRem.cmd("sversion")
-        ServerConfig.fetch_available_maps
-      end
-
-      @data[:last_request_time] = monotonic_time.to_i
-
       RenRem.cmd("mapnum") if @data[:current_map_number] == -1
 
       RenRem.cmd("sversion")
@@ -78,12 +61,29 @@ module Mobius
       RenRem.cmd("game_info")
     end
 
-    def self.fds_not_responding!
-      @data[:fds_responding] = false
+    def self.fds_renrem_response_okay
+      @data[:last_request_time] = monotonic_time.to_i
+      @data[:last_response_time] = monotonic_time.to_i
+
+      unless @data[:fds_responding]
+        # Soft re-init Mobius on server crash
+        SSGM.parse_tt_rotation
+        Config.reload_config(reload: true)
+        ServerConfig.fetch_available_maps
+
+        # prevent infinite loop
+        @data[:fds_responding] = true
+
+        RenRem.cmd("mapnum")
+        RenRem.cmd("sversion")
+      end
+
+      @data[:fds_responding] = true
     end
 
-    def self.fds_okay!
-      @data[:fds_responding] = true
+    def self.fds_renrem_no_communication!
+      @data[:last_request_time] = monotonic_time.to_i
+      @data[:fds_responding] = false
     end
 
     def self.update_mode(mode)

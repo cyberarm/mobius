@@ -107,13 +107,6 @@ module Mobius
           @socket&.close unless @socket&.closed?
           @socket = nil
 
-          # Soft re-init Mobius on server crash
-          if e.class == Errno::ECONNREFUSED
-            parse_tt_rotation
-            Config.reload_config(reload: true)
-            ServerStatus.fds_not_responding!
-          end
-
           sleep 10
 
           monitor_stream
