@@ -66,13 +66,13 @@ module Mobius
       @data[:last_response_time] = monotonic_time.to_i
 
       unless @data[:fds_responding]
+        # prevent infinite loop
+        @data[:fds_responding] = true
+
         # Soft re-init Mobius on server crash
         SSGM.parse_tt_rotation
         Config.reload_config
         ServerConfig.fetch_available_maps
-
-        # prevent infinite loop
-        @data[:fds_responding] = true
 
         RenRem.cmd("mapnum")
         RenRem.cmd("sversion")
