@@ -25,6 +25,7 @@ module Mobius
     @data[:start_map]           = "N/A"
 
     @data[:update_interval] = 30.0 # seconds
+    @data[:internal_data_reset] = false
 
     def self.get(key)
       @data.fetch(key)
@@ -69,9 +70,21 @@ module Mobius
         # prevent infinite loop
         @data[:fds_responding] = true
 
+        # Purge player data
+        PlayerData.player_list.each do |player|
+          PluginManager.publish_event(:player_left, player)
+          log "Deleting data for player #{player.name} (ID: #{player.id})"
+          PlayerData.delete(player)
+        end
+
+        PluginManager.reset_blackboard!
+
         # Soft re-init Mobius on server crash
         SSGM.parse_tt_rotation
         Config.reload_config
+
+        PluginManager.reload_enabled_plugins!
+
         ServerConfig.fetch_available_maps
 
         RenRem.cmd("mapnum")

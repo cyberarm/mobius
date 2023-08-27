@@ -434,12 +434,22 @@ module Mobius
       end
     end
 
+    def self.reload_enabled_plugins!
+      _plugins = @plugins.select(&:___enabled?)
+
+      _plugins.each { |plugin| reload_plugin(plugin) }
+    end
+
     def self.blackboard(key)
       @blackboard[key]
     end
 
     def self.blackboard_store(key, value)
       @blackboard[key] = value
+    end
+
+    def self.reset_blackboard!
+      @blackboard = {}
     end
 
     # Delay delivery of event/block until the backend has done it's thing
