@@ -18,10 +18,12 @@ module Mobius
       mine_limit    = get_map_setting(:mines)
       vehicle_limit = get_map_setting(:vehicles)
       rules         = get_map_setting(:rules)
+      botcount      = get_map_setting(:botcount) || 0
 
       RenRem.cmd("time #{time * 60}") if apply_time && time && time.is_a?(Numeric)
       RenRem.cmd("mlimit #{mine_limit}")
       RenRem.cmd("vlimit #{vehicle_limit}")
+      RenRem.cmd("botcount #{botcount}")
 
       RenRem.cmd("msg [MOBIUS] Special rules for #{ServerStatus.get(:current_map)}: #{rules}", 5) unless rules.empty?
     end

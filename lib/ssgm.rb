@@ -39,6 +39,8 @@ module Mobius
       @address = address
       @port = port
 
+      @lost_connection = false
+
       parse_tt_rotation
 
       monitor_stream
@@ -72,6 +74,30 @@ module Mobius
           @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
 
           log("SSGM", "Connected to SSGM.")
+
+          if @lost_connection
+            @lost_connection = false
+
+            # Purge player data
+            PlayerData.player_list.each do |player|
+              PluginManager.publish_event(:player_left, player)
+              log "Deleting data for player #{player.name} (ID: #{player.id})"
+              PlayerData.delete(player)
+            end
+
+            PluginManager.reset_blackboard!
+
+            # Soft re-init Mobius on server crash
+            SSGM.parse_tt_rotation
+            Config.reload_config
+
+            PluginManager.reload_enabled_plugins!
+
+            ServerConfig.fetch_available_maps
+
+            RenRem.cmd("mapnum")
+            RenRem.cmd("sversion")
+          end
 
           while (event = @socket.gets("\0")&.strip)
             type = event[0..2]
@@ -108,25 +134,7 @@ module Mobius
           @socket = nil
 
           if e.class == Errno::ECONNREFUSED
-            # Purge player data
-            PlayerData.player_list.each do |player|
-              PluginManager.publish_event(:player_left, player)
-              log "Deleting data for player #{player.name} (ID: #{player.id})"
-              PlayerData.delete(player)
-            end
-
-            PluginManager.reset_blackboard!
-
-            # Soft re-init Mobius on server crash
-            SSGM.parse_tt_rotation
-            Config.reload_config
-
-            PluginManager.reload_enabled_plugins!
-
-            ServerConfig.fetch_available_maps
-
-            RenRem.cmd("mapnum")
-            RenRem.cmd("sversion")
+            @lost_connection = true
           end
 
           sleep 10
