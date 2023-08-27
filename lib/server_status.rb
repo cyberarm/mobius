@@ -66,36 +66,12 @@ module Mobius
       @data[:last_request_time] = monotonic_time.to_i
       @data[:last_response_time] = monotonic_time.to_i
 
-      unless @data[:fds_responding]
-        # prevent infinite loop
-        @data[:fds_responding] = true
-
-        # Purge player data
-        PlayerData.player_list.each do |player|
-          PluginManager.publish_event(:player_left, player)
-          log "Deleting data for player #{player.name} (ID: #{player.id})"
-          PlayerData.delete(player)
-        end
-
-        PluginManager.reset_blackboard!
-
-        # Soft re-init Mobius on server crash
-        SSGM.parse_tt_rotation
-        Config.reload_config
-
-        PluginManager.reload_enabled_plugins!
-
-        ServerConfig.fetch_available_maps
-
-        RenRem.cmd("mapnum")
-        RenRem.cmd("sversion")
-      end
-
       @data[:fds_responding] = true
     end
 
     def self.fds_renrem_no_communication!
       @data[:last_request_time] = monotonic_time.to_i
+
       @data[:fds_responding] = false
     end
 

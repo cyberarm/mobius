@@ -107,6 +107,28 @@ module Mobius
           @socket&.close unless @socket&.closed?
           @socket = nil
 
+          if e.class == Errno::ECONNREFUSED
+            # Purge player data
+            PlayerData.player_list.each do |player|
+              PluginManager.publish_event(:player_left, player)
+              log "Deleting data for player #{player.name} (ID: #{player.id})"
+              PlayerData.delete(player)
+            end
+
+            PluginManager.reset_blackboard!
+
+            # Soft re-init Mobius on server crash
+            SSGM.parse_tt_rotation
+            Config.reload_config
+
+            PluginManager.reload_enabled_plugins!
+
+            ServerConfig.fetch_available_maps
+
+            RenRem.cmd("mapnum")
+            RenRem.cmd("sversion")
+          end
+
           sleep 10
 
           monitor_stream
