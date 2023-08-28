@@ -198,9 +198,9 @@ module Mobius
 
       return if handle_loading_level(line) # TODO: Don't we already skip these?
 
-      return if handle_vehicle_purchased(line) # TODO
+      return if handle_vehicle_purchased(line) # NOTE: No OP? This is handled in GameLog atm... 🤔
 
-      return if handle_player_lost_connection(line) # TODO
+      return if handle_player_lost_connection(line)
 
       return if handle_player_was_kicked(line) # TODO
     end

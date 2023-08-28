@@ -1,20 +1,4 @@
 mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.0.1") do
-  def donations_available?(player)
-    donate_limit = MapSettings.get_map_setting(:donatelimit)
-    map = ServerStatus.get(:current_map)
-    map_elapsed_time = monotonic_time.to_i - ServerStatus.get(:map_start_time)
-
-    if (donate_limit != 0 && map_elapsed_time < donate_limit * 60)
-      remaining = donate_limit - (map_elapsed_time / 60.0).round;
-
-      page_player(player.name, "[MOBIUS] Donations are not allowed on #{map} in the first #{donate_limit} minutes. You have to wait #{remaining} more minutes.")
-
-      return false
-    end
-
-    return true
-  end
-
   on(:start) do
     @spectators = {}
   end
@@ -249,59 +233,6 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       broadcast_message(
         slice.join(", ")
       )
-    end
-  end
-
-  command(:donate, aliases: [:d], arguments: 2, help: "!donate <nickname> <amount>") do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
-    amount = command.arguments.last.to_i
-
-    if player
-      if amount.positive?
-        if command.issuer.team == player.team && command.issuer.name != player.name
-          if donations_available?(command.issuer)
-            RenRem.cmd("donate #{command.issuer.id} #{player.id} #{amount}")
-
-            page_player(command.issuer.name, "You have donated #{amount} credits to #{player.name}")
-            page_player(player.name, "#{command.issuer.name} has donated #{amount} credits to you")
-          end
-        elsif command.issuer.name == player.name
-          page_player(command.issuer.name, "You cannot donate to yourself")
-        else
-          page_player(command.issuer.name, "Can only donate to players on your team")
-        end
-      else
-        page_player(command.issuer.name, "Cannot donate nothing!")
-      end
-    else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
-    end
-  end
-
-  # FIXME:
-  command(:teamdonate, aliases: [:td], arguments: 1, help: "!teamdonate <amount>") do |command|
-    mates  = PlayerData.player_list.select { |ply| ply.ingame? && ply.team == command.issuer.team && ply != command.issuer }
-    amount = command.arguments.last.to_i
-
-    if mates.count.positive?
-      if amount.positive?
-        if donations_available?(command.issuer)
-          slice = (amount / mates.count.to_f).floor
-
-          mates.each do |mate|
-            RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
-
-            page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you")
-          end
-
-          # FIXME: Sometimes this message is not delivered!
-          page_player(command.issuer.name, "You have donated #{amount} credits to your team")
-        end
-      else
-        page_player(command.issuer.name, "Cannot donate nothing!")
-      end
-    else
-      page_player(command.issuer.name, "You are the only one on your team!")
     end
   end
 
