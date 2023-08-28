@@ -117,6 +117,7 @@ module Mobius
       def update_rank_data(win_data, tally)
         model = Database::Rank.first(name: @name.downcase) || Database::Rank.create(name: @name.downcase, skill: DEFAULT_SKILL)
 
+        # NOTE: This will fail here if teams.json is not setup correctly
         winning_team = Teams.id_from_name(win_data[:winning_team_name])[:id]
         round_rating = 0.0
 
