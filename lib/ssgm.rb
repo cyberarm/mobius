@@ -45,7 +45,7 @@ module Mobius
 
       @lost_connection = false
 
-      retrieve_server_rotation
+      retrieve_server_rotation || parse_tt_rotation
 
       monitor_stream
     end
@@ -53,6 +53,7 @@ module Mobius
     def parse_tt_rotation
       ServerConfig.rotation.clear
 
+      i = 0
       reading_rotation = false
       File.open("#{Config.fds_path}/tt.cfg") do |f|
         f.each_line do |line|
@@ -65,7 +66,10 @@ module Mobius
             next unless line.start_with?("\"")
 
             _, name = line.split('"')
+            log("SSGM", "Map in position #{i} is #{name}")
             ServerConfig.rotation << name
+
+            i += 1
           end
         end
       end
@@ -94,6 +98,12 @@ module Mobius
 
         i += 1
       end
+
+      ServerConfig.rotation
+    rescue NoMethodError
+      log("SSGM", "Failed to retrieve server rotation from RenRem.")
+
+      nil
     end
 
     def monitor_stream
@@ -162,7 +172,7 @@ module Mobius
           @socket&.close unless @socket&.closed?
           @socket = nil
 
-          if e.class == Errno::ECONNREFUSED
+          if [Errno::ECONNREFUSED, Errno::ECONNRESET].include?(e.class)
             @lost_connection = true
           end
 
