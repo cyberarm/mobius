@@ -31,6 +31,10 @@ module Mobius
       @@instance&.parse_tt_rotation
     end
 
+    def self.retrieve_server_rotation
+      @@instance&.retrieve_server_rotation
+    end
+
     def initialize(address:, port:)
       raise "SSGM instance already active!" if @@instance
 
@@ -41,7 +45,7 @@ module Mobius
 
       @lost_connection = false
 
-      parse_tt_rotation
+      retrieve_server_rotation
 
       monitor_stream
     end
@@ -67,6 +71,31 @@ module Mobius
       end
     end
 
+    def retrieve_server_rotation
+      ServerConfig.rotation.clear
+
+      i = 0
+      loop do
+        exit_loop = false
+        RenRem.cmd_now("mlist #{i}") do |response|
+          response = response.strip
+
+          if response == "There is no map in position #{i} of the map list"
+            exit_loop = true
+          else
+            name = response.strip.split(" ").last
+
+            ServerConfig.rotation << name
+            log("SSGM", "Map in position #{i} is #{name}")
+          end
+        end
+
+        break if exit_loop
+
+        i += 1
+      end
+    end
+
     def monitor_stream
       Thread.new do
         begin
@@ -81,14 +110,14 @@ module Mobius
             # Purge player data
             PlayerData.player_list.each do |player|
               PluginManager.publish_event(:player_left, player)
-              log "Deleting data for player #{player.name} (ID: #{player.id})"
+              log("SSGM", "Deleting data for player #{player.name} (ID: #{player.id})")
               PlayerData.delete(player)
             end
 
             PluginManager.reset_blackboard!
 
             # Soft re-init Mobius on server crash
-            SSGM.parse_tt_rotation
+            retrieve_server_rotation
             Config.reload_config
 
             PluginManager.reload_enabled_plugins!

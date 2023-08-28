@@ -37,6 +37,12 @@ module Mobius
       end
     end
 
+    def self.cmd_now(data, &block)
+      raise "RenRem not running!" unless @@instance
+
+      @@instance.cmd_now(data, block)
+    end
+
     # Queue command for single execution on next tick (Repeated calls will be ignored in the same tick)
     def self.enqueue(data)
       @@queue << data
@@ -208,6 +214,12 @@ module Mobius
 
     def cmd_delayed(data, seconds, block)
       queue_command(data, seconds, block)
+    end
+
+    def cmd_now(data, block)
+      command = Command.new(command: data, queued_time: monotonic_time, delay: nil, block: block)
+
+      deliver_command(command, true)
     end
 
     def teardown
