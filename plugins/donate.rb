@@ -125,7 +125,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
             RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
 
             page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you.")
-            donation[:receivers] << { name: player.name, amount: slice, money: funds[player.name] }
+            donation[:receivers] << { name: mate.name, amount: slice, money: funds[mate.name] }
           end
 
           RenRem.cmd("pinfo")
