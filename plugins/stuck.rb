@@ -4,7 +4,7 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
       name == player.name
     end
 
-    return unless death
+    return false unless death
 
     @queued_deaths.delete(player.name)
 
@@ -15,11 +15,15 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
       page_player(player.name, "You've taken damage, respawn aborted.")
     when :killed
       page_player(player.name, "You've died, respawn aborted.")
+    when :cancelled
+      page_player(player.name, "Respawn aborted.")
     end
+
+    true
   end
 
   on(:start) do
-    @killme_timeout = 30.0 # seconds
+    @killme_timeout = -1.0 # seconds or -1 to disable delay
     @damage_timeout = 10.0 # seconds must elipse since last damaged for !killme to be allowed
     @damaged_players = {}
     @queued_deaths = {}
@@ -93,11 +97,21 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
     damaged = @damaged_players[command.issuer.name] || 100_000.0
 
     if (monotonic_time - damaged).abs >= @damage_timeout
-      page_player(command.issuer.name, "You will respawn in #{@killme_timeout} seconds.")
+      if @killme_timeout >= 0
+        page_player(command.issuer.name, "You will respawn in #{@killme_timeout} seconds. Use !kc or !killcancel to abort.")
 
-      @queued_deaths[command.issuer.name] = monotonic_time
+        @queued_deaths[command.issuer.name] = monotonic_time
+      else
+        RenRem.cmd("kill #{command.issuer.id}")
+
+        broadcast_message("#{command.issuer.name} has respawned")
+      end
     else
       page_player(command.issuer.name, "You've taken damage in the last #{@damage_timeout} seconds, cannot yet respawn.")
     end
+  end
+
+  command(:killcancel, aliases: [:kc], arguments: 0, help: "Cancel !killme") do |command|
+    page_player(command.issuer.name, "No respawn queued.") unless abort_queued_deaths(command.issuer, :cancelled)
   end
 end
