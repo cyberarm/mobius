@@ -363,31 +363,38 @@ module Mobius
         obj[:armor] = object[:armor]
       end
 
-      if (damager = @game_objects[object[:damager_object]]) && (player = PlayerData.player(PlayerData.name_to_id(damager[:name])))
+      damager = @game_objects[object[:damager_object]]
+      damaged = @game_objects[object[:object]]
+      damager_player = damager ? PlayerData.player(PlayerData.name_to_id(damager[:name])) : nil
+      damaged_player = damaged ? PlayerData.player(PlayerData.name_to_id(damaged[:name])) : nil
+
+      if damager && damager_player
         # If the damage is less than 0 it's actually being repaired
         if object[:damage].negative?
           case object[:type].downcase.strip
           when "building"
-            player.increment_value(:stats_building_repairs, -object[:damage])
+            damager_player.increment_value(:stats_building_repairs, -object[:damage])
           when "vehicle"
-            player.increment_value(:stats_vehicle_repairs, -object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
+            damager_player.increment_value(:stats_vehicle_repairs, -object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
           when "soldier"
-            player.increment_value(:stats_healed, -object[:damage])
+            damager_player.increment_value(:stats_healed, -object[:damage])
           end
         else
           case object[:type].downcase.strip
           when "building"
-            player.increment_value(:stats_building_damage, object[:damage])
+            damager_player.increment_value(:stats_building_damage, object[:damage])
           when "vehicle"
-            player.increment_value(:stats_vehicle_damage, object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
+            damager_player.increment_value(:stats_vehicle_damage, object[:damage]) if obj && obj[:drivers].positive? # only count occupied vehicles
           when "soldier"
-            player.increment_value(:stats_damage, object[:damage])
+            damager_player.increment_value(:stats_damage, object[:damage])
           end
         end
-
-        object[:_damager_object] = damager
-        object[:_player_object] = player
       end
+
+        object[:_damager_object] = damager if damager
+        object[:_damaged_object] = damaged if damaged
+        object[:_damager_player_object] = damager_player if damager_player
+        object[:_damaged_player_object] = damaged_player if damaged_player
 
       PluginManager.publish_event(:damaged, object, data)
 

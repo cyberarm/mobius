@@ -429,7 +429,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
   end
 
   on(:enter_vehicle) do |hash|
-    if tournament_active? && (player_obj = hash[:_player_object])
+    if tournament_active? && (player_obj = hash[:_damager_player_object])
       player = PlayerData.player(PlayerData.name_to_id(player_obj[:name]))
 
       if player
@@ -440,7 +440,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
   end
 
   # on(:damaged) do |hash|
-  #   if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_player_object])
+  #   if tournament_active? && hash[:type].downcase.to_sym == :building && (player = hash[:_damager_player_object])
   #     damage = hash[:damage]
 
   #     if damage.positive? # Ignore healing
@@ -475,7 +475,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
     # Block C4
     if hash[:type].downcase.strip.to_sym == :object && tournament_active? && c4?(hash[:preset].downcase)
-      player_obj = hash[:_player_object]
+      player_obj = hash[:_damager_player_object]
       ply = PlayerData.player(PlayerData.name_to_id(player_obj[:name])) if player_obj
 
       log "#{ply ? ply.name : Teams.name(hash[:team])} placed C4 (#{hash[:preset]})"

@@ -236,16 +236,6 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
   end
 
-  command(:stuck, arguments: 0, help: "Become unstuck, maybe.") do |command|
-    broadcast_message("!stuck not available. Use !killme if needed.")
-  end
-
-  command(:killme, arguments: 0, help: "Kill yourself") do |command|
-    RenRem.cmd("kill #{command.issuer.id}")
-
-    broadcast_message("#{command.issuer.name} has respawned")
-  end
-
   command(:ping, arguments: 0..1, help: "!ping [<nickname>]") do |command|
     if command.arguments.first.empty?
       player = PlayerData.player(PlayerData.name_to_id(command.issuer.name))

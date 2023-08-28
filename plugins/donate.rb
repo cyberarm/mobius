@@ -53,6 +53,10 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     @undonate_timeout = 5.0
   end
 
+  on(:map_loaded) do
+    @donations = {}
+  end
+
   on(:tick) do
     @donations.delete_if { |key, d| monotonic_time - d[:time] > @undonate_timeout }
   end
