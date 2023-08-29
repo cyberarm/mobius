@@ -30,6 +30,11 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
         funds[name] = money
       end
+
+      # Fallback incase RenRem read failed
+      PlayerData.player_list do |player|
+        funds[player.name] ||= player.money
+      end
     end
 
     # id       = split_data[0].to_i
@@ -151,6 +156,10 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       funds = all_player_funds
 
       donation[:receivers].each do |receiver|
+        next unless receiver[:name]
+        next unless receiver[:amount]
+        next unless receiver[:money]
+
         player = PlayerData.player(PlayerData.name_to_id(receiver[:name], exact_match: true))
         next unless player
 
