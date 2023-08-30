@@ -177,6 +177,7 @@ module Mobius
 
           if [Errno::ECONNREFUSED, Errno::ECONNRESET, SSGMCommunicationLostError].include?(e.class)
             @lost_connection = true
+            ServerStatus.fds_renrem_no_communication!
           end
 
           sleep 10
