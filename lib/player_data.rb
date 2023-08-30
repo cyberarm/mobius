@@ -162,7 +162,7 @@ module Mobius
           stats_total_matches: model.stats_total_matches + 1,
           stats_matches_won: model.stats_matches_won + (on_winning_team ? 1 : 0),
           stats_matches_lost: model.stats_matches_lost + (!on_winning_team ? 1 : 0),
-          stats_score: model.stats_score + @score,
+          stats_score: model.stats_score + @data[:stats_score],
           stats_kills: model.stats_kills + @data[:stats_kills],
           stats_deaths: model.stats_deaths + @data[:stats_deaths],
           stats_damage: model.stats_damage + @data[:stats_damage],
