@@ -119,6 +119,7 @@ module Mobius
 
         # NOTE: This will fail here if teams.json is not setup correctly
         winning_team = Teams.id_from_name(win_data[:winning_team_name])[:id]
+        on_winning_team = @team == winning_team
         round_rating = 0.0
 
         tally_total_damage = tally.data[:stats_damage] + tally.data[:stats_building_damage] + tally.data[:stats_vehicle_damage]
@@ -159,8 +160,8 @@ module Mobius
         model.update(
           skill: skill,
           stats_total_matches: model.stats_total_matches + 1,
-          stats_matches_won: model.stats_matches_won + (winning_team ? 1 : 0),
-          stats_matches_lost: model.stats_matches_lost + (!winning_team ? 1 : 0),
+          stats_matches_won: model.stats_matches_won + (on_winning_team ? 1 : 0),
+          stats_matches_lost: model.stats_matches_lost + (!on_winning_team ? 1 : 0),
           stats_score: model.stats_score + @score,
           stats_kills: model.stats_kills + @data[:stats_kills],
           stats_deaths: model.stats_deaths + @data[:stats_deaths],
