@@ -1,5 +1,8 @@
 module Mobius
   class SSGM
+    class SSGMCommunicationLostError < StandardError
+    end
+
     @@instance = nil
 
     def self.init
@@ -163,7 +166,7 @@ module Mobius
             end
           end
 
-          raise "Lost connection to SSGM."
+          raise SSGMCommunicationLostError, "Lost connection to SSGM."
         rescue SystemCallError, StandardError => e
           log("SSGM", "An error occurred while attempting to communicate with SSGM. Retrying in 10s...")
           log "SSGM", "#{e.class}: #{e}"
@@ -172,7 +175,7 @@ module Mobius
           @socket&.close unless @socket&.closed?
           @socket = nil
 
-          if [Errno::ECONNREFUSED, Errno::ECONNRESET].include?(e.class)
+          if [Errno::ECONNREFUSED, Errno::ECONNRESET, SSGMCommunicationLostError].include?(e.class)
             @lost_connection = true
           end
 
