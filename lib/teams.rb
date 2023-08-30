@@ -114,7 +114,13 @@ module Mobius
       team_picking = @team_first_picking
 
       PlayerData.player_list.select(&:ingame?).each do |player|
-        rating = Database::Rank.first(name: player.name.downcase)&.skill || PlayerData::DEFAULT_SKILL
+        rank = Database::Rank.first(name: player.name.downcase)
+        rating = 0.0
+
+        if rank && rank.stats_total_matches >= 10
+          win_ratio = rank.stats_matches_won / rank.stats_total_matches
+          rating = (rank.stats_score / rank.stats_total_matches) * win_ratio
+        end
 
         list << [player, rating]
       end
