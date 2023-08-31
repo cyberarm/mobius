@@ -33,7 +33,10 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
       # Fallback incase RenRem read failed
       PlayerData.player_list do |player|
-        funds[player.name] ||= player.money
+        unless funds[player.name]
+          log "Failed to retreive pinfo data for \"#{player.name}\" via RenRem, falling back to PlayerData."
+          funds[player.name] = player.money
+        end
       end
     end
 

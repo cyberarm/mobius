@@ -31,7 +31,7 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
     end
   end
 
-  command(:swap, arguments: 0, help: "!swap - Request to swap teams") do |command|
+  command(:swap, aliases: [:rtc], arguments: 0, help: "!swap - Request to swap teams") do |command|
     # Swap in progress
     if @requester
       requester = PlayerData.player(PlayerData.name_to_id(@requester))
@@ -44,6 +44,8 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
 
             requester.change_team(command.issuer.team)
             command.issuer.change_team(requester_team)
+
+            broadcast_message("[Swap] #{requester.name} and #{command.issuer.name} have swapped teams.")
 
             reset
           else
@@ -62,6 +64,27 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
     # Request to swap
     else
       reset
+
+      team_0_size = PlayerData.players_by_team(0).size
+      team_1_size = PlayerData.players_by_team(1).size
+      team_diff = team_0_size - team_1_size
+
+      if team_diff.abs > 1
+        if team_diff.positive? # Team Zero has more players
+          if command.issuer.team == 0
+            broadcast_message("[Swap] #{command.issuer.name} has changed teams.")
+            command.issuer.change_team(1)
+            next
+          end
+
+        else # Team One has more players
+          if command.issuer.team == 1
+            broadcast_message("[Swap] #{command.issuer.name} has changed teams.")
+            command.issuer.change_team(0)
+            next
+          end
+        end
+      end
 
       @requester = command.issuer.name
       @request_time = monotonic_time
