@@ -19,6 +19,8 @@ module Mobius
       require_relative "db/models/ip"
       require_relative "db/models/rank"
       require_relative "db/models/moderator_action"
+      require_relative "db/models/recommendation"
+      require_relative "db/models/recommendation_counter_cache"
     end
 
     def self.transaction(&block)

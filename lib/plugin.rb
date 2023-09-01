@@ -187,6 +187,12 @@ module Mobius
       Database::PluginData.first(plugin_name: @___database_name, key: key)
     end
 
+    def database_remove(key)
+      if (db = database_get(key))
+        db.delete
+      end
+    end
+
     def config
       config_path = "#{ROOT_PATH}/plugins/configs/#{File.basename(@___plugin_file, ".rb")}.json"
       @___config || File.exist?(config_path) ? @___config = JSON.parse(File.read(config_path), symbolize_names: true) : {}

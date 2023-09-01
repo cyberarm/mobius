@@ -32,6 +32,7 @@ module Mobius
     warnlog:  4,
     stafflog: 5,
     mutelog: 6,
+    reclog: 7
   }.freeze
 
   MODERATOR_ACTION = {
