@@ -88,7 +88,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
   end
 
   command(:time, arguments: 1, help: "!time 5[{s,m,h}]", groups: [:admin, :mod, :director]) do |command|
-    match_data = command.arguments.first.match(/(\d+)([smh])/)
+    match_data = command.arguments.first.downcase.match(/(\d+)([smh])/)
 
     time = -1
     unit = "s"
@@ -106,11 +106,17 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
 
     hardcap = 2 * 60 * 60 # 2 hours
 
+    if (unit == "s" && time > hardcap) || (unit == "m" && time * 60 > hardcap) || (unit == "h" && time * 60 * 60 > hardcap)
+      log "Player #{command.issuer.name} attempted to set the game clock to #{match_data ? match_data[0] : "#{time}s"}"
+      page_player(command.issuer.name, "Game clock may not be set greater than 2 hours! Overriding to 2 hours.")
+
+      # Override input
+      time = 2
+      unit = "h"
+    end
+
     if time <= 0
       page_player(command.issuer.name, "Time must be greater than 0!")
-    elsif (unit == "s" && time > hardcap) || (unit == "m" && time * 60 > hardcap)
-      log "Player #{command.issuer.name} attempted to set the game clock to #{match_data[0]}"
-      page_player(command.issuer.name, "Game clock may not be set greater than 2 hours!")
     else
       case unit.downcase
       when "s"
