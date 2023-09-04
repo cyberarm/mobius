@@ -333,7 +333,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @voice_channel_data_updated = false
     @send_status = true
 
-    @fds_responding = true
+    @fds_responding = database_get(:fds_responding) == "true"
     @staff_pending_verification = {}
     @verification_timeout = 65 # seconds
 
@@ -393,6 +393,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     if ServerStatus.get(:fds_responding) != @fds_responding
       @send_status = true
       @fds_responding = ServerStatus.get(:fds_responding)
+      database_set(:fds_responding, @fds_responding)
 
       page_server_administrators!
     else
