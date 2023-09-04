@@ -7,8 +7,13 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       next
     end
 
+    # DEBUG Logging
     @debugging = false
+
     @allow_auto_recs = false
+
+    @teamplayers_timeout = 120 # seconds - how often the !tp/!n00bs command my be used
+    @team_players_last_used = -@teamplayers_timeout
 
     @autorec_cache = {}
   end
@@ -66,25 +71,27 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     end
   end
 
-  command(:recommend, aliases: [:rec], arguments: 2, help: "Recommend another player for good teamplay, etc.") do |command|
+  command(:recommend, aliases: [:rec], arguments: 2, help: "!rec <nickname> <comment> - Recommend another player for good teamplay, etc.") do |command|
     recommend(:rec, command)
   end
 
-  command(:n00b, aliases: [:noob], arguments: 2, help: "Recommend another player for good teamplay, etc.") do |command|
+  command(:n00b, aliases: [:noob], arguments: 2, help: "!n00b <nickname> <comment> - Mark another player as a n00b.") do |command|
     recommend(:n00b, command)
   end
 
-  command(:recommendations, aliases: [:recs], help: "Shows your current recommendations.") do |command|
+  command(:recommendations, aliases: [:recs], help: "!recs - Shows your current recommendations.") do |command|
     recommendations(command.issuer)
   end
 
-  command(:teamplayers, aliases: [:tp], help: "Displays all teamplayers.") do |command|
+  command(:teamplayers, aliases: [:tp], help: "!tp - Displays all teamplayers.") do |command|
+    team_players(:rec)
   end
 
-  command(:shown00bs, aliases: [:shownoobs, :n00bs, :noobs], help: "Displays all n00bs.") do |command|
+  command(:shown00bs, aliases: [:shownoobs, :n00bs, :noobs], help: "!n00bs - Displays all n00bs.") do |command|
+    team_players(:n00b)
   end
 
-  command(:recignore, arguments: 1, help: "Disables recommendations for a specific user.", groups: [:admin, :mod]) do |command|
+  command(:recignore, arguments: 1, help: "!recignore <nickname> - Disables recommendations for a specific user.", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -100,7 +107,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     end
   end
 
-  command(:recallow, arguments: 1, help: "Enables recommendations for a specific user.", groups: [:admin, :mod]) do |command|
+  command(:recallow, arguments: 1, help: "!recallow <nickname> - Enables recommendations for a specific user.", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
@@ -157,6 +164,85 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     page_player(player.name, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
   end
 
+  def team_players(mode)
+    noob = mode == :n00b
+
+    if monotonic_time - @team_players_last_used < @teamplayers_timeout
+      broadcast_message("[MOBIUS] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations.")
+      return
+    else
+      @team_players_last_used = monotonic_time
+    end
+
+    team_0_recs = 0
+    team_1_recs = 0
+    team_0_noobs = 0
+    team_1_noobs = 0
+    team_0 = []
+    team_1 = []
+    PlayerData.player_list.select(&:ingame?).each do |player|
+      recommendations = Database::RecommendationCounterCache.first(Sequel.ilike(:player_name, player.name)) # ILIKE, case insensitive
+
+      if recommendations
+        if player.team == 0
+          team_0_recs += recommendations.recommendations
+          team_0_noobs += recommendations.noobs
+          team_0 << "#{player.name} #{recommendations.noobs - recommendations.recommendations}" if noob && (recommendations.noobs - recommendations.recommendations) > 0
+          team_0 << "#{player.name} #{recommendations.recommendations - recommendations.noobs}" if !noob && (recommendations.recommendations - recommendations.noobs) > 0
+        end
+
+        if player.team == 1
+          team_1_recs += recommendations.recommendations
+          team_1_noobs += recommendations.noobs
+          team_1 << "#{player.name} #{recommendations.noobs - recommendations.recommendations}" if noob && (recommendations.noobs - recommendations.recommendations) > 0
+          team_1 << "#{player.name} #{recommendations.recommendations - recommendations.noobs}" if !noob && (recommendations.recommendations - recommendations.noobs) > 0
+        end
+      end
+    end
+
+    if noob
+      if team_0_noobs + team_1_noobs == 0
+        broadcast_message("[MOBIUS] None of the players in the server have any n00bs.")
+      else
+        broadcast_message("[MOBIUS] n00bs based on in-game complaints")
+
+        if team_0.size > 0
+          broadcast_message("[MOBIUS] #{Teams.name(0)}")
+          team_0.each do |str|
+            broadcast_message("[MOBIUS]     #{str}")
+          end
+        end
+
+        if team_1.size > 0
+          broadcast_message("[MOBIUS] #{Teams.name(1)}")
+          team_1.each do |str|
+            broadcast_message("[MOBIUS]     #{str}")
+          end
+        end
+      end
+    else # recs
+      if team_0_recs + team_1_recs == 0
+        broadcast_message("[MOBIUS] None of the players in the server have any recommendations.")
+      else
+        broadcast_message("[MOBIUS] Team players based on in-game recommendations")
+
+        if team_0.size > 0
+          broadcast_message("[MOBIUS] #{Teams.name(0)}")
+          team_0.each do |str|
+            broadcast_message("[MOBIUS]     #{str}")
+          end
+        end
+
+        if team_1.size > 0
+          broadcast_message("[MOBIUS] #{Teams.name(1)}")
+          team_1.each do |str|
+            broadcast_message("[MOBIUS]     #{str}")
+          end
+        end
+      end
+    end
+  end
+
   def recommend_status(recommender, player, noob)
     cutoff = Time.parse(Time.now.utc.to_i - (1440 * 60)) # 1 day
 
@@ -178,7 +264,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
   end
 
   def allow_auto_recs?
-    config[:enable_for_coop] || (PlayerData.players_by_team(0) > 0 && PlayerData.players_by_team(1) > 0)
+    config[:enable_for_coop] || (PlayerData.players_by_team(0).size > 0 && PlayerData.players_by_team(1).size > 0)
   end
 
   def rec_ignored?(player)
@@ -218,10 +304,6 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     else
       # FAILED TO SAVE...
     end
-  end
-
-  def teamplayers(noobs = false)
-    #
   end
 
   def show_joinmessage(player)
