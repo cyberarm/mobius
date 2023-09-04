@@ -1,0 +1,32 @@
+{
+  "enable_for_coop": false,
+  "join_messages": [
+    "%nick currently has %recs recommendations."
+  ],
+  "team_0_sound": "rokroll1.wav",
+  "team_1_sound": "jyes1.wav",
+
+  "autorec": {
+    "match_top_player": {
+      "min_score": 100,
+      "min_kills": 1,
+      "min_kd": 0.1
+    },
+    "commanders": {
+      "team_0": ["Marshal Georgi Kukov"],
+      "team_1": ["Tanya Adams"]
+    },
+
+    "building_kills": 2,
+    "vehicle_kills": 6,
+    "infantry_kills": 7,
+
+    "building_repair": 2000,
+    "vehicle_repair": 2500,
+    "infantry_healing": 2000,
+
+    "building_damage": 20000,
+    "vehicle_damage": 10000,
+    "infantry_damage": 5000
+  }
+}
