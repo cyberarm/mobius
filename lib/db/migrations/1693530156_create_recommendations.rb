@@ -6,6 +6,7 @@ Sequel.migration do
       String  :player_name, null: false
       String  :comment, null: false
       Boolean :noob, default: false
+      Boolean :autorec, default: false
 
       Time :created_at
       Time :updated_at
@@ -13,6 +14,7 @@ Sequel.migration do
       index :recommender_name
       index :player_name
       index :noob
+      index :autorec
     end
 
     create_table(:recommendation_counter_cache) do

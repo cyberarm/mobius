@@ -391,10 +391,10 @@ module Mobius
         end
       end
 
-        object[:_damager_object] = damager if damager
-        object[:_damaged_object] = damaged if damaged
-        object[:_damager_player_object] = damager_player if damager_player
-        object[:_damaged_player_object] = damaged_player if damaged_player
+      object[:_damager_object] = damager if damager
+      object[:_damaged_object] = damaged if damaged
+      object[:_damager_player_object] = damager_player if damager_player
+      object[:_damaged_player_object] = damaged_player if damaged_player
 
       PluginManager.publish_event(:damaged, object, data)
 
