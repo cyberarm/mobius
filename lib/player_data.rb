@@ -40,6 +40,7 @@ module Mobius
 
       def increment_value(key, value = 1)
         @data[key] += value if @data[key]
+        set_value(key, value) unless @data[key]
       end
 
       def delete_value(key)
