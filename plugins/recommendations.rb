@@ -161,7 +161,11 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     recommendations = Database::RecommendationCounterCache.first(Sequel.ilike(:player_name, player.name)) # ILIKE, case insensitive
 
     count = recommendations ? recommendations.recommendations - recommendations.noobs : 0
-    page_player(player.name, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
+    if recommendations
+      page_player(player.name, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
+    else
+      broadcast_message("[MOBIUS] You currently don't have any recommendations yet.")
+    end
   end
 
   def team_players(mode)
