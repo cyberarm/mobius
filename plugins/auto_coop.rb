@@ -2,7 +2,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   def configure_bots
     player_count = ServerStatus.total_players
     bot_count = player_count * @bot_difficulty
-    bot_count = @base_bot_count if bot_count.zero? || bot_count < @base_bot_count
+    bot_count = @min_bot_count if bot_count.zero? || bot_count < @min_bot_count
 
     bot_count = @max_bot_count if bot_count > @max_bot_count
 
@@ -15,12 +15,21 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     #   RenRem.cmd("botcount #{bot_count} 0")
     # end
 
-    if @versus_started || !@coop_started || player_count.zero?
-      bot_count = -1
+    if player_count.zero? # Idle server
       RenRem.cmd("botcount 0")
 
       PluginManager.blackboard_store(:"team_0_bot_count", 0)
       PluginManager.blackboard_store(:"team_1_bot_count", 0)
+    elsif @versus_started || !@coop_started
+      unless @versus_configured # Only call this once so that !fds botcount CAN take effect if desired
+        @versus_configured = true
+        bot_count = MapSettings.get_map_setting(:botcount) || 0
+
+        RenRem.cmd("botcount #{bot_count}")
+
+        PluginManager.blackboard_store(:"team_0_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+        PluginManager.blackboard_store(:"team_1_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+      end
     elsif player_count >= @friendless_player_count
       # NOTE: Prevent sudden influx of enemy bots when transitioning to exclusive PvE mode
       bot_count = (bot_count / 2.0).round
@@ -52,21 +61,19 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   end
 
   def check_map(map)
-    case map.split(".", 2).first
-    when "RA_AS_Seamist"
+    name = map.split(".", 2).first
+
+    if (config[:force_team_0_maps] || []).include?(name)
       @override_current_side = @current_side
-      @current_side = 1 # Force players to Allied team as that is how the map is designed
-    when "RA_Volcano", "RA_RidgeWar", "RA_GuardDuty"
+      @current_side = 0
+    elsif (config[:force_team_1_maps] || []).include?(name)
       @override_current_side = @current_side
-      @current_side = 0 # Force players to Soviet team for aircraft maps
-    when "RA_PacificThreat"
-      # TODO: Murder ship yard and sub pen on map start
-      # RESOLVED: This is done in SSGM.ini
+      @current_side = 1
     end
   end
 
   def revive_naval_buildings
-    broadcast_message("[AutoCoop] Reviving Naval Factories...")
+    # broadcast_message("[AutoCoop] Reviving Naval Factories...")
     RenRem.cmd("revivebuildingbypreset 0 Sov_Pen")
     RenRem.cmd("revivebuildingbypreset 1 All_Nyd")
   end
@@ -114,7 +121,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   end
 
   def bot_report
-    return "0 bots per team" unless @coop_started
+    return "#{(@last_bot_count / 2.0).round} bots per team" unless @coop_started
 
     "#{PluginManager.blackboard(:team_0_bot_count).to_i} bots on team #{Teams.name(0)}, #{PluginManager.blackboard(:team_1_bot_count).to_i} bots on team #{Teams.name(1)}"
   end
@@ -122,22 +129,26 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   on(:start) do
     @start_time = monotonic_time
 
+    # Loaded from config
+    @default_mode = (config[:default_mode] || "coop").to_sym
+    @default_bot_difficulty = config[:default_bot_difficulty] || 3
+    @default_max_bot_count = config[:default_max_bot_count] || 64
+    @default_friendless_player_count = config[:default_friendless_player_count] || 12
+    @min_bot_count = config[:min_bot_count] || 12
+    @hardcap_bot_count = config[:hardcap_bot_count] || 127 #64
+    @hardcap_friendless_player_count = config[:hardcap_friendless_player_count] || 12
+
+    @vote_required_percentage = config[:vote_required_percentage] || 0.69 # 69% => (number_of_players * 0.69).round
+
+    @advertise_versus_player_count = config[:advertise_mode_player_count] || 8
+
     @current_side = 0
-    @bot_difficulty = 3
-    @support_bots = 4
-    @last_bot_count = -1
-    @friendless_player_count = 12
-    @max_bot_count = 64
-    @hardcap_bot_count = 127 #64
-    @hardcap_friendless_player_count = 12
-    @base_bot_count = 12
+    @bot_difficulty = @default_bot_difficulty
+    @friendless_player_count = @default_friendless_player_count
+    @max_bot_count = @default_max_bot_count
     @max_bot_difficulty = @hardcap_bot_count + 1 # 13 # >= 12
-
-    @default_bot_difficulty = 3
-    @default_max_bot_count = 64
-    @default_friendless_player_count = 12
-
-    @vote_required_percentage = 0.69 # 69% => (number_of_players * 0.69).round
+    @last_bot_count = -1
+    @support_bots = 4 # Not a thing... :sad:
 
     @coop_started = false
     @manual_bot_count = false
@@ -145,7 +156,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     @versus_started = false
     @versus_votes = {}
-    @advertise_versus_player_count = 8
+    @versus_configured = false
 
     @player_characters = {}
 
@@ -204,7 +215,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     after(5) do
       if ServerStatus.total_players.zero?
         log "Resetting to defaults since no players are in-game."
-        @next_round_mode = :coop
+        @next_round_mode = @default_mode
 
         # Reset Co-Op settings to defaults
         @bot_difficulty = @default_bot_difficulty
@@ -221,6 +232,8 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       end
 
       if @versus_started
+        @versus_configured = false
+
         revive_naval_buildings
         configure_bots
       elsif ServerStatus.total_players.positive?
@@ -255,7 +268,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     baby_bot = monotonic_time - @start_time <= 1.0
 
     if @versus_started
-      message_player(player.name, "[AutoCoop] Co-op for this round has been disabled. PvP active.")
+      message_player(player.name, "[AutoCoop] Co-op for this round has been disabled. PvP active.") unless @default_mode == :versus
 
       configure_bots
     elsif @coop_started || ServerStatus.total_players == 1
@@ -385,6 +398,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       @coop_started = false
       @versus_started = true
+      @versus_configured = false
 
       configure_bots
       remix_teams
