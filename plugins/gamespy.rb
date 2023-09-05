@@ -22,19 +22,21 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
     @team_1_kills = 0
     @team_1_deaths = 0
 
-    failure = false
+    @failure = false
+    @socket_bound = false
 
     after(5) do
       log "Started Announcer"
 
       begin
         @query_socket.bind("0.0.0.0", @query_port)
+        @socket_bound = true
       rescue Errno::EADDRINUSE
-        failure = true
+        @failure = true
         log "Failed to start query server, address already in use!"
       end
 
-      unless failure
+      unless @failure
         Config.gamespy[:master_servers].each do |address|
           host, port = address.split(":")
           socket = UDPSocket.new
@@ -47,11 +49,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
         end
       end
 
-      unless failure
-        every(1) do
-          handle_sockets
-        end
-
+      unless @failure
         every(300) do
           log "Sending heartbeat..."
           @master_servers.each do |ms|
@@ -60,6 +58,11 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
         end
       end
     end
+  end
+
+  # Called every ~16 ms
+  on(:think) do
+    handle_sockets if !@failure && @socket_bound
   end
 
   on(:killed) do |hash|
