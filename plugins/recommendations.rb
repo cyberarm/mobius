@@ -143,7 +143,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       recommend_status = recommend_status(recommender, player, noob)
       case recommend_status
       when :allowed
-        recommend_player(recommender.name.downcase, player.name.downcase, comment, noob)
+        recommend_player(recommender.name.downcase, player, comment, noob)
       when :limit_reached
         page_player(recommender.name, "[MOBIUS] You have reached your daily limit for n00bs.") if noob
         page_player(recommender.name, "[MOBIUS] You have reached your daily limit for recommendations.") unless noob
@@ -244,7 +244,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
   end
 
   def recommend_status(recommender, player, noob)
-    cutoff = Time.parse(Time.now.utc.to_i - (1440 * 60)) # 1 day
+    cutoff = Time.at(Time.now.utc.to_i - (1440 * 60)) # 1 day
 
     results = Database::Recommendation.select.where(Sequel.ilike(:recommender_name, recommender.name)).where(noob: noob).where { created_at >= cutoff }.all
 
@@ -253,9 +253,11 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       r.player_name.downcase == player.name.downcase
     end
 
-    if already_operated
-      return :already_noobed_today if already_operated.last.noob? && noob
-      return :already_recommended_today unless already_operated.last.noob? && noob
+    if already_operated.size.positive?
+      pp already_operated
+
+      return :already_noobed_today if already_operated.last.noob && noob
+      return :already_recommended_today unless already_operated.last.noob && noob
     end
 
     return :limit_reached if results.count >= 5
@@ -296,11 +298,12 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     if recommendation.save
       if counter_cache
-        noob ? counter_cache.update(noobs: counter_cache.noob + 1) : counter_cache.update(recommendations: counter_cache.recommendations + 1)
+        noob ? counter_cache.update(noobs: counter_cache.noobs + 1) : counter_cache.update(recommendations: counter_cache.recommendations + 1)
       else
-        counter_cache = Database::RecommendationCounterCache.create(player_name: player_name)
-        counter_cache.save
+        counter_cache = Database::RecommendationCounterCache.create(player_name: player_name, noobs: (noob ? 1 : 0), recommendations: (!noob ? 1 : 0))
       end
+
+      counter_cache.save
     else
       # FAILED TO SAVE...
     end
