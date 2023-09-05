@@ -78,6 +78,8 @@ module Mobius
       @enabled_plugins = @data.dig(:mobius, :enabled_plugins)
       @disabled_plugins = @data.dig(:mobius, :disabled_plugins)
 
+      MapSettings.new
+
       PluginManager.publish_event(:config_reloaded) if reload
     end
   end

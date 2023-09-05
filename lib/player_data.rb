@@ -114,6 +114,7 @@ module Mobius
         PlayerData.process_team_change(id, old_team, @team) if old_team != @team
       end
 
+        # FIXME: Use a a "shadow" PlayerData object to store active match data so that a disconnect doesn't purge players stats...
       def update_rank_data(win_data, tally)
         model = Database::Rank.first(name: @name.downcase) || Database::Rank.create(name: @name.downcase, skill: DEFAULT_SKILL)
 

@@ -332,6 +332,9 @@ module Mobius
         # TODO: Send message to IRC/mod tool
         ServerConfig.read_server_settings
 
+        # "reload" map settings
+        MapSettings.new
+
         MapSettings.apply_map_settings(apply_time: true)
 
         # ENSURE that the mapnum has been handled **BEFORE** sending :map_loaded event

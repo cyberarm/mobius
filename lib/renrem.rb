@@ -67,6 +67,7 @@ module Mobius
       @checksum_factor_cache = 2**32
 
       @socket = UDPSocket.new
+      @socket.setsockopt(:SOCKET, :SO_RCVBUF, 1024 * 1024) # Maybe make reading from RenRem more reliable?
       @socket.connect(@address, @port)
 
       @queue = []
