@@ -12,7 +12,7 @@ module Mobius
 
         @id           = id # String
         @name         = name # String
-        @join_time    = join_time # Time
+        @join_time    = join_time # Float | Monotonic Time
         @score        = score # Integer
         @team         = team # Integer
         @ping         = ping # Integer
@@ -23,8 +23,8 @@ module Mobius
         @money        =  money # Integer
         @kd           =  kd # Float
         @kbps         = kbps # Integer
-        @time         = time # Time
-        @last_updated = last_updated # Time
+        @time         = time # Float | Monotonic Time
+        @last_updated = last_updated # Float | Monotonic Time
 
         @data = { banned: false } # Hash
         reset
@@ -70,6 +70,10 @@ module Mobius
         @data[:stats_vehicle_damage] = 0.0 # damage dealt _to_ vehicle
         @data[:stats_vehicles_captured] = 0
         @data[:stats_vehicles_stolen] = 0
+
+        # MISC.
+        @time = 0 # reset 'play time' for stats reasons
+        @last_updated = monotonic_time
 
         @data.delete(:manual_team)
       end
@@ -130,28 +134,29 @@ module Mobius
         player_total_damage = @data[:stats_damage] + @data[:stats_building_damage] + @data[:stats_vehicle_damage]
         player_total_repairs = @data[:stats_healed] + @data[:stats_building_repairs] + @data[:stats_vehicle_repairs]
 
-        # Round is not worth consideration.
-        return if tally_total_damage <= 100
-        return if tally_total_repairs <= 25
+        ##########################################################
+        # Round is not worth consideration for SKILL adjustment. #
+        ##########################################################
+        if tally_total_damage > 100 && tally_total_repairs > 25
+          excellent = 1.0
+          okay      = 0.5
+          bad       = excellent * -2.0
 
-        excellent = 1.0
-        okay      = 0.5
-        bad       = excellent * -2.0
+          if player_total_damage >= tally_total_damage * 0.08
+            round_rating += excellent
+          elsif player_total_damage >= tally_total_damage * 0.03
+            round_rating += okay
+          elsif player_total_damage <= tally_total_damage * 0.01
+            round_rating += bad
+          end
 
-        if player_total_damage >= tally_total_damage * 0.08
-          round_rating += excellent
-        elsif player_total_damage >= tally_total_damage * 0.03
-          round_rating += okay
-        elsif player_total_damage <= tally_total_damage * 0.01
-          round_rating += bad
-        end
-
-        if player_total_repairs >= tally_total_repairs * 0.10
-          round_rating += excellent
-        elsif player_total_repairs >= tally_total_repairs * 0.05
-          round_rating += okay
-        elsif player_total_repairs <= tally_total_repairs * 0.01
-          round_rating += bad
+          if player_total_repairs >= tally_total_repairs * 0.10
+            round_rating += excellent
+          elsif player_total_repairs >= tally_total_repairs * 0.05
+            round_rating += okay
+          elsif player_total_repairs <= tally_total_repairs * 0.01
+            round_rating += bad
+          end
         end
 
         skill = model.skill
@@ -177,12 +182,14 @@ module Mobius
           stats_vehicle_repairs: model.stats_vehicle_repairs + @data[:stats_vehicle_repairs],
           stats_vehicle_damage: model.stats_vehicle_damage + @data[:stats_vehicle_damage],
           stats_vehicles_captured: model.stats_vehicles_captured + @data[:stats_vehicles_captured],
-          stats_vehicles_stolen: model.stats_vehicles_stolen + @data[:stats_vehicles_stolen]
+          stats_vehicles_stolen: model.stats_vehicles_stolen + @data[:stats_vehicles_stolen],
+          stats_total_time: model.stats_total_time + @data[:stats_match_time]
         )
       end
     end
 
     @player_data = {}
+    @match_stats = {}
 
     def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, last_updated:)
       if (player = @player_data[id])
@@ -216,6 +223,8 @@ module Mobius
         end
 
         if player_updated
+          PlayerData.update_match_stats(player)
+
           PluginManager.publish_event(
             :player_updated,
             player
@@ -229,7 +238,7 @@ module Mobius
           origin: origin,
           id: id,
           name: name,
-          join_time: Time.now.utc,
+          join_time: monotonic_time,
           score: score,
           team: team,
           ping: ping,
@@ -255,6 +264,7 @@ module Mobius
 
         log "PlayerData", "#{player.name} has joined the game"
 
+        PlayerData.update_match_stats(player)
         PluginManager.publish_event(
           :player_joined,
           player
@@ -270,6 +280,33 @@ module Mobius
 
     def self.clear
       @player_data.clear
+    end
+
+    # Sync player stats to Player object that survives disconnects/rejoins
+    def self.update_match_stats(player)
+      stats_player = @match_stats[player.name]
+
+      if stats_player
+        player.data.each do |key, value|
+          stats_player.set_value(key, value)
+        end
+
+        time_diff = monotonic_time - stats_player.value(:_last_stats_sync_update_time)
+        stats_player.set_value(:stats_score, player.score)
+        stats_player.increment_value(:stats_match_time, time_diff)
+        stats_player.set_value(:_last_stats_sync_update_time, monotonic_time)
+      else
+        stats_player = @match_stats[player.name] = player.clone # Clone that their player (don't mutate actual player data)
+        stats_player.set_value(:_last_stats_sync_update_time, monotonic_time)
+      end
+    end
+
+    def self.match_stats
+      @match_stats.map { |name, player| player }
+    end
+
+    def self.clear_match_stats
+      @match_stats.clear
     end
 
     def self.name_to_id(name, exact_match: true)

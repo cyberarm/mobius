@@ -610,12 +610,15 @@ module Mobius
       if win_data
         # Create a dummy playerdata player object
         tally = PlayerData::Player.new(origin: "NULL", id: "", name: "", join_time: nil, score: 0, team: -1, ping: 0, address: ";", kbps: 0, rank: 0, kills: 0, deaths: 0, money: 0, kd: 0, time: nil, last_updated: nil)
-        player_list = PlayerData.player_list
+        ### Use PlayerData.match_stats data instead of PlayerData.player_list so that all match players affect ranking
+        player_list = PlayerData.match_stats
+
 
         player_list.each do |player|
-          player.increment_value(:stats_score, player.score)
-
-          player.score = 0
+          ### NOTE: only needed for PlayerData.player_list sourced player list
+          # player.increment_value(:stats_score, player.score)
+          # player.score = 0
+          # PlayerData.update_match_stats(player)
 
           player.data.each do |key, value|
             tally.increment_value(key, value)
@@ -627,6 +630,7 @@ module Mobius
         end
       end
 
+      PlayerData.clear_match_stats
       PlayerData.player_list.each(&:reset)
 
       @last_purchase_team_one = nil

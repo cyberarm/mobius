@@ -265,6 +265,7 @@ module Mobius
         RenRem.cmd("game_info")
         RenRem.cmd("pinfo")
 
+        PlayerData.update_match_stats(player)
         PlayerData.delete(player)
 
         # TODO: More work needed
@@ -321,7 +322,7 @@ module Mobius
         deaths: deaths,
         money: money,
         kd: kd,
-        last_updated: Time.now.utc
+        last_updated: monotonic_time
       )
 
       check_username(id, name, address)
@@ -498,7 +499,7 @@ module Mobius
 
     def check_player_list
       PlayerData.player_list.reverse.each do |player|
-        if Time.now.utc - player.last_updated > 40
+        if monotonic_time - player.last_updated > 40
           log "Deleting data for player #{player.name} (ID: #{player.id})"
           PlayerData.delete(player)
         end
