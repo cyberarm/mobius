@@ -1,0 +1,4 @@
+{
+"inactive_warning_timeout_in_minutes": 7,
+"inactive_kick_timeout_in_minutes": 10
+}
