@@ -140,7 +140,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     @vote_required_percentage = config[:vote_required_percentage] || 0.69 # 69% => (number_of_players * 0.69).round
 
-    @advertise_versus_player_count = config[:advertise_mode_player_count] || 8
+    @advertise_mode_player_count = config[:advertise_mode_player_count] || 8
 
     @current_side = 0
     @bot_difficulty = @default_bot_difficulty
@@ -254,10 +254,10 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     end
 
     after(15) do
-      if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_versus_player_count
+      if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_mode_player_count
         broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
         broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !request_versus (!vs), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
-      elsif !@coop_started && @next_round_mode != :coop
+      elsif !@coop_started && @next_round_mode != :coop && ServerStatus.total_players >= @advertise_mode_player_count
         broadcast_message("[AutoCoop] Want to switch back to co-op?")
         broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
       end
