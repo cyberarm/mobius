@@ -142,6 +142,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     @advertise_mode_player_count = config[:advertise_mode_player_count] || 8
 
+    @next_round_mode = @default_mode
     @current_side = 0
     @bot_difficulty = @default_bot_difficulty
     @friendless_player_count = @default_friendless_player_count
