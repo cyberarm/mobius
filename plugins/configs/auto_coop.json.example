@@ -1,0 +1,22 @@
+{
+  "default_mode": "versus",
+  "default_bot_difficulty": 3,
+  "default_max_bot_count": 64,
+  "default_friendless_player_count": 12,
+  "min_bot_count": 12,
+  "hardcap_bot_count": 128,
+  "hardcap_friendless_player_count": 12,
+
+  "vote_required_percentage": 0.69,
+
+  "advertise_mode_player_count": 8,
+
+  "force_team_0_maps": [
+    "RA_Volcano",
+    "RA_RidgeWar",
+    "RA_GuardDuty"
+  ],
+  "force_team_1_maps": [
+    "RA_AS_Seamist"
+  ]
+}
