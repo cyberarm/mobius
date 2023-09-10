@@ -1,12 +1,19 @@
 # Authored: 2023-05-12 by cyberarm
 
-puts "WARNING: This will OVERWRITE any existing Rank data!"
-puts "Enter: 'OK' without quotes to proceed."
-# WINDOWS terminal is borked...
-# input = gets.chomp
-
-# pp input
-# exit unless input == "OK"
+puts "########################################################"
+puts "# WARNING: This will OVERWRITE any existing Rank data! #"
+puts "#------------------------------------------------------#"
+puts "# Enter: 'OK' without quotes to proceed.               #"
+puts "########################################################"
+print "> "
+input = gets.chomp
+if input == "OK"
+  puts "Processing..."
+else
+  puts "\"#{input}\" != \"OK\", aborting..."
+  puts
+  exit
+end
 
 MOBIUS_NO_INIT = true
 require_relative "../mobius"
@@ -48,3 +55,5 @@ end
 
 Mobius::Database.teardown
 Mobius::Config.teardown
+
+puts
