@@ -621,6 +621,8 @@ module Mobius
           # PlayerData.update_match_stats(player)
 
           player.data.each do |key, value|
+            next unless value.is_a?(Numeric)
+
             tally.increment_value(key, value)
           end
         end
