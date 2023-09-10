@@ -102,6 +102,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
         end
       else
         page_player(command.issuer.name, "Cannot donate nothing!")
+        log "#{command.issuer.name} attempted to donate #{amount.inspect} to #{player.name}."
       end
     else
       page_player(command.issuer.name, "Player not in game or name is not unique!")
@@ -143,6 +144,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
         end
       else
         page_player(command.issuer.name, "Cannot donate nothing!")
+        log "#{command.issuer.name} attempted to donate #{amount.inspect} to their team."
       end
     else
       page_player(command.issuer.name, "You are the only one on your team!")
