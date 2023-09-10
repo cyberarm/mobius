@@ -21,9 +21,12 @@ mobius_plugin(name: "AFK", database_name: "afk", version: "0.0.1") do
 
   on(:tick) do
     PlayerData.player_list.each do |player|
-      if (monotonic_time - @player_last_activity[player.name].to_i) > @inactive_warning_timeout && !@player_afk[player.name]
+      # Possibly handle edge case where a glitch causes a player to still appear in PlayerData when they lagged out or something...
+      next unless @player_last_activity[player.name]
+
+      if (monotonic_time - @player_last_activity[player.name]) > @inactive_warning_timeout && !@player_afk[player.name]
         player_afk!(player)
-      elsif (monotonic_time - @player_last_activity[player.name].to_i) > @inactive_kick_timeout && @player_afk[player.name]
+      elsif (monotonic_time - @player_last_activity[player.name]) > @inactive_kick_timeout && @player_afk[player.name]
         kick_afk_player!(player)
       end
     end
@@ -83,16 +86,22 @@ mobius_plugin(name: "AFK", database_name: "afk", version: "0.0.1") do
   end
 
   def player_active!(player)
+    last_activity = @player_last_activity[player.name]
     @player_last_activity[player.name] = monotonic_time
+
     was_afk = @player_afk[player.name]
     @player_afk.delete(player.name)
 
-    page_player(player.name, "[MOBIUS] You you are no longer marked as AFK. Welcome back!") if was_afk
+    if was_afk
+      page_player(player.name, "[MOBIUS] You you are no longer marked as AFK. Welcome back!")
+      log "#{player.name} is no longer marked as AFK. Appeared AFK for #{(monotonic_time - last_activity.to_i).round(2)}s"
+    end
   end
 
   def player_afk!(player)
     @player_afk[player.name] = true
     page_player(player.name, "[MOBIUS] You have been marked as AFK, you will be kicked soon unless you become active.")
+    log "#{player.name} has been marked as AFK."
   end
 
   def kick_afk_player!(player)
@@ -118,6 +127,7 @@ mobius_plugin(name: "AFK", database_name: "afk", version: "0.0.1") do
     kick_player!(player.name, reason)
 
     broadcast_message("[MOBIUS] #{player.name} has been kicked due to being AFK.")
+    log "#{player.name} has been kicked due to being AFK."
   end
 
   def afk_cleanup!(player)
