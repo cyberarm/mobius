@@ -325,8 +325,13 @@ module Mobius
       end
     end
 
-    def self.player(player_id)
-      @player_data[player_id]
+    def self.player(player_id_or_name, exact_match: true)
+      if player_id_or_name.is_a?(Numeric)
+        @player_data[player_id_or_name]
+      else
+        id = name_to_id(player_id_or_name, exact_match: exact_match)
+        id >= 0 ? @player_data[id] : nil
+      end
     end
 
     def self.player_list
