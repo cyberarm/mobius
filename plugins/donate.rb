@@ -16,175 +16,174 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     return true
   end
 
-  def all_player_funds
-    funds = {}
-
-    RenRem.cmd_now("pinfo") do |response|
-      lines = response.strip.lines
-
-      lines[1..lines.count - 2].each do |line|
-        split_data = line.split(",")
-
-        name  = split_data[1]
-        money = split_data[10].to_i
-
-        funds[name] = money
-      end
-
-      # Fallback incase RenRem read failed
-      PlayerData.player_list do |player|
-        unless funds[player.name]
-          log "Failed to retreive pinfo data for \"#{player.name}\" via RenRem, falling back to PlayerData."
-          funds[player.name] = player.money
-        end
-      end
-    end
-
-    # id       = split_data[0].to_i
-    # name     = split_data[1]
-    # score    = split_data[2].to_i
-    # team     = split_data[3].to_i
-    # ping     = split_data[4].to_i
-    # address  = split_data[5]
-    # kbps     = split_data[6].to_i
-    # rank     = split_data[7].to_i
-    # kills    = split_data[8].to_i
-    # deaths   = split_data[9].to_i
-    # money    = split_data[10].to_i
-    # kd       = split_data[11].to_f
-
-    funds
+  def create_transaction(issuer, type, recipients = [], amount = nil)
+    @pending_transactions << {
+      issuer: issuer,
+      type: type,
+      recipients: recipients,
+      amount: amount,
+      time: monotonic_time
+    }
   end
 
-  on(:start) do
-    @donations = {}
-    @undonate_timeout = 5.0
-  end
+  def donate(type, transaction)
+    donator = PlayerData.player(transaction[:issuer])
+    return unless donator
 
-  on(:map_loaded) do
-    @donations = {}
-  end
-
-  on(:tick) do
-    @donations.delete_if { |key, d| monotonic_time - d[:time] > @undonate_timeout }
-  end
-
-  command(:donate, aliases: [:d], arguments: 1..2, help: "!donate <nickname> [<amount>]") do |command|
-    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
-    amount = command.arguments.last
-    funds = all_player_funds
-    max_amount = funds[command.issuer.name] || 0
-
-    begin
-      amount = Integer(amount)
-    rescue ArgumentError
-      amount = max_amount
-    end
-
+    max_amount = donator.money
+    amount = transaction[:amount].is_a?(Numeric) ? transaction[:amount] : max_amount
     amount = max_amount if amount > max_amount
 
-    if player
-      if amount.positive?
-        if command.issuer.team == player.team && command.issuer.name != player.name
-          if donations_available?(command.issuer)
-            RenRem.cmd("donate #{command.issuer.id} #{player.id} #{amount}")
-            RenRem.cmd("pinfo")
+    if amount.positive?
+      slice = (amount / transaction[:recipients].count.to_f).floor
+      donation = @donations[command.issuer.name] = {receivers: [], time: monotonic_time }
 
-            page_player(command.issuer.name, "You have donated #{amount} credits to #{player.name}")
-            page_player(player.name, "#{command.issuer.name} has donated #{amount} credits to you.")
+      transaction[:recipients].each do |recipient|
+        mate = PlayerData.player(recipient)
+        next unless mate
 
-            @donations[command.issuer.name] = {receivers: [{ name: player.name, amount: amount, money: funds[player.name] }], time: monotonic_time }
-          end
-        elsif command.issuer.name == player.name
-          page_player(command.issuer.name, "You cannot donate to yourself.")
-        else
-          page_player(command.issuer.name, "Can only donate to players on your team.")
-        end
-      else
-        page_player(command.issuer.name, "Cannot donate nothing!")
-        log "#{command.issuer.name} attempted to donate #{amount.inspect} to #{player.name}."
+        RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
+
+        page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you.")
+        donation[:receivers] << { name: mate.name, amount: slice, money: mate.money }
+
+        mate.money += slice
       end
+
+      # FIXME: Sometimes this message is not delivered!
+      page_player(command.issuer.name, "You have donated #{donation[:receivers].sum { |r| r[:amount]}} credits to #{type == :individual ? "#{transaction[:recipients][0]}" : "your team"}.")
     else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer.name, "Cannot donate nothing!")
+      log "#{command.issuer.name} attempted to donate #{amount.inspect} to #{type == :individual ? "#{transaction[:recipients][0]}" : "their team"}."
     end
   end
 
-  # FIXME:
-  command(:teamdonate, aliases: [:td], arguments: 0..1, help: "!teamdonate [<amount>]") do |command|
-    mates  = PlayerData.player_list.select { |ply| ply.ingame? && ply.team == command.issuer.team && ply != command.issuer }
-    amount = command.arguments.first
-    funds = all_player_funds
-    max_amount = funds[command.issuer.name] || 0
+  def undonate(transaction)
+    donator = PlayerData.player(transaction[:issuer])
+    return unless donator
 
-    begin
-      amount = Integer(amount)
-    rescue ArgumentError
-      amount = max_amount
-    end
-
-    amount = max_amount if amount > max_amount
-
-    if mates.count.positive?
-      if amount.positive?
-        if donations_available?(command.issuer)
-          slice = (amount / mates.count.to_f).floor
-            donation = @donations[command.issuer.name] = {receivers: [], time: monotonic_time }
-
-          mates.each do |mate|
-            RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
-
-            page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you.")
-            donation[:receivers] << { name: mate.name, amount: slice, money: funds[mate.name] }
-          end
-
-          RenRem.cmd("pinfo")
-
-          # FIXME: Sometimes this message is not delivered!
-          page_player(command.issuer.name, "You have donated #{amount} credits to your team.")
-        end
-      else
-        page_player(command.issuer.name, "Cannot donate nothing!")
-        log "#{command.issuer.name} attempted to donate #{amount.inspect} to their team."
-      end
-    else
-      page_player(command.issuer.name, "You are the only one on your team!")
-    end
-  end
-
-  # NOTE: If receiver has less (credits + donation) then when they were donated to, we decline un-donating from this player
-  command(:undonate, aliases: [:ud], arguments: 0, help: "!undonate - Undo last donation (limited to 5 seconds)") do |command|
-    donation = @donations[command.issuer.name]
+    donation = @donations[transaction[:issuer]]
 
     if donation
       taken_back = 0
       total_given = donation[:receivers].sum { |r| r[:amount] }
-      funds = all_player_funds
 
       donation[:receivers].each do |receiver|
         next unless receiver[:name]
         next unless receiver[:amount]
         next unless receiver[:money]
 
-        player = PlayerData.player(PlayerData.name_to_id(receiver[:name], exact_match: true))
+        player = PlayerData.player(receiver[:name])
         next unless player
 
         # Player has likely spent it, reject un-donate from them
-        next if funds[player.name] <= receiver[:amount] + receiver[:money]
+        next if player.money <= receiver[:amount] + receiver[:money]
 
-        RenRem.cmd("donate #{player.id} #{command.issuer.id} #{receiver[:amount]}")
+        RenRem.cmd("donate #{player.id} #{donator.id} #{receiver[:amount]}")
         taken_back += receiver[:amount]
-        page_player(player.name, "#{command.issuer.name} has un-donated #{receiver[:amount]} credits from you.")
+        player.money -= receiver[:amount]
+
+        page_player(player.name, "#{donator.name} has un-donated #{receiver[:amount]} credits from you.")
       end
 
       if taken_back == total_given
-        page_player(command.issuer.name, "You have un-undonated and received back #{taken_back} credits.")
+        page_player(donator.name, "You have un-undonated and received back #{taken_back} credits.")
       elsif taken_back == 0
-        page_player(command.issuer.name, "Unable to un-donated, all receivers have have spent credits since you donated to them.")
+        page_player(donator.name, "Unable to un-donated, all receivers have have spent credits since you donated to them.")
       else
-        page_player(command.issuer.name, "You have un-undonated and received back #{taken_back} of #{total_given} credits.")
+        page_player(donator.name, "You have un-undonated and received back #{taken_back} of #{total_given} credits.")
       end
 
-      @donations.delete(command.issuer.name)
+      @donations.delete(donator.name)
+    else
+      page_player(donator.name, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
+    end
+  end
+
+  on(:start) do
+    @donations = {}
+    @pending_transactions = []
+    @undonate_timeout = 5.0
+  end
+
+  on(:map_loaded) do
+    @donations = {}
+    @pending_transactions = []
+  end
+
+  on(:player_info_updated) do
+    while(transaction = @pending_transactions.shift)
+      case transaction.type
+      when :individual
+        donate(:individual, transaction)
+      when :team
+        donate(:team, transaction)
+      when :undonation
+        undonate(transaction)
+      end
+    end
+  end
+
+  on(:tick) do
+    @donations.delete_if { |key, d| monotonic_time - d[:time] > @undonate_timeout }
+
+    # Queue up transactions over tick and issue ONE `pinfo` to handle them.
+    RenRem.cmd("pinfo") if @pending_transactions.size.positive?
+  end
+
+  command(:donate, aliases: [:d], arguments: 1..2, help: "!donate <nickname> [<amount>]") do |command|
+    next unless donations_available?(command.issuer)
+
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+    amount = command.arguments.last
+
+    # Assume empty string means they intend to donate everything
+    if amount.to_s.length.positive?
+      begin
+        amount = Integer(amount)
+      rescue ArgumentError
+        page_player(command.issuer.name, "Invalid amount: #{command.arguments.first}")
+
+        next
+      end
+    end
+
+    if player
+      create_transaction(command.issuer.name, :individual, [player.name], amount)
+    else
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
+    end
+  end
+
+  command(:teamdonate, aliases: [:td], arguments: 0..1, help: "!teamdonate [<amount>]") do |command|
+    next unless donations_available?(command.issuer)
+
+    mates  = PlayerData.player_list.select { |ply| ply.ingame? && ply.team == command.issuer.team && ply != command.issuer }
+    amount = command.arguments.first
+
+    # Assume empty string means they intend to donate everything
+    if amount.to_s.length.positive?
+      begin
+        amount = Integer(amount)
+      rescue ArgumentError
+        page_player(command.issuer.name, "Invalid amount: #{command.arguments.first}")
+
+        next
+      end
+    end
+
+    if mates.count.positive?
+      create_transaction(command.issuer.name, :team, mates.map(&:name), amount)
+    else
+      page_player(command.issuer.name, "You are the only one on your team!")
+    end
+  end
+
+  command(:undonate, aliases: [:ud], arguments: 0, help: "!undonate - Undo last donation (limited to 5 seconds)") do |command|
+    donation = @donations[command.issuer.name]
+
+    if donation
+      create_transaction(command.issuer.name, :undonate)
     else
       page_player(command.issuer.name, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
     end
