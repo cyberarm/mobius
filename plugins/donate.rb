@@ -116,8 +116,6 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
   on(:player_info_updated) do
     while(transaction = @pending_transactions.shift)
-      pp transaction
-
       case transaction[:type]
       when :individual
         donate(:individual, transaction)
