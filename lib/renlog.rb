@@ -237,6 +237,8 @@ module Mobius
         # Check player list for invalid player names
         check_player_list
 
+        PluginManager.publish_event(:player_info_updated)
+
         return true
       end
 
