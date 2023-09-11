@@ -17,6 +17,9 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
   end
 
   def create_transaction(issuer, type, recipients = [], amount = nil)
+    # Use RenRem.enqueue to ensure we only issue `pinfo` once per tick
+    RenRem.enqueue("pinfo")
+
     @pending_transactions << {
       issuer: issuer,
       type: type,
@@ -128,9 +131,6 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
   on(:tick) do
     @donations.delete_if { |key, d| monotonic_time - d[:time] > @undonate_timeout }
-
-    # Queue up transactions over tick and issue ONE `pinfo` to handle them.
-    RenRem.cmd("pinfo") if @pending_transactions.size.positive?
   end
 
   command(:donate, aliases: [:d], arguments: 1..2, help: "!donate <nickname> [<amount>]") do |command|
