@@ -36,25 +36,25 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
     if amount.positive?
       slice = (amount / transaction[:recipients].count.to_f).floor
-      donation = @donations[command.issuer.name] = {receivers: [], time: monotonic_time }
+      donation = @donations[donator.name] = {receivers: [], time: monotonic_time }
 
       transaction[:recipients].each do |recipient|
         mate = PlayerData.player(recipient)
         next unless mate
 
-        RenRem.cmd("donate #{command.issuer.id} #{mate.id} #{slice}")
+        RenRem.cmd("donate #{donator.id} #{mate.id} #{slice}")
 
-        page_player(mate.name, "#{command.issuer.name} has donated #{slice} credits to you.")
+        page_player(mate.name, "#{donator.name} has donated #{slice} credits to you.")
         donation[:receivers] << { name: mate.name, amount: slice, money: mate.money }
 
         mate.money += slice
       end
 
       # FIXME: Sometimes this message is not delivered!
-      page_player(command.issuer.name, "You have donated #{donation[:receivers].sum { |r| r[:amount]}} credits to #{type == :individual ? "#{transaction[:recipients][0]}" : "your team"}.")
+      page_player(donator.name, "You have donated #{donation[:receivers].sum { |r| r[:amount]}} credits to #{type == :individual ? "#{transaction[:recipients][0]}" : "your team"}.")
     else
-      page_player(command.issuer.name, "Cannot donate nothing!")
-      log "#{command.issuer.name} attempted to donate #{amount.inspect} to #{type == :individual ? "#{transaction[:recipients][0]}" : "their team"}."
+      page_player(donator.name, "Cannot donate nothing!")
+      log "#{donator.name} attempted to donate #{amount.inspect} to #{type == :individual ? "#{transaction[:recipients][0]}" : "their team"}."
     end
   end
 
@@ -113,12 +113,14 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
   on(:player_info_updated) do
     while(transaction = @pending_transactions.shift)
-      case transaction.type
+      pp transaction
+
+      case transaction[:type]
       when :individual
         donate(:individual, transaction)
       when :team
         donate(:team, transaction)
-      when :undonation
+      when :undonate
         undonate(transaction)
       end
     end
@@ -137,22 +139,24 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
     amount = command.arguments.last
 
+    unless player
+      page_player(command.issuer.name, "Player not in game or name is not unique!")
+
+      next
+    end
+
     # Assume empty string means they intend to donate everything
     if amount.to_s.length.positive?
       begin
         amount = Integer(amount)
       rescue ArgumentError
-        page_player(command.issuer.name, "Invalid amount: #{command.arguments.first}")
+        page_player(command.issuer.name, "Invalid amount: #{command.arguments.last}")
 
         next
       end
     end
 
-    if player
-      create_transaction(command.issuer.name, :individual, [player.name], amount)
-    else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
-    end
+    create_transaction(command.issuer.name, :individual, [player.name], amount) if player
   end
 
   command(:teamdonate, aliases: [:td], arguments: 0..1, help: "!teamdonate [<amount>]") do |command|
@@ -161,6 +165,12 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     mates  = PlayerData.player_list.select { |ply| ply.ingame? && ply.team == command.issuer.team && ply != command.issuer }
     amount = command.arguments.first
 
+    unless mates.count.positive?
+      page_player(command.issuer.name, "You are the only one on your team!")
+
+      next
+    end
+
     # Assume empty string means they intend to donate everything
     if amount.to_s.length.positive?
       begin
@@ -172,11 +182,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       end
     end
 
-    if mates.count.positive?
-      create_transaction(command.issuer.name, :team, mates.map(&:name), amount)
-    else
-      page_player(command.issuer.name, "You are the only one on your team!")
-    end
+    create_transaction(command.issuer.name, :team, mates.map(&:name), amount) if mates.count.positive?
   end
 
   command(:undonate, aliases: [:ud], arguments: 0, help: "!undonate - Undo last donation (limited to 5 seconds)") do |command|
