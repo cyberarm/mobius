@@ -106,7 +106,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload_plugin, :disable].include?(name)
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload, :disable].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -171,7 +171,7 @@ module Mobius
         return
       end
 
-      if cmd.downcase.to_sym == :reload_plugin && player.administrator?
+      if cmd.downcase.to_sym == :reload && player.administrator?
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_reload_plugin_command(player, parts)
 
