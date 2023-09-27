@@ -60,12 +60,13 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     }
   end
 
-  def verify_staff(discord_id, nickname)
+  def verify_staff(discord_id, player)
     {
       type: :verify_staff,
       data: {
         discord_id: discord_id,
-        nickname: nickname,
+        nickname: player.name,
+        ip_address: player.address.split(";").first,
         server_name: ServerConfig.server_name
       }
     }
@@ -89,6 +90,15 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     end
 
     hash
+  end
+
+  def fetch_staff(auth_channel)
+    {
+      type: :fetch_staff,
+      data: {
+        auth_channel: auth_channel
+      }
+    }
   end
 
   def waiting_for_reply?(discord_id)
@@ -147,7 +157,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
           end
 
           ws.on(:message) do |msg|
-            this.log msg.data
+            # this.log msg.data
             this.handle_message(msg.data)
           end
 
@@ -195,7 +205,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   def handle_message(msg)
     hash = JSON.parse(msg, symbolize_names: true)
 
-    pp hash
+    # pp hash
 
     case hash[:type].to_s.downcase.to_sym
     when :verify_staff
@@ -225,6 +235,9 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     when :voice_channel_changed
       @voice_channel_data = hash
       @voice_channel_data_updated = true
+
+    when :fetch_staff
+      handle_fetch_staff(hash[:data])
     end
   end
 
@@ -316,6 +329,18 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     broadcast_message("[MOBIUS] Players in voice channels: #{string}", red: 255, green: 127, blue: 0)
   end
 
+  def handle_fetch_staff(hash)
+    if hash[:okay]
+      Config.staff[:admin] = hash[:hash][:admin] || []
+      Config.staff[:mod] = hash[:hash][:mod] || []
+      Config.staff[:director] = hash[:hash][:director] || []
+
+      log "Updated staff from bridge. (#{hash[:auth_channel]})"
+    else
+      log "Failed to retreive staff from bridge. (#{hash[:auth_channel]})"
+    end
+  end
+
   on(:start) do
     unless Config.discord_bridge && !Config.discord_bridge[:url].to_s.empty?
       log "Missing configuration data or invalid url"
@@ -332,6 +357,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @voice_channel_data = nil
     @voice_channel_data_updated = false
     @send_status = true
+    @auth_channel = Config.discord_bridge[:auth_channel]
 
     @fds_responding = database_get("fds_responding") == "true"
     @staff_pending_verification = {}
@@ -344,6 +370,10 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     connect_to_bridge
 
+    after(5) do
+      deliver(fetch_staff(@auth_channel)) if @auth_channel
+    end
+
     every(15) do
       @send_status = true if monotonic_time - @status_last_sent >= 15.0
     end
@@ -354,6 +384,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   end
 
   on(:map_loaded) do
+    deliver(fetch_staff(@auth_channel)) if @auth_channel
+
     @send_status = true
     @known_spies = {}
 
@@ -362,6 +394,10 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     after(15) do
       @suppress_voice_channel_changes = false
     end
+  end
+
+  on(:config_reloaded) do
+    deliver(fetch_staff(@auth_channel)) if @auth_channel
   end
 
   on(:team_changed) do
@@ -480,7 +516,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     @staff_pending_verification[discord_id] = { player: player, time: monotonic_time }
 
-    deliver(verify_staff(discord_id, player.name))
+    deliver(verify_staff(discord_id, player))
   end
 
   on(:_authenticated) do |player, hash|
