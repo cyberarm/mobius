@@ -61,12 +61,30 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   end
 
   def verify_staff(discord_id, player)
+    ip_trustable = true
+
+    Config.staff.each do |level, list|
+      found = false
+
+      list.each do |hash|
+        next unless hash[:name].downcase == player.name.downcase
+
+        ip_trustable = hash[:ip_trustable] == nil ? true : hash[:ip_trustable]
+        found = true
+
+        break
+      end
+
+      break if found
+    end
+
     {
       type: :verify_staff,
       data: {
         discord_id: discord_id,
         nickname: player.name,
         ip_address: player.address.split(";").first,
+        ip_trustable: ip_trustable,
         server_name: ServerConfig.server_name
       }
     }

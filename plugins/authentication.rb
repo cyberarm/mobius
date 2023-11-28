@@ -14,28 +14,32 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
 
         player_ip = player.address.split(";").first
 
-        hash[:hostnames].each do |hostname|
-          ip = Resolv.getaddress(hostname)
+        # Assume that if the :ip_trustable field is missing then assume that the ip is trustable, else use value
+        ip_trustable = hash[:ip_trustable] == nil ? true : hash[:ip_trustable]
+        if ip_trustable
+          hash[:hostnames].each do |hostname|
+            ip = Resolv.getaddress(hostname)
 
-          next unless player_ip == ip
+            next unless player_ip == ip
 
-          granted_role = grant(level, player)
-
-          found = true
-          data = hash
-          break
-        end
-
-        if (known_ip = Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first, authenticated: true))
-          if (Time.now.utc.to_i - known_ip.updated_at.to_i) >= 7 * 24 * 60 * 60 # 1 week
-            # Last authentication was a week ago, IP no longer trusted
-
-            known_ip.update(authenticated: false)
-          else
-            # Known and trusted IP
             granted_role = grant(level, player)
+
             found = true
             data = hash
+            break
+          end
+
+          if (known_ip = Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first, authenticated: true))
+            if (Time.now.utc.to_i - known_ip.updated_at.to_i) >= 7 * 24 * 60 * 60 # 1 week
+              # Last authentication was a week ago, IP no longer trusted
+
+              known_ip.update(authenticated: false)
+            else
+              # Known and trusted IP
+              granted_role = grant(level, player)
+              found = true
+              data = hash
+            end
           end
         end
 
