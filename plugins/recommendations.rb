@@ -282,10 +282,12 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     player_name = player.name
 
+    team_color = Teams.rgb_color(player.team)
+
     if noob
-      broadcast_message("[MOBIUS] #{player.name} has been been marked a n00b by #{recommender_name} for: #{comment}")
+      broadcast_message("[MOBIUS] #{player.name} has been been marked a n00b by #{recommender_name} for: #{comment}", **team_color.to_h)
     else
-      broadcast_message("[MOBIUS] #{player.name} has been recommended by #{recommender_name} for: #{comment}")
+      broadcast_message("[MOBIUS] #{player.name} has been recommended by #{recommender_name} for: #{comment}", **team_color.to_h)
     end
 
     # Only play sound if player is recommended

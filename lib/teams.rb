@@ -93,6 +93,16 @@ module Mobius
       end
     end
 
+    def self.rgb_color(team)
+      color = color(team)
+
+      return Color.new(red: 255, green: 255, blue: 255) unless color.length == 6
+
+      hex_color = color.to_i(16)
+
+      return Color.new(hex_color)
+    end
+
     def self.list
       @teams
     end
