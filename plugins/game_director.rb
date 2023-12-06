@@ -209,7 +209,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       end
 
       RenRem.cmd("toggle_spectator #{player.id}")
-      page_player(player.name, "You are #{spectating ? 'now' : 'no longer' } spectating.")
+      page_player(player, "You are #{spectating ? 'now' : 'no longer' } spectating.")
       page_player(command.issuer.name, "#{player.name} is #{spectating ? 'now' : 'no longer' } spectating.")
     elsif nickname.to_s.empty?
       if spectating

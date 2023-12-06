@@ -181,7 +181,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         page_player(command.issuer.name, "#{player.name} Cannot issue a warning against yourself!")
       else
         reason = command.arguments.last
-        page_player(player.name, "[Moderation] You've been issued a warning for: #{reason}")
+        page_player(player, "[Moderation] You've been issued a warning for: #{reason}")
         page_player(command.issuer.name, "#{player.name} has been warned!")
 
         ip = player.address.split(";").first

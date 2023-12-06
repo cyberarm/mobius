@@ -124,7 +124,7 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
     issuer = command.issuer
 
     if player == issuer
-      page_player(issuer.name, "[Authentication] You cannot authenticate yourself.")
+      page_player(issuer, "[Authentication] You cannot authenticate yourself.")
 
       next
     end
@@ -139,17 +139,17 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
           if issuer.administrator? || (issuer.moderator? && [:mod, :director].include?(level))
             if (role = grant(level, player))
               announce_staff(player, role, hash)
-              page_player(issuer.name, "[Authentication] Authenticated #{player.name}")
+              page_player(issuer, "[Authentication] Authenticated #{player.name}")
               # Rmember players IP as authenticated
               # NOTE: Disabled marking IP as trusted
               # Database::IP.first(name: player.name.downcase, ip: player.address.split(";").first)&.update(authenticated: true)
 
               PluginManager.publish_event(:_authenticated, player, hash)
             else
-              page_player(issuer.name, "[Authentication] Unknown permission level, #{level}, failed to authenticate player.")
+              page_player(issuer, "[Authentication] Unknown permission level, #{level}, failed to authenticate player.")
             end
           else
-            page_player(issuer.name, "[Authentication] You do not have permission to authenticate #{player.name}")
+            page_player(issuer, "[Authentication] You do not have permission to authenticate #{player.name}")
           end
 
           break
@@ -157,10 +157,10 @@ mobius_plugin(name: "Authentication", database_name: "authentication", version: 
       end
 
       unless found
-        page_player(issuer.name, "[Authentication] Failed to authenticate player, no permission level configured.")
+        page_player(issuer, "[Authentication] Failed to authenticate player, no permission level configured.")
       end
     else
-      page_player(issuer.name, "[Authentication] Player not found on name not unique.")
+      page_player(issuer, "[Authentication] Player not found on name not unique.")
     end
   end
 end

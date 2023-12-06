@@ -248,7 +248,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     when :message
       player = PlayerData.player(PlayerData.name_to_id(hash[:data][:nickname]))
 
-      page_player(player.name, "[DiscordBridgeAgent] #{hash[:data][:message]}") if player
+      page_player(player, "[DiscordBridgeAgent] #{hash[:data][:message]}") if player
 
     when :voice_channel_changed
       @voice_channel_data = hash
@@ -510,19 +510,19 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     after(5) do # 60 seconds left
       if @staff_pending_verification[discord_id]
-        page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD")
+        page_player(player, "[MOBIUS] Protected nickname, please authenticate via DISCORD")
 
         after(10) do # 50 seconds left
           if @staff_pending_verification[discord_id]
-            page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
+            page_player(player, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
 
             after(20) do # 30 seconds left
               if @staff_pending_verification[discord_id]
-                page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
+                page_player(player, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
 
                 after(20) do # 10 seconds left
                   if @staff_pending_verification[discord_id]
-                    page_player(player.name, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
+                    page_player(player, "[MOBIUS] Protected nickname, please authenticate via DISCORD within the next #{verify_timeout(discord_id)} seconds or you will be kicked.")
                   end
                 end
               end

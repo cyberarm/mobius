@@ -269,7 +269,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     baby_bot = monotonic_time - @start_time <= 1.0
 
     if @versus_started
-      message_player(player.name, "[AutoCoop] Co-op for this round has been disabled. PvP active.") unless @default_mode == :versus
+      message_player(player, "[AutoCoop] Co-op for this round has been disabled. PvP active.") unless @default_mode == :versus
 
       configure_bots
     elsif @coop_started || ServerStatus.total_players == 1
@@ -278,7 +278,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       configure_bots
 
-      message_player(player.name, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
+      message_player(player, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
       player.change_team(@current_side)
     elsif !baby_bot
       broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.")
@@ -308,7 +308,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
         RenRem.cmd("ChangeChar #{player.id} #{@player_characters[hash[:object]]}")
         RenRem.cmd("GiveCredits #{player.id} 500")
 
-        page_player(player.name, "Spies may not be purchased during a co-op match, you have been refunded and returned to your previous character.")
+        page_player(player, "Spies may not be purchased during a co-op match, you have been refunded and returned to your previous character.")
       end
     end
   end

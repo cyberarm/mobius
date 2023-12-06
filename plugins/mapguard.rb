@@ -49,9 +49,7 @@ mobius_plugin(name: "MapGuard", database_name: "mapguard", version: "0.0.1") do
 
   def display_maps_left(player, queue)
     queue.each_slice(6) do |slice|
-      message_player(player.name,
-        slice.join(", ")
-      )
+      message_player(player, slice.join(", "))
     end
   end
 

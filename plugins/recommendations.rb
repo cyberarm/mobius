@@ -162,7 +162,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     count = recommendations ? recommendations.recommendations - recommendations.noobs : 0
     if recommendations
-      page_player(player.name, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
+      page_player(player, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
     else
       broadcast_message("[MOBIUS] You currently don't have any recommendations yet.")
     end

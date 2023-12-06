@@ -97,16 +97,12 @@ module Mobius
       renrem_cmd("cmsgt #{team_id} #{red},#{green},#{blue} #{message}")
     end
 
-    def message_player(name, message, red: 255, green: 255, blue: 255)
-      return unless (player_id = PlayerData.name_to_id(name))
-
-      renrem_cmd("cmsgp #{player_id} #{red},#{green},#{blue} #{message}")
+    def message_player(player, message, red: 255, green: 255, blue: 255)
+      renrem_cmd("cmsgp #{player.id} #{red},#{green},#{blue} #{message}")
     end
 
-    def page_player(name, message, red: 255, green: 255, blue: 255)
-      return unless (player_id = PlayerData.name_to_id(name))
-
-      renrem_cmd("ppage #{player_id} #{message}")
+    def page_player(player, message, red: 255, green: 255, blue: 255)
+      renrem_cmd("ppage #{player.id} #{message}")
     end
 
     def renrem_cmd(data, delay = nil)
@@ -133,7 +129,7 @@ module Mobius
 
     def notify_moderators(message)
       PlayerData.player_list.each do |player|
-        page_player(player.name, message) if player.administrator? || player.moderator?
+        page_player(player, message) if player.administrator? || player.moderator?
       end
     end
 

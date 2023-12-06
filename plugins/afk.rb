@@ -93,14 +93,14 @@ mobius_plugin(name: "AFK", database_name: "afk", version: "0.0.1") do
     @player_afk.delete(player.name)
 
     if was_afk
-      page_player(player.name, "[MOBIUS] You you are no longer marked as AFK. Welcome back!")
+      page_player(player, "[MOBIUS] You you are no longer marked as AFK. Welcome back!")
       log "#{player.name} is no longer marked as AFK. Appeared AFK for #{(monotonic_time - last_activity.to_i).round(2)}s"
     end
   end
 
   def player_afk!(player)
     @player_afk[player.name] = true
-    page_player(player.name, "[MOBIUS] You have been marked as AFK, you will be kicked soon unless you become active.")
+    page_player(player, "[MOBIUS] You have been marked as AFK, you will be kicked soon unless you become active.")
     log "#{player.name} has been marked as AFK."
   end
 

@@ -8,7 +8,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       remaining_seconds = (donate_limit * 60) - map_elapsed_time
       pp remaining_seconds, donate_limit * 60, map_elapsed_time
 
-      page_player(player.name, "[MOBIUS] Donations are not allowed on #{map} in the first #{donate_limit} minutes. You have to wait #{remaining_seconds} more seconds.")
+      page_player(player, "[MOBIUS] Donations are not allowed on #{map} in the first #{donate_limit} minutes. You have to wait #{remaining_seconds} more seconds.")
 
       return false
     end
@@ -86,7 +86,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
         taken_back += receiver[:amount]
         player.money -= receiver[:amount]
 
-        page_player(player.name, "#{donator.name} has un-donated #{receiver[:amount]} credits from you.")
+        page_player(player, "#{donator.name} has un-donated #{receiver[:amount]} credits from you.")
       end
 
       if taken_back == total_given

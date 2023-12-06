@@ -203,7 +203,7 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
     next if waiting_for_reply?(discord_id)
 
     after(5) do
-      page_player(player.name, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
+      page_player(player, "Protected nickname, please authenticate via Discord within the next #{@verification_timeout - 5} seconds or you will be kicked.")
     end
 
     if (channel = @bot.pm_channel(discord_id))

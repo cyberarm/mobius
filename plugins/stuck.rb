@@ -10,13 +10,13 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
 
     case reason
     when :created
-      page_player(player.name, "You've changed characters, respawn aborted.")
+      page_player(player, "You've changed characters, respawn aborted.")
     when :damaged
-      page_player(player.name, "You've taken damage, respawn aborted.")
+      page_player(player, "You've taken damage, respawn aborted.")
     when :killed
-      page_player(player.name, "You've died, respawn aborted.")
+      page_player(player, "You've died, respawn aborted.")
     when :cancelled
-      page_player(player.name, "Respawn aborted.")
+      page_player(player, "Respawn aborted.")
     end
 
     true
@@ -79,7 +79,7 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
 
           broadcast_message("#{player.name} has respawned")
         else
-          page_player(player.name, "You've taken damage in the last #{@damage_timeout} seconds, respawn aborted.")
+          page_player(player, "You've taken damage in the last #{@damage_timeout} seconds, respawn aborted.")
         end
       end
     end

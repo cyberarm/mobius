@@ -327,7 +327,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
         survivor_players.each do |player|
           RenRem.cmd("kill #{player.id}")
-          page_player(player.name, "Group up! The infected will try to hunt you all down!")
+          page_player(player, "Group up! The infected will try to hunt you all down!")
         end
       end
     end
@@ -358,7 +358,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
       if survivor_count.positive?
         broadcast_message("[Tournament] #{player.name} has been infected, there are only #{survivor_count} survivors left!", **@message_color)
-        page_player(player.name, "You have been infected, hunt down the #{survivor_count} survivors!")
+        page_player(player, "You have been infected, hunt down the #{survivor_count} survivors!")
       else
         broadcast_message("[Tournament] #{player.name} has been infected, there are no survivors left!", **@message_color)
       end
@@ -411,7 +411,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
       if @infection
         player.change_team(@survivor_team)
         change_player(player: player)
-        page_player(player.name, "[Tournament] Group up! The infected will try to hunt you all down.")
+        page_player(player, "[Tournament] Group up! The infected will try to hunt you all down.")
       end
     end
   end
@@ -424,7 +424,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     if tournament_active? && hash[:type].downcase.to_sym == :vehicle
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
 
-      page_player(player.name, "[Tournament] A tournament game mode is active, vehicles cannot be used.") if player
+      page_player(player, "[Tournament] A tournament game mode is active, vehicles cannot be used.") if player
     end
   end
 
@@ -433,7 +433,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
       player = PlayerData.player(PlayerData.name_to_id(player_obj[:name]))
 
       if player
-        page_player(player.name, "[Tournament] A tournament game mode is active, vehicles cannot be used.")
+        page_player(player, "[Tournament] A tournament game mode is active, vehicles cannot be used.")
         RenRem.cmd("eject #{player.id}")
       end
     end
@@ -456,14 +456,14 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
   #         # DISABLED
   #         if false #warning_hash[:warnings] >= 3
-  #           page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
-  #           page_player(player.name, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
+  #           page_player(player, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+  #           page_player(player, "[Tournament] You have been warned #{warning_hash[:warnings]} times, you have been temporarily frozen!")
 
   #           warning_hash[:frozen] = true
   #           warning_hash[:frozen_at] = monotonic_time
   #           RenRem.cmd("FreezePlayer #{player.id}")
   #         else
-  #           page_player(player.name, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
+  #           page_player(player, "[Tournament] A tournament game mode is active, DO NOT DAMAGE BUILDINGS!")
   #         end
   #       end
   #     end
@@ -789,7 +789,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
       #     player = PlayerData.player(PlayerData.name_to_id(nickname))
 
       #     if player
-      #       page_player(player.name, "[Tournament] You have been unfrozen!")
+      #       page_player(player, "[Tournament] You have been unfrozen!")
       #       RenRem.cmd("UnFreezePlayer #{player.id}")
 
       #       hash[:frozen] = false

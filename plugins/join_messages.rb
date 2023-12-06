@@ -50,9 +50,9 @@ mobius_plugin(name: "JoinMessages", database_name: "join_messages", version: "0.
 
       if red.between?(0, 255) && green.between?(0, 255) && blue.between?(0, 255)
         database_set(command.issuer.name.downcase, "#{red},#{green},#{blue},#{message}")
-        message_player(command.issuer.name, "Your join message color has been set.", red: red, green: green, blue: blue)
+        message_player(command.issuer, "Your join message color has been set.", red: red, green: green, blue: blue)
       else
-        page_player(command.issuer.name, "Invalid color.")
+        page_player(command.issuer, "Invalid color.")
       end
     end
   end
@@ -61,10 +61,10 @@ mobius_plugin(name: "JoinMessages", database_name: "join_messages", version: "0.
     dataset = database_get(command.issuer.name.downcase)
 
     if (dataset && dataset.value.to_s.empty?) || dataset.nil?
-      page_player(command.issuer.name, "You do not have a join message set. Set one with !setjoin <join text>.")
+      page_player(command.issuer, "You do not have a join message set. Set one with !setjoin <join text>.")
     else
       red, green, blue, message = dataset.value.split(",", 4)
-      message_player(command.issuer.name, "#{command.issuer.name}: #{message}", red: red, green: green, blue: blue)
+      message_player(command.issuer, "#{command.issuer.name}: #{message}", red: red, green: green, blue: blue)
     end
   end
 end
