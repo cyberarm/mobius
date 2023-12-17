@@ -1,40 +1,43 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    bcrypt (3.1.18)
-    ffi (1.15.5)
+    bcrypt (3.1.20)
+    ffi (1.16.3)
+    ffi (1.16.3-x64-mingw-ucrt)
     multi_json (1.15.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
-    nio4r (2.5.9)
-    puma (6.2.2)
+    nio4r (2.7.0)
+    puma (6.4.0)
       nio4r (~> 2.0)
-    rack (2.2.6.4)
-    rack-protection (3.0.6)
-      rack
+    rack (2.2.8)
+    rack-protection (3.1.0)
+      rack (~> 2.2, >= 2.2.4)
     ruby2_keywords (0.0.5)
     sassc (2.4.0)
       ffi (~> 1.9)
-    sinatra (3.0.6)
+    sinatra (3.1.0)
       mustermann (~> 3.0)
       rack (~> 2.2, >= 2.2.4)
-      rack-protection (= 3.0.6)
+      rack-protection (= 3.1.0)
       tilt (~> 2.0)
-    sinatra-contrib (3.0.6)
+    sinatra-contrib (3.1.0)
       multi_json
       mustermann (~> 3.0)
-      rack-protection (= 3.0.6)
-      sinatra (= 3.0.6)
+      rack-protection (= 3.1.0)
+      sinatra (= 3.1.0)
       tilt (~> 2.0)
-    slim (5.1.0)
+    slim (5.2.0)
       temple (~> 0.10.0)
-      tilt (>= 2.0.6, < 2.2)
-    sqlite3 (1.6.2-x64-mingw-ucrt)
-    temple (0.10.0)
-    tilt (2.1.0)
+      tilt (>= 2.1.0)
+    sqlite3 (1.6.9-x64-mingw-ucrt)
+    sqlite3 (1.6.9-x86_64-linux)
+    temple (0.10.3)
+    tilt (2.3.0)
 
 PLATFORMS
   x64-mingw-ucrt
+  x86_64-linux
 
 DEPENDENCIES
   bcrypt
@@ -46,4 +49,4 @@ DEPENDENCIES
   sqlite3
 
 BUNDLED WITH
-   2.3.17
+   2.4.22
