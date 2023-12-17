@@ -21,10 +21,10 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
         RenRem.cmd("attachscript #{player.id} dp88_buildingScripts_functionRepairBuildings #{repair_amount},None,false")
         broadcast_message("[GameDirector] #{player.name} has been made a living Construction Yard!")
       else
-        page_player(command.issuer.name, "Repair amount must be positive, got #{repair_amount.round(4)}")
+        page_player(command.issuer, "Repair amount must be positive, got #{repair_amount.round(4)}")
       end
     else
-      page_player(command.issuer.name, "Failed to find player.")
+      page_player(command.issuer, "Failed to find player.")
     end
   end
 
@@ -34,7 +34,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       remix_teams
       broadcast_message("[GameDirector] Teams have been remixed")
     else
-      page_player(command.issuer.name, "Use !remix NOW, to truely remix teams!")
+      page_player(command.issuer, "Use !remix NOW, to truely remix teams!")
     end
   end
 
@@ -43,7 +43,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       log "#{command.issuer.name} ended the game"
       RenRem.cmd("gameover")
     else
-      page_player(command.issuer.name, "Use !gameover NOW, to truely end the game!")
+      page_player(command.issuer, "Use !gameover NOW, to truely end the game!")
     end
   end
 
@@ -57,9 +57,9 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     maps = [exact_match] if maps.count > 1 && exact_match
 
     if maps.count > 1
-      page_player(command.issuer.name, "More than one map matched search, found: #{maps.join(', ')}")
+      page_player(command.issuer, "More than one map matched search, found: #{maps.join(', ')}")
     elsif maps.count.zero?
-      page_player(command.issuer.name, "No map matched: #{command.arguments.first}")
+      page_player(command.issuer, "No map matched: #{command.arguments.first}")
     else
       original_map = ServerConfig.rotation.rotate(ServerStatus.get(:current_map_number) + 1)&.first
       array_index = ServerConfig.rotation.index(original_map)
@@ -108,7 +108,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
 
     if (unit == "s" && time > hardcap) || (unit == "m" && time * 60 > hardcap) || (unit == "h" && time * 60 * 60 > hardcap)
       log "Player #{command.issuer.name} attempted to set the game clock to #{match_data ? match_data[0] : "#{time}s"}"
-      page_player(command.issuer.name, "Game clock may not be set greater than 2 hours! Overriding to 2 hours.")
+      page_player(command.issuer, "Game clock may not be set greater than 2 hours! Overriding to 2 hours.")
 
       # Override input
       time = 2
@@ -116,7 +116,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
 
     if time <= 0
-      page_player(command.issuer.name, "Time must be greater than 0!")
+      page_player(command.issuer, "Time must be greater than 0!")
     else
       case unit.downcase
       when "s"
@@ -132,7 +132,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
         log "#{command.issuer.name} has set the game clock to #{time} hours"
         broadcast_message("[GameDirector] #{command.issuer.name} has set the game clock to #{time} hours")
       else
-        page_player(command.issuer.name, "Time unit must be s for seconds, m for minutes, and h for hours. Example: !time 15m")
+        page_player(command.issuer, "Time unit must be s for seconds, m for minutes, and h for hours. Example: !time 15m")
       end
     end
   end
@@ -158,10 +158,10 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
         player.set_value(:manual_team, true)
         player.change_team(team)
       else
-        page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.last}, got #{team}, try again.")
+        page_player(command.issuer, "Failed to detect team for: #{command.arguments.last}, got #{team}, try again.")
       end
     else
-      page_player(command.issuer.name, "Player is not in game or name is not unique!")
+      page_player(command.issuer, "Player is not in game or name is not unique!")
     end
   end
 
@@ -177,10 +177,10 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
 
     if team.is_a?(Integer)
-      page_player(command.issuer.name, "Attempting to revive building for team #{Teams.name(team)} from preset: #{preset}")
+      page_player(command.issuer, "Attempting to revive building for team #{Teams.name(team)} from preset: #{preset}")
       RenRem.cmd("revivebuildingbypreset #{team} #{preset}")
     else
-      page_player(command.issuer.name, "Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
+      page_player(command.issuer, "Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
     end
   end
 
@@ -188,7 +188,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     z = Integer(command.arguments.first)
     preset = command.arguments.last
 
-    page_player(command.issuer.name, "Attempting to spawn vehicle from preset: #{preset}")
+    page_player(command.issuer, "Attempting to spawn vehicle from preset: #{preset}")
     RenRem.cmd("SpawnVehicle #{command.issuer.id} #{z} #{preset}")
   end
 
@@ -210,7 +210,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
 
       RenRem.cmd("toggle_spectator #{player.id}")
       page_player(player, "You are #{spectating ? 'now' : 'no longer' } spectating.")
-      page_player(command.issuer.name, "#{player.name} is #{spectating ? 'now' : 'no longer' } spectating.")
+      page_player(command.issuer, "#{player.name} is #{spectating ? 'now' : 'no longer' } spectating.")
     elsif nickname.to_s.empty?
       if spectating
         @spectators.delete(command.issuer.name)
@@ -220,9 +220,9 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       end
 
       RenRem.cmd("toggle_spectator #{command.issuer.id}")
-      page_player(command.issuer.name, "You are #{spectating ? 'now' : 'no longer' } spectating.")
+      page_player(command.issuer, "You are #{spectating ? 'now' : 'no longer' } spectating.")
     else
-      page_player(command.issuer.name, "Player is not in game or name is not unique!")
+      page_player(command.issuer, "Player is not in game or name is not unique!")
     end
   end
 

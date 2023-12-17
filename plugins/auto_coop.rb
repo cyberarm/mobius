@@ -326,7 +326,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
   command(:coop_info, aliases: [:ci], arguments: 0, help: "Reports co-op configuration") do |command|
     page_player(
-      command.issuer.name,
+      command.issuer,
       "[AutoCoop] PvP: #{@versus_started}, PvE: #{@coop_started}, "\
       "Bots: #{@last_bot_count}/#{@max_bot_count} (hard cap: #{@hardcap_bot_count}), "\
       "Bot Diff: #{@bot_difficulty}/#{@max_bot_difficulty}, "\
@@ -351,7 +351,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
   command(:request_coop, aliases: [:rc], arguments: 0, help: "Vote to start coop") do |command|
     if @next_round_mode == :coop
-      page_player(command.issuer.name, "Co-op is already set to start on the next round!")
+      page_player(command.issuer, "Co-op is already set to start on the next round!")
     else
       @coop_votes[command.issuer.name] = true
       check_coop_votes(silent: false)
@@ -360,7 +360,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
   command(:request_versus, aliases: [:vs], arguments: 0, help: "Vote to start Player vs. Player") do |command|
     if @next_round_mode == :versus
-      page_player(command.issuer.name, "PvP is already set to start on the next round!")
+      page_player(command.issuer, "PvP is already set to start on the next round!")
     else
       @versus_votes[command.issuer.name] = true
       check_versus_votes(silent: false)
@@ -389,7 +389,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       broadcast_message("[AutoCoop] #{command.issuer.name} has started co-op on team #{Teams.name(@current_side)} with #{bot_report}")
     else
-      page_player(command.issuer.name, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
+      page_player(command.issuer, "[AutoCoop] Failed to detect team for: #{command.arguments.first}, got #{team}, try again.")
     end
   end
 
@@ -406,7 +406,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       broadcast_message("#{command.issuer.name} has started Player vs. Player.")
     else
-      page_player(command.issuer.name, "Use !versus NOW if you really mean it.")
+      page_player(command.issuer, "Use !versus NOW if you really mean it.")
     end
   end
 
@@ -414,9 +414,9 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     diff = command.arguments.first.to_i
 
     if diff <= 0
-      page_player(command.issuer.name, "Invalid bot difficulty, must be greater than 0!")
+      page_player(command.issuer, "Invalid bot difficulty, must be greater than 0!")
     elsif diff >= @max_bot_difficulty
-      page_player(command.issuer.name, "Invalid bot difficulty, must be less than #{@max_bot_difficulty}!")
+      page_player(command.issuer, "Invalid bot difficulty, must be less than #{@max_bot_difficulty}!")
     else
       @bot_difficulty = diff
       configure_bots
@@ -429,11 +429,11 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     limit = command.arguments.first.to_i
 
     if limit.zero? || limit.negative?
-      page_player(command.issuer.name, "Cannot set bot limit to ZERO or a negative number")
+      page_player(command.issuer, "Cannot set bot limit to ZERO or a negative number")
     elsif limit > @hardcap_bot_count
-      page_player(command.issuer.name, "Cannot set bot limit to more than #{@hardcap_bot_count}")
+      page_player(command.issuer, "Cannot set bot limit to more than #{@hardcap_bot_count}")
     else
-      page_player(command.issuer.name, "Bot limit set to #{limit}")
+      page_player(command.issuer, "Bot limit set to #{limit}")
       @max_bot_count = limit
 
       configure_bots
@@ -444,11 +444,11 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     player_count = command.arguments.first.to_i
 
     if player_count.negative?
-      page_player(command.issuer.name, "Cannot set friendless player count to negative number")
+      page_player(command.issuer, "Cannot set friendless player count to negative number")
     elsif player_count > @hardcap_friendless_player_count
-      page_player(command.issuer.name, "Cannot set friendless player count to more than #{@hardcap_friendless_player_count}")
+      page_player(command.issuer, "Cannot set friendless player count to more than #{@hardcap_friendless_player_count}")
     else
-      page_player(command.issuer.name, "friendless player count set to #{player_count}")
+      page_player(command.issuer, "friendless player count set to #{player_count}")
       @friendless_player_count = player_count
 
       configure_bots

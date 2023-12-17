@@ -101,9 +101,9 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       )
 
       database_set(command.issuer.name.downcase, "false")
-      page_player(command.issuer.name, "[MOBIUS] #{player.name} is now recignored.")
+      page_player(command.issuer, "[MOBIUS] #{player.name} is now recignored.")
     else
-      page_player(command.issuer.name, "[MOBIUS] #{command.arguments.first} is not ingame, or the name is not unique.")
+      page_player(command.issuer, "[MOBIUS] #{command.arguments.first} is not ingame, or the name is not unique.")
     end
   end
 
@@ -117,9 +117,9 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       )
 
       database_remove(command.issuer.name.downcase)
-      page_player(command.issuer.name, "[MOBIUS] #{player.name} is now recallowed.")
+      page_player(command.issuer, "[MOBIUS] #{player.name} is now recallowed.")
     else
-      page_player(command.issuer.name, "[MOBIUS] #{command.arguments.first} is not ingame, or the name is not unique.")
+      page_player(command.issuer, "[MOBIUS] #{command.arguments.first} is not ingame, or the name is not unique.")
     end
   end
 

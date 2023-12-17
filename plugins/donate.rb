@@ -138,7 +138,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     amount = command.arguments.last
 
     unless player
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
 
       next
     end
@@ -148,7 +148,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       begin
         amount = Integer(amount)
       rescue ArgumentError
-        page_player(command.issuer.name, "Invalid amount: #{command.arguments.last}")
+        page_player(command.issuer, "Invalid amount: #{command.arguments.last}")
 
         next
       end
@@ -164,7 +164,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     amount = command.arguments.first
 
     unless mates.count.positive?
-      page_player(command.issuer.name, "You are the only one on your team!")
+      page_player(command.issuer, "You are the only one on your team!")
 
       next
     end
@@ -174,7 +174,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       begin
         amount = Integer(amount)
       rescue ArgumentError
-        page_player(command.issuer.name, "Invalid amount: #{command.arguments.first}")
+        page_player(command.issuer, "Invalid amount: #{command.arguments.first}")
 
         next
       end
@@ -189,7 +189,7 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
     if donation
       create_transaction(command.issuer.name, :undonate)
     else
-      page_player(command.issuer.name, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
+      page_player(command.issuer, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
     end
   end
 end

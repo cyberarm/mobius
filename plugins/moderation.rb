@@ -45,7 +45,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
   command(:ban, arguments: 2, help: "!ban <nickname> <reason>", groups: [:admin, :mod]) do |command|
     if command.issuer.value(:given_moderator_power_from)
-      page_player(command.issuer.name, "Temporarily moderators may not ban players.")
+      page_player(command.issuer, "Temporarily moderators may not ban players.")
 
       next
     end
@@ -57,9 +57,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to ban you!")
         RenRem.cmd("ppage #{command.issuer.id} you may not ban your benefactor!")
       elsif command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot ban yourself!")
+        page_player(command.issuer, "#{player.name} Cannot ban yourself!")
       else
-        page_player(command.issuer.name, "#{player.name} has been banned!")
+        page_player(command.issuer, "#{player.name} has been banned!")
 
         RenRem.cmd("ban #{player.id} #{command.arguments.last}")
 
@@ -79,13 +79,13 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         )
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
   command(:unban, arguments: 1, help: "!unban <nickname>", groups: [:admin, :mod]) do |command|
     if command.issuer.value(:given_moderator_power_from)
-      page_player(command.issuer.name, "Temporarily moderators may not unban players.")
+      page_player(command.issuer, "Temporarily moderators may not unban players.")
 
       next
     end
@@ -110,13 +110,13 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if ban
         # Is this check really needed?
         if command.issuer.name.downcase == nickname.downcase
-          page_player(command.issuer.name, "#{player.name} Cannot unban yourself!")
+          page_player(command.issuer, "#{player.name} Cannot unban yourself!")
         else
           lines = raw_banlist.lines
           lines.delete_at(ban[:line])
           File.write(Config.banlist_path, lines.join)
 
-          page_player(command.issuer.name, "#{nickname} has been unbanned.")
+          page_player(command.issuer, "#{nickname} has been unbanned.")
           RenRem.cmd("rehash_ban_list")
           db_ban&.destroy
 
@@ -126,11 +126,11 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           )
         end
       else
-        page_player(command.issuer.name, "Failed to find banned player: #{nickname}")
+        page_player(command.issuer, "Failed to find banned player: #{nickname}")
         db_ban&.destroy
       end
     else
-      page_player(command.issuer.name, "BanList.tsv does not exist. #{db_ban ? 'Removing database ban' : ''}")
+      page_player(command.issuer, "BanList.tsv does not exist. #{db_ban ? 'Removing database ban' : ''}")
       db_ban&.destroy
     end
   end
@@ -143,9 +143,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to kick you!")
         RenRem.cmd("ppage #{command.issuer.id} you may not kick your benefactor!")
       elsif command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot kick yourself!")
+        page_player(command.issuer, "#{player.name} Cannot kick yourself!")
       else
-        page_player(command.issuer.name, "#{player.name} has been kicked!")
+        page_player(command.issuer, "#{player.name} has been kicked!")
 
         RenRem.cmd("kick #{player.id} #{command.arguments.last}")
 
@@ -165,7 +165,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         )
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
@@ -178,11 +178,11 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to warn you!")
         RenRem.cmd("ppage #{command.issuer.id} you may not issue a warning against your benefactor!")
       elsif command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot issue a warning against yourself!")
+        page_player(command.issuer, "#{player.name} Cannot issue a warning against yourself!")
       else
         reason = command.arguments.last
         page_player(player, "[Moderation] You've been issued a warning for: #{reason}")
-        page_player(command.issuer.name, "#{player.name} has been warned!")
+        page_player(command.issuer, "#{player.name} has been warned!")
 
         ip = player.address.split(";").first
         warning = Database::ModeratorAction.create(
@@ -200,7 +200,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         )
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
@@ -212,9 +212,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to mute you!")
         RenRem.cmd("ppage #{command.issuer.id} you may not mute your benefactor!")
       elsif command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot mute yourself!")
+        page_player(command.issuer, "#{player.name} Cannot mute yourself!")
       else
-        page_player(command.issuer.name, "#{player.name} has been muted!")
+        page_player(command.issuer, "#{player.name} has been muted!")
 
         RenRem.cmd("mute #{player.id} #{command.arguments.last}")
 
@@ -234,7 +234,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         )
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
@@ -243,14 +243,14 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if command.issuer.id == player.id
-        page_player(command.issuer.name, "#{player.name} Cannot unmute yourself!")
+        page_player(command.issuer, "#{player.name} Cannot unmute yourself!")
       else
-        page_player(command.issuer.name, "#{player.name} has been unmute!")
+        page_player(command.issuer, "#{player.name} has been unmute!")
 
         RenRem.cmd("unmute #{player.id} #{command.arguments.last}")
       end
     else
-      page_player(command.issuer.name, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
     end
   end
 
@@ -279,7 +279,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
       end
     else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
     end
   end
 
@@ -306,7 +306,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
       end
     else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
     end
   end
 
@@ -326,7 +326,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Server Moderator", red: 127, green: 255, blue: 127) if Config.messages[:staff]
       end
     else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
     end
   end
 
@@ -346,7 +346,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
         broadcast_message("[MOBIUS] #{player.name} is no longer a temporary Game Director", red: 127, green: 255, blue: 127) if Config.messages[:staff]
       end
     else
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
     end
   end
 
@@ -380,10 +380,10 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       player.inspect.to_s.chars.each_slice(100) do |slice|
-        page_player(command.issuer.name, slice.join)
+        page_player(command.issuer, slice.join)
       end
     else
-      page_player(command.issuer.name, "Failed to find player or name not unique.")
+      page_player(command.issuer, "Failed to find player or name not unique.")
     end
   end
 
@@ -396,24 +396,24 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       usernames = ip_search.map(&:name).uniq
       all_usernames_match = usernames.size == 1
 
-      page_player(command.issuer.name, "[Moderation: Audit] Found #{usernames.size} matching username(s) in database...")
-      page_player(command.issuer.name, "[Moderation: Audit] #{usernames.join(', ')}") unless all_usernames_match
+      page_player(command.issuer, "[Moderation: Audit] Found #{usernames.size} matching username(s) in database...")
+      page_player(command.issuer, "[Moderation: Audit] #{usernames.join(', ')}") unless all_usernames_match
 
       # List all usernames, their ips, and moderator actions
       usernames.each do |username|
         moderator_actions = Database::ModeratorAction.select.where(name: username).all
         ips = ip_search.select { |ip| ip.name.downcase == username.downcase }
 
-        page_player(command.issuer.name, "[Moderation: Audit] #{username}")
-        page_player(command.issuer.name, "[Moderation: Audit]     IP(s)")
+        page_player(command.issuer, "[Moderation: Audit] #{username}")
+        page_player(command.issuer, "[Moderation: Audit]     IP(s)")
         ips.each_slice(3) do |ips|
           # checking for untrusted ips takes too long... cache/save to database?
           # chunk = ips.map { |ip| "#{ip.ip}#{untrusted_ip?(ip.ip) ? '[*]' : ''}" }.join(', ')
-          page_player(command.issuer.name, "[Moderation: Audit]         #{ips.map(&:ip).join(', ')}")
+          page_player(command.issuer, "[Moderation: Audit]         #{ips.map(&:ip).join(', ')}")
         end
 
         if moderator_actions.size.positive?
-          page_player(command.issuer.name, "[Moderation: Audit]     Moderator Action(s)")
+          page_player(command.issuer, "[Moderation: Audit]     Moderator Action(s)")
           moderator_actions.each do |action|
             type = action.action
             MODERATOR_ACTION.each do |key, value|
@@ -423,12 +423,12 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
               end
             end
 
-            page_player(command.issuer.name, "[Moderation: Audit]         [#{action.created_at.strftime('%Y-%m-%d')}] [#{type.to_s.upcase}] (mod: #{action.moderator}) #{action.reason}")
+            page_player(command.issuer, "[Moderation: Audit]         [#{action.created_at.strftime('%Y-%m-%d')}] [#{type.to_s.upcase}] (mod: #{action.moderator}) #{action.reason}")
           end
         end
       end
     else
-      page_player(command.issuer.name, "Failed to name \"#{command.arguments.first}\" in database.")
+      page_player(command.issuer, "Failed to name \"#{command.arguments.first}\" in database.")
     end
   end
 end

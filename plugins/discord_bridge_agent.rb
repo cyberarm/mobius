@@ -554,12 +554,12 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   command(:vc_lobby, aliases: [:vcl], arguments: 0, help: "!vc_lobby - Moves everyone in teamed voice channels into lobby channel", groups: [:admin, :mod]) do |command|
     deliver(manage_voice_channels(lobby: true, issuer_nickname: command.issuer.name))
-    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move all users in teamed voice channels to lobby channel, one moment...")
+    page_player(command.issuer, "[DiscordBridgeAgent] Requesting to move all users in teamed voice channels to lobby channel, one moment...")
   end
 
   command(:vc_teamed, aliases: [:vct], arguments: 0, help: "!vc_teamed - Moves known players from lobby channel into teamed voice channels", groups: [:admin, :mod]) do |command|
     deliver(manage_voice_channels(teamed: true, issuer_nickname: command.issuer.name))
-    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move known players from lobby voice channel to teamed channels, one moment...")
+    page_player(command.issuer, "[DiscordBridgeAgent] Requesting to move known players from lobby voice channel to teamed channels, one moment...")
   end
 
   command(:vc_move, aliases: [:vcm], arguments: 2, help: "!vc_move <discord name> <team or lobby> - Moves Discord user from lobby or teamed channel in to lobby or teamed channel (Moving player between teamed channels may not work if their nickname matches their Discord name and the teamed channel isn't the team they're on)", groups: [:admin, :mod]) do |command|
@@ -573,6 +573,6 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     end
 
     deliver(manage_voice_channels(move: true, discord_name: discord_name, voice_channel: channel, issuer_nickname: command.issuer.name))
-    page_player(command.issuer.name, "[DiscordBridgeAgent] Requesting to move #{discord_name} to #{channel.is_a?(Integer) ? Teams.name(channel) : channel.capitalize} voice channel, one moment...")
+    page_player(command.issuer, "[DiscordBridgeAgent] Requesting to move #{discord_name} to #{channel.is_a?(Integer) ? Teams.name(channel) : channel.capitalize} voice channel, one moment...")
   end
 end

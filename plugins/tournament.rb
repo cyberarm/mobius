@@ -806,7 +806,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     if tournament_active?
       broadcast_message("[Tournament] #{Teams.name(0)}: #{@tournament_kills[:team_0]} kills, #{Teams.name(1)}: #{@tournament_kills[:team_1]} kills, #{Teams.name(2)}: #{@tournament_kills[:team_2]} kills", **@message_color)
     else
-      page_player(command.issuer.name, "[Tournament] No active tournament game!", **@message_color)
+      page_player(command.issuer, "[Tournament] No active tournament game!", **@message_color)
     end
   end
 
@@ -846,10 +846,10 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
         log("#{player.name} has been manually infected by #{command.issuer.name}")
       else
-        page_player(command.issuer.name, "Player #{command.arguments.first} was not found ingame, or is not unique.")
+        page_player(command.issuer, "Player #{command.arguments.first} was not found ingame, or is not unique.")
       end
     else
-      page_player(command.issuer.name, "Infection mode is not enabled.")
+      page_player(command.issuer, "Infection mode is not enabled.")
     end
   end
 

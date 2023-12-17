@@ -17,7 +17,7 @@ mobius_plugin(name: "JoinMessages", database_name: "join_messages", version: "0.
     message = command.arguments.last
 
     if message.to_s.length > 180
-      page_player(command.issuer.name, "Join message is to long, #{message.to_s.length} characters, max length is: 180 characters.")
+      page_player(command.issuer, "Join message is to long, #{message.to_s.length} characters, max length is: 180 characters.")
     else
       red = 255
       green = 255
@@ -28,7 +28,7 @@ mobius_plugin(name: "JoinMessages", database_name: "join_messages", version: "0.
       end
 
       database_set(command.issuer.name.downcase, "#{red},#{green},#{blue},#{message}")
-      page_player(command.issuer.name, "Your join message has been set.")
+      page_player(command.issuer, "Your join message has been set.")
     end
   end
 
@@ -37,11 +37,11 @@ mobius_plugin(name: "JoinMessages", database_name: "join_messages", version: "0.
     color = command.arguments.last
 
     if dataset.nil?
-      page_player(command.issuer.name, "Must set join message before setting join color")
+      page_player(command.issuer, "Must set join message before setting join color")
     elsif color.to_s.length != 6
-      page_player(command.issuer.name, "Color must be 6 characters long")
+      page_player(command.issuer, "Color must be 6 characters long")
     elsif !color.match?(/\A[A-Fa-f0-9]*\z/)
-      page_player(command.issuer.name, "Invalid color.")
+      page_player(command.issuer, "Invalid color.")
     else
       _red, _green, _blue, message = dataset.value.split(",", 4)
       red = color[0..1].to_i(16)

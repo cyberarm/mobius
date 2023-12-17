@@ -98,7 +98,7 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
 
     if (monotonic_time - damaged).abs >= @damage_timeout
       if @killme_timeout >= 0
-        page_player(command.issuer.name, "You will respawn in #{@killme_timeout} seconds. Use !kc or !killcancel to abort.")
+        page_player(command.issuer, "You will respawn in #{@killme_timeout} seconds. Use !kc or !killcancel to abort.")
 
         @queued_deaths[command.issuer.name] = monotonic_time
       else
@@ -107,11 +107,11 @@ mobius_plugin(name: "Stuck", database_name: "stuck", version: "0.0.1") do
         broadcast_message("#{command.issuer.name} has respawned")
       end
     else
-      page_player(command.issuer.name, "You've taken damage in the last #{@damage_timeout} seconds, cannot yet respawn.")
+      page_player(command.issuer, "You've taken damage in the last #{@damage_timeout} seconds, cannot yet respawn.")
     end
   end
 
   command(:killcancel, aliases: [:kc], arguments: 0, help: "Cancel !killme") do |command|
-    page_player(command.issuer.name, "No respawn queued.") unless abort_queued_deaths(command.issuer, :cancelled)
+    page_player(command.issuer, "No respawn queued.") unless abort_queued_deaths(command.issuer, :cancelled)
   end
 end

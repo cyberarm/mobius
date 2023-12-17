@@ -49,11 +49,11 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
 
             reset
           else
-            page_player(command.issuer.name, "[Swap] You cannot swap teams with #{requester.name}, request a mod to do it for you!")
+            page_player(command.issuer, "[Swap] You cannot swap teams with #{requester.name}, request a mod to do it for you!")
             notify_moderators("[Swap] #{requester.name} and #{command.issuer.name} attempted to swap, but they have the same IP.")
           end
         else
-          page_player(command.issuer.name, "[Swap] You cannot swap teams with #{requester.name}, they are on the same team as you!")
+          page_player(command.issuer, "[Swap] You cannot swap teams with #{requester.name}, they are on the same team as you!")
         end
       else
         broadcast_message("[Swap] Unable to complete swap, one or both players not found ingame!")
@@ -107,7 +107,7 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
 
           broadcast_message("[Swap] Swap was cancelled by #{command.issuer.name}.")
         else
-          page_player(command.issuer.name, "[Swap] You do not have permission to cancel other players swap requests.")
+          page_player(command.issuer, "[Swap] You do not have permission to cancel other players swap requests.")
         end
       else
         broadcast_message("[Swap] Swap cancelled, player no longer ingame.")
@@ -115,7 +115,7 @@ mobius_plugin(name: "Swap", database_name: "swap", version: "0.0.1") do
         reset
       end
     else
-      page_player(command.issuer.name, "[Swap] There is no swap in progress.")
+      page_player(command.issuer, "[Swap] There is no swap in progress.")
     end
   end
 end

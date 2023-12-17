@@ -35,7 +35,7 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
 
         broadcast_message("[Bounty] #{issuer.name} has added $#{amount} to the bounty on #{player.name}. Total is now $#{@bounties[player.name]}!")
       else
-        page_player(command.issuer.name, "Insufficient funds, cannot place bounty.")
+        page_player(command.issuer, "Insufficient funds, cannot place bounty.")
       end
     end
   end
@@ -68,9 +68,9 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
     if command.arguments.first.to_s.empty?
       b = @bounties[command.issuer.name]
       if b
-        page_player(command.issuer.name, "[Bounty] You have a bounty of $#{b} on your head.")
+        page_player(command.issuer, "[Bounty] You have a bounty of $#{b} on your head.")
       else
-        page_player(command.issuer.name, "[Bounty] You currently don't have a bounty on your head.")
+        page_player(command.issuer, "[Bounty] You currently don't have a bounty on your head.")
       end
 
       next
@@ -78,7 +78,7 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
 
     # Abort unless player is found
     unless player
-      page_player(command.issuer.name, "Player not in game or name is not unique!")
+      page_player(command.issuer, "Player not in game or name is not unique!")
 
       next
     end
@@ -88,7 +88,7 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
         amount = Integer(amount)
       rescue ArgumentError
         # Abort unless amount is a number
-        page_player(command.issuer.name, "Invalid amount: #{command.arguments.first}")
+        page_player(command.issuer, "Invalid amount: #{command.arguments.first}")
 
         next
       end
@@ -109,12 +109,12 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
         # Everything looks good, create the transaction to be handling on next `pinfo` result
         create_transaction(command.issuer.name, player.name, amount)
       elsif command.issuer.name == player.name
-        page_player(command.issuer.name, "You cannot put a bounty on yourself!")
+        page_player(command.issuer, "You cannot put a bounty on yourself!")
       else
-        page_player(command.issuer.name, "Can only place a bounty on your enemies!")
+        page_player(command.issuer, "Can only place a bounty on your enemies!")
       end
     else
-      page_player(command.issuer.name, "Cannot add nothing to bounty!")
+      page_player(command.issuer, "Cannot add nothing to bounty!")
     end
   end
 end
