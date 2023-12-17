@@ -7,6 +7,12 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       next
     end
 
+    @rec_colors = {
+      red: 255,
+      green: 127,
+      blue: 0
+    }
+
     # DEBUG Logging
     @debugging = false
 
@@ -164,7 +170,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     if recommendations
       page_player(player, "[MOBIUS] You currently have #{count} recommendations. ( #{recommendations.recommendations} recs, #{recommendations.noobs} n00bs )")
     else
-      broadcast_message("[MOBIUS] You currently don't have any recommendations yet.")
+      page_player(player, "[MOBIUS] You currently don't have any recommendations yet.")
     end
   end
 
@@ -172,7 +178,7 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     noob = mode == :n00b
 
     if monotonic_time - @team_players_last_used < @teamplayers_timeout
-      broadcast_message("[MOBIUS] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations.")
+      broadcast_message("[MOBIUS] The !teamplayers/!shown00bs command can only be used once every 2 minutes! Use !recs to see your own recommendations.", **@rec_colors)
       return
     else
       @team_players_last_used = monotonic_time
@@ -206,41 +212,41 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     if noob
       if team_0_noobs + team_1_noobs == 0
-        broadcast_message("[MOBIUS] None of the players in the server have any n00bs.")
+        broadcast_message("[MOBIUS] None of the players in the server have any n00bs.", **@rec_colors)
       else
-        broadcast_message("[MOBIUS] n00bs based on in-game complaints")
+        broadcast_message("[MOBIUS] n00bs based on in-game complaints", **@rec_colors)
 
         if team_0.size > 0
-          broadcast_message("[MOBIUS] #{Teams.name(0)}")
+          broadcast_message("[MOBIUS] #{Teams.name(0)}", **@rec_colors)
           team_0.each do |str|
-            broadcast_message("[MOBIUS]     #{str}")
+            broadcast_message("[MOBIUS]     #{str}", **@rec_colors)
           end
         end
 
         if team_1.size > 0
-          broadcast_message("[MOBIUS] #{Teams.name(1)}")
+          broadcast_message("[MOBIUS] #{Teams.name(1)}", **@rec_colors)
           team_1.each do |str|
-            broadcast_message("[MOBIUS]     #{str}")
+            broadcast_message("[MOBIUS]     #{str}", **@rec_colors)
           end
         end
       end
     else # recs
       if team_0_recs + team_1_recs == 0
-        broadcast_message("[MOBIUS] None of the players in the server have any recommendations.")
+        broadcast_message("[MOBIUS] None of the players in the server have any recommendations.", **@rec_colors)
       else
-        broadcast_message("[MOBIUS] Team players based on in-game recommendations")
+        broadcast_message("[MOBIUS] Team players based on in-game recommendations", **@rec_colors)
 
         if team_0.size > 0
-          broadcast_message("[MOBIUS] #{Teams.name(0)}")
+          broadcast_message("[MOBIUS] #{Teams.name(0)}", **@rec_colors)
           team_0.each do |str|
-            broadcast_message("[MOBIUS]     #{str}")
+            broadcast_message("[MOBIUS]     #{str}", **@rec_colors)
           end
         end
 
         if team_1.size > 0
-          broadcast_message("[MOBIUS] #{Teams.name(1)}")
+          broadcast_message("[MOBIUS] #{Teams.name(1)}", **@rec_colors)
           team_1.each do |str|
-            broadcast_message("[MOBIUS]     #{str}")
+            broadcast_message("[MOBIUS]     #{str}", **@rec_colors)
           end
         end
       end

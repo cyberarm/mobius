@@ -2,6 +2,12 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
   def reset
     @bounties = {}
     @pending_transactions = []
+
+    @bounty_colors = {
+      red: 255,
+      green: 127,
+      blue: 0
+    }
   end
 
   def create_transaction(issuer, player, amount)
@@ -33,7 +39,7 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
         @bounties[player.name] ||= 0
         @bounties[player.name] += amount
 
-        broadcast_message("[Bounty] #{issuer.name} has added $#{amount} to the bounty on #{player.name}. Total is now $#{@bounties[player.name]}!")
+        broadcast_message("[Bounty] #{issuer.name} has added $#{amount} to the bounty on #{player.name}. Total is now $#{@bounties[player.name]}!", **@bounty_colors)
       else
         page_player(command.issuer, "Insufficient funds, cannot place bounty.")
       end
@@ -54,7 +60,7 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
           RenRem.cmd("givecredits #{killer.id} #{bounty}")
           @bounties.delete(killed_obj[:name])
 
-          broadcast_message("[Bounty] #{killer.name} has claimed the bounty on #{killed_obj[:name]} of $#{bounty}!")
+          broadcast_message("[Bounty] #{killer.name} has claimed the bounty on #{killed_obj[:name]} of $#{bounty}!", **@bounty_colors)
         end
       end
     end
@@ -96,9 +102,9 @@ mobius_plugin(name: "Bounty", database_name: "bounty", version: "0.0.1") do
       # Amount was not specified, check bounty on player instead
       b = @bounties[player.name]
       if b
-        broadcast_message("[Bounty] #{player.name} has a bounty of $#{b} on their head.")
+        broadcast_message("[Bounty] #{player.name} has a bounty of $#{b} on their head.", **@bounty_colors)
       else
-        broadcast_message("[Bounty] #{player.name} currently doesn't have a bounty on them.")
+        broadcast_message("[Bounty] #{player.name} currently doesn't have a bounty on them.", **@bounty_colors)
       end
 
       next
