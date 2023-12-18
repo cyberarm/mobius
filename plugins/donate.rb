@@ -143,6 +143,12 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       next
     end
 
+    if player == command.issuer
+      page_player(command.issuer, "Cannot donate to yourself!")
+
+      next
+    end
+
     # Assume empty string means they intend to donate everything
     if amount.to_s.length.positive?
       begin
