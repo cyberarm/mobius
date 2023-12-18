@@ -326,9 +326,9 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     count = recommendations ? recommendations.recommendations - recommendations.noobs : 0
     if count.zero? || count.negative?
-      broadcast_message("[MOBIUS] #{player.name} does not have any recommendations yet.")
+      broadcast_message("[MOBIUS] #{player.name} does not have any recommendations yet.", **@rec_colors)
     else
-      broadcast_message("[MOBIUS] #{player.name} has #{count} recommendations.")
+      broadcast_message("[MOBIUS] #{player.name} has #{count} recommendations.", **@rec_colors)
     end
   end
 
