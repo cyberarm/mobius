@@ -124,7 +124,7 @@ mobius_plugin(name: "AFK", database_name: "afk", version: "0.0.1") do
       log: "[KICK] #{player.name} (#{ip}) was kicked by [MOBIUS:AFK] for \"#{reason}\". (ID #{kick.id})"
     )
 
-    kick_player!(player.name, reason)
+    kick_player!(player, reason)
 
     broadcast_message("[MOBIUS] #{player.name} has been kicked due to being AFK.")
     log "#{player.name} has been kicked due to being AFK."

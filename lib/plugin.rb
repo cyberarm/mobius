@@ -109,22 +109,19 @@ module Mobius
       RenRem.cmd(data, delay)
     end
 
-    def kick_player!(name, message = "")
-      exact_match = PlayerData.name_to_id(name, exact_match: true)
-      partial_match = PlayerData.name_to_id(name, exact_match: false)
-
-      if (player = PlayerData.player(exact_match.negative? ? partial_match : exact_match))
+    def kick_player!(player, message = "")
+      if player
         RenRem.cmd("kick #{player.id} #{message}")
       else
         notify_moderators("Failed to kick \"#{name}\", name not found or not unique!")
       end
     end
 
-    def temp_ban_player!(name, banner, reason, duration)
-      kick_player!(name, reason)
+    def temp_ban_player!(player, banner, reason, duration)
+      kick_player!(player, reason)
     end
 
-    def ban_player!(name, banner, reason)
+    def ban_player!(player, banner, reason)
     end
 
     def notify_moderators(message)
@@ -133,10 +130,10 @@ module Mobius
       end
     end
 
-    def auto_kick!(name)
+    def auto_kick!(player)
     end
 
-    def add_player_report(name, reporter, reason)
+    def add_player_report(player, reporter, reason)
     end
 
     def remix_teams

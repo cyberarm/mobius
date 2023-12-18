@@ -47,16 +47,16 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
 
         RenRem.cmd("donate #{donator.id} #{mate.id} #{slice}")
 
-        page_player(mate.name, "#{donator.name} has donated #{slice} credits to you.")
+        page_player(mate, "#{donator.name} has donated #{slice} credits to you.")
         donation[:receivers] << { name: mate.name, amount: slice, money: mate.money }
 
         mate.money += slice
       end
 
       # FIXME: Sometimes this message is not delivered!
-      page_player(donator.name, "You have donated #{donation[:receivers].sum { |r| r[:amount]}} credits to #{type == :individual ? "#{transaction[:recipients][0]}" : "your team"}.")
+      page_player(donator, "You have donated #{donation[:receivers].sum { |r| r[:amount]}} credits to #{type == :individual ? "#{transaction[:recipients][0]}" : "your team"}.")
     else
-      page_player(donator.name, "Cannot donate nothing!")
+      page_player(donator, "Cannot donate nothing!")
       log "#{donator.name} attempted to donate #{amount.inspect} to #{type == :individual ? "#{transaction[:recipients][0]}" : "their team"}."
     end
   end
@@ -90,16 +90,16 @@ mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
       end
 
       if taken_back == total_given
-        page_player(donator.name, "You have un-undonated and received back #{taken_back} credits.")
+        page_player(donator, "You have un-undonated and received back #{taken_back} credits.")
       elsif taken_back == 0
-        page_player(donator.name, "Unable to un-donated, all receivers have have spent credits since you donated to them.")
+        page_player(donator, "Unable to un-donated, all receivers have have spent credits since you donated to them.")
       else
-        page_player(donator.name, "You have un-undonated and received back #{taken_back} of #{total_given} credits.")
+        page_player(donator, "You have un-undonated and received back #{taken_back} of #{total_given} credits.")
       end
 
       @donations.delete(donator.name)
     else
-      page_player(donator.name, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
+      page_player(donator, "You have made no donations in the last #{@undonate_timeout} seconds or have already un-donated.")
     end
   end
 

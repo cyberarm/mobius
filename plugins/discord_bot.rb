@@ -88,7 +88,7 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
   def check_pending_staff_verifications!
     @staff_pending_verification.each do |discord_id, hash|
       if (monotonic_time - hash[:time]) >= @verification_timeout
-        kick_player!(hash[:player].name, "Protected username: You failed to verify in time!")
+        kick_player!(hash[:player], "Protected username: You failed to verify in time!")
 
         @staff_pending_verification.delete(discord_id)
       end
@@ -122,7 +122,7 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
           @staff_pending_verification.delete(discord_id)
         elsif message == "n" || message == "no"
           # Kick imposter
-          kick_player!(pending_staff[:player].name, "Protected username: You are an imposter!")
+          kick_player!(pending_staff[:player], "Protected username: You are an imposter!")
           @staff_pending_verification.delete(discord_id)
           event.message.respond("Roger, imposter has been kicked.")
         else

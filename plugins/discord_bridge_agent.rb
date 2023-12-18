@@ -134,7 +134,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   def check_pending_staff_verifications!
     @staff_pending_verification.each do |discord_id, hash|
       if (monotonic_time - hash[:time]) >= @verification_timeout
-        kick_player!(hash[:player].name, "Protected username: You failed to verify in time!")
+        kick_player!(hash[:player], "Protected username: You failed to verify in time!")
 
         @staff_pending_verification.delete(discord_id)
       end
@@ -239,7 +239,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
           @staff_pending_verification.delete(discord_id)
         else
           # Kick imposter
-          kick_player!(pending_staff[:player].name, "Protected username: You are an imposter!")
+          kick_player!(pending_staff[:player], "Protected username: You are an imposter!")
           deliver(message_discord_id(discord_id, "Roger, imposter has been kicked."))
           @staff_pending_verification.delete(discord_id)
         end

@@ -46,7 +46,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     return unless string
 
     log "Sound: #{sound.inspect}"
-    RenRem.cmd("snda #{string}")
+    RenRem.cmd("evaa #{string}")
   end
 
   def play_team_sound(team_id, sound)
@@ -56,17 +56,17 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     return unless string
 
     log "Sound: #{sound.inspect}"
-    RenRem.cmd("sndt #{team_id} #{string}")
+    RenRem.cmd("evat #{team_id} #{string}")
   end
 
-  def play_player_sound(player_id, sound)
+  def play_player_sound(player, sound)
     string = @sounds[sound]
 
     log "Sound missing: #{sound.inspect}" unless string
     return unless string
 
     log "Sound: #{sound.inspect}"
-    RenRem.cmd("sndp #{player_id} #{string}")
+    RenRem.cmd("evap #{player.id} #{string}")
   end
 
   def construction_yard!(player)
@@ -375,8 +375,8 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
           # Since the player is technically still on the survivor team, we need this check to avoid sending it to both "surviving players"
           next if @infected_players[ply.id]
 
-          page_player(ply.name, "You are the last survivor!")
-          play_player_sound(ply.name, :survivors_last_survivor)
+          page_player(ply, "You are the last survivor!")
+          play_player_sound(ply, :survivors_last_survivor)
         end
       end
     end
@@ -481,11 +481,11 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
       log "#{ply ? ply.name : Teams.name(hash[:team])} placed C4 (#{hash[:preset]})"
 
       if player_obj && ply
-        page_player(ply.name, "[Tournament] A tournament game mode is active, C4 cannot be used.")
+        page_player(ply, "[Tournament] A tournament game mode is active, C4 cannot be used.")
         RenRem.cmd("disarm #{ply.id}")
       else
         PlayerData.players_by_team(hash[:team]).each do |actor| # Running out of variations on player :D
-          page_player(actor.name, "[Tournament] A tournament game mode is active, C4 cannot be used.")
+          page_player(actor, "[Tournament] A tournament game mode is active, C4 cannot be used.")
           RenRem.cmd("disarm #{actor.id}")
         end
       end
@@ -590,7 +590,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
           killed.change_team(@ghost_players[killed.id]) if is_ghost
 
           broadcast_message("[Tournament] #{killed.name} has become a ghost!", **@message_color)
-          page_player(killed.name, "You've become a ghost, go forth and haunt the living!")
+          page_player(killed, "You've become a ghost, go forth and haunt the living!")
           play_sound(:lastmanstanding_new_ghost)
 
         elsif @infection
