@@ -234,7 +234,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
         if verified
           PluginManager.publish_event(:_discord_bot_verified_staff, pending_staff[:player], discord_id)
-          page_player(pending_staff[:player].name, "Welcome back, Commander!")
+          page_player(pending_staff[:player], "Welcome back, Commander!")
           deliver(message_discord_id(discord_id, "Welcome back, Commander!"))
           @staff_pending_verification.delete(discord_id)
         else
