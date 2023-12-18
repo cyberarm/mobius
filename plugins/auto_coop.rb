@@ -64,10 +64,8 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     name = map.split(".", 2).first
 
     if (config[:force_team_0_maps] || []).include?(name)
-      @override_current_side = @current_side
       @current_side = 0
     elsif (config[:force_team_1_maps] || []).include?(name)
-      @override_current_side = @current_side
       @current_side = 1
     end
   end
@@ -202,14 +200,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @coop_votes.clear
     @versus_votes.clear
     @player_characters.clear
-
-    if @override_current_side
-      @current_side = @override_current_side
-
-      log "Restored co-op team to #{Teams.name(@current_side)}, was overridden by map rule."
-
-      @override_current_side = nil
-    end
 
     check_map(map)
 
