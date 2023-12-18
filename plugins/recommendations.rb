@@ -137,12 +137,12 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
 
     if player
       if recommender.name == player.name
-        page_player(recommender.name, "[MOBIUS] You cannot #{noob ? 'n00b' : 'recommend'} youself.")
+        page_player(recommender, "[MOBIUS] You cannot #{noob ? 'n00b' : 'recommend'} youself.")
         return
       end
 
       if rec_ignored?(player)
-        page_player(recommender.name, "[MOBIUS] Sorry, the server administrators have disabled recommendations for you.")
+        page_player(recommender, "[MOBIUS] Sorry, the server administrators have disabled recommendations for you.")
         return
       end
 
@@ -151,15 +151,15 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
       when :allowed
         recommend_player(recommender.name.downcase, player, comment, noob)
       when :limit_reached
-        page_player(recommender.name, "[MOBIUS] You have reached your daily limit for n00bs.") if noob
-        page_player(recommender.name, "[MOBIUS] You have reached your daily limit for recommendations.") unless noob
+        page_player(recommender, "[MOBIUS] You have reached your daily limit for n00bs.") if noob
+        page_player(recommender, "[MOBIUS] You have reached your daily limit for recommendations.") unless noob
       when :already_recommended_today
-        page_player(recommender.name, "[MOBIUS] You have already recommended #{player.name} today.")
+        page_player(recommender, "[MOBIUS] You have already recommended #{player.name} today.")
       when :already_noobed_today
-        page_player(recommender.name, "[MOBIUS] You have already n00bed #{player.name} today.")
+        page_player(recommender, "[MOBIUS] You have already n00bed #{player.name} today.")
       end
     else
-      page_player(recommender.name, "[MOBIUS] Player #{command.arguments.first} was not found ingame, or is not unique.")
+      page_player(recommender, "[MOBIUS] Player #{command.arguments.first} was not found ingame, or is not unique.")
     end
   end
 
