@@ -261,4 +261,13 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
       end
     end
   end
+
+  vote(:cyclemap, arguments: 0, description: "Vote to end match and cycle map", groups: [:admin, :mod, :director]) do |vote|
+    if vote.validate?
+      true
+    elsif vote.commit?
+      broadcast_message("[GameDirector] Match will end in 10 seconds...")
+      RenRem.cmd("time 10")
+    end
+  end
 end

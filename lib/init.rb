@@ -58,6 +58,7 @@ module Mobius
         last_tick_time = monotonic_time
 
         PluginManager.publish_event(:tick)
+        PluginManager.tick
       end
 
       total_think_time = monotonic_time - time_before_think

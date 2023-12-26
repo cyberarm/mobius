@@ -548,6 +548,7 @@ module Mobius
       }
 
       PluginManager.publish_event(:win, object, data)
+      PluginManager.reset_vote
       Presets.save_presets
 
       clear_data(object)

@@ -1,10 +1,26 @@
 module Mobius
   class PluginManager
     CommandResult = Struct.new(:issuer, :arguments)
+    VoteResult = Struct.new(:issuer, :arguments, :___mode, :announcement)
+    VoteResult.define_method(:validate?) do
+      self.___mode == :validate
+    end
+    VoteResult.define_method(:commit?) do
+      self.___mode == :commit
+    end
 
     @plugins = []
     @commands = {}
     @deferred = []
+    @votes = {}
+    @active_vote = nil
+    @active_vote_result = nil
+    @active_vote_votes = {}
+    @active_vote_start_time = 0
+    @last_active_vote_announced = 0
+    @announce_active_vote_every_seconds = 30.0
+    @active_vote_required_percentage = 0.69
+    @active_vote_sound_effect = "private_message.wav"
 
     @blackboard = {}
 
@@ -13,6 +29,10 @@ module Mobius
 
       find_plugins
       init_plugins
+    end
+
+    def self.tick
+      vote_tick
     end
 
     def self.teardown
@@ -83,6 +103,14 @@ module Mobius
         @commands.delete(name) if command.plugin == plugin
       end
 
+      @votes.each do |name, vote|
+        if vote.plugin == plugin
+          reset_vote(reason: "Vote aborted, #{plugin.___name} plugin has been disabled or reloaded.") if @active_vote == vote
+
+          @votes.delete(name)
+        end
+      end
+
       log "PLUGIN MANAGER", "Disabled plugin: #{plugin.___name}"
     end
 
@@ -106,7 +134,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload, :disable].include?(name)
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload, :disable, :v, :vote].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -181,6 +209,13 @@ module Mobius
       if cmd.downcase.to_sym == :disable && player.administrator?
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_disable_plugin_command(player, parts)
+
+        return
+      end
+
+      if cmd.downcase.to_sym == :vote || cmd.downcase.to_sym == :v
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        handle_vote_plugin_command(player, parts)
 
         return
       end
@@ -389,6 +424,210 @@ module Mobius
       else
         RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No enabled plugins matching: #{name}.")
       end
+    end
+
+    def self.handle_vote_plugin_command(player, parts)
+      vt = parts.shift
+
+      unless vt
+        # If a vote is active, report what it is
+        if @active_vote
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Active vote: #{@active_vote_result.announcement}")
+
+        # If not, return list of available votes
+        else
+          handle_vote_help(player, parts)
+        end
+
+        return
+      end
+
+      case vt.downcase.to_sym
+      when :y, :yes
+        # Already voted, yes.
+        unless @active_vote_votes[player.name]
+          @active_vote_votes[player.name] = true
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You voted Yes to #{@active_vote.name}")
+        else
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You already voted Yes to #{@active_vote.name}")
+        end
+        return
+      when :n, :no
+        # Already voted, no.
+        unless @active_vote_votes[player.name] == false
+          @active_vote_votes[player.name] = false
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You voted No to #{@active_vote.name}")
+        else
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You already voted No to #{@active_vote.name}")
+        end
+        return
+      end
+
+      if @active_vote
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] A vote is already active: #{@active_vote_result.announcement}")
+
+        return
+      end
+
+      vote = @votes[vt.downcase.to_sym]
+
+      if vote.nil? || !player.in_group?(vote&.groups)
+        log "PLUGIN MANAGER", "Player #{player.name} tried to use vote #{parts.join(' ')}"
+
+        RenRem.cmd("cmsgp #{player.id} 255,255,255, vote: #{vt} not found.")
+
+        return
+      end
+
+      arguments = []
+      vote_arguments = vote.arguments.is_a?(Range) ? vote.arguments.max : vote.arguments
+
+      if parts.count.zero? && vote_arguments.zero? && parts.count.zero?
+        # Do nothing here, vote has no arguments and we've received no arguments
+      elsif vote.arguments.is_a?(Range) ? parts.count >= vote.arguments.min : parts.count >= vote_arguments
+        (vote_arguments - 1).times do
+          arguments << parts.shift
+        end
+
+        arguments << parts.join(" ")
+      else
+        RenRem.cmd("cmsgp #{player.id} 255,255,255 wrong number of arguments provided.")
+        RenRem.cmd("cmsgp #{player.id} 255,255,255 #{vote.description}")
+
+        return
+      end
+
+      begin
+        vote_result = VoteResult.new(player, arguments, :validate, vote.description)
+        result = vote.block&.call(vote_result)
+
+        pp [vote_result, result]
+
+        if result
+          @active_vote = vote
+          @active_vote_result = vote_result
+          @last_active_vote_announced = monotonic_time
+          @active_vote_start_time = monotonic_time
+
+          RenRem.cmd("evaa #{@active_vote_sound_effect}")
+          RenRem.cmd("cmsg 64,255,64 [MOBIUS] A vote is active: #{@active_vote_result.announcement}")
+        end
+      rescue StandardError, ScriptError => e
+        log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
+        log "ERROR", "#{e.class}: #{e}"
+        formatted_backtrace(vote.plugin, e.backtrace)
+      end
+    end
+
+    def self.handle_vote_help(player, parts)
+      votes = @votes.select do |name, vote|
+        player.in_group?(vote.groups)
+      end
+
+      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Votes:")
+      votes.map { |name, v| "#{name} - #{v.description}" }.each do |vote_info|
+        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{vote_info}")
+      end
+    end
+
+    def self.register_vote(vote)
+      _register_vote(vote.name, vote)
+
+      ### Save list of votes to file
+      # File.open("_mobius_votes.txt", "a+") do |f|
+      #   f.puts "!#{vote.name}"
+      #   f.puts "    Description: #{vote.description}"
+      #   f.puts "    Aliases: #{vote.aliases.map { |a| "!#{a}" }.join(', ')}"
+      #   f.puts "    Groups: #{vote.groups.join(', ')}"
+      #   f.puts
+      # end
+
+      vote.aliases.each do |vt|
+        _vote_command(vt, vote)
+      end
+    end
+
+    def self._register_vote(name, vote)
+      existing_vote = @votes[name]
+
+      raise "Plugin '#{vote.plugin.___name}' attempted to register vote '#{name}' but it is reserved" if [:y, :yes, :n, :no].include?(name)
+
+      raise "Plugin '#{vote.plugin.___name}' attempted to register vote '#{existing_vote.name}' but it's already registered to '#{existing_vote.plugin.___name}'" if existing_vote
+
+      @votes[name] = vote
+    end
+
+    def self.vote_tick
+      return unless @active_vote
+
+      seconds = monotonic_time
+
+      if seconds - @active_vote_start_time >= @active_vote.duration
+        reset_vote(reason: "Vote has timed out.")
+
+        return
+      end
+
+      if seconds - @last_active_vote_announced >= @announce_active_vote_every_seconds
+        @last_active_vote_announced = seconds
+
+        RenRem.cmd("evaa #{@active_vote_sound_effect}")
+        RenRem.cmd("cmsg 64,255,64 [MOBIUS] A vote is active: #{@active_vote_result.announcement}")
+      end
+
+      player_list = PlayerData.player_list.select(&:ingame?)
+      required_votes = (player_list.size * @active_vote_required_percentage).ceil
+      positive_votes = player_list.select { |ply| @active_vote_votes[ply.name] == true }.size
+      negative_votes = player_list.select { |ply| @active_vote_votes[ply.name] == false }.size
+      total_votes = positive_votes + negative_votes
+
+      vote_passed = false
+      vote_failed = total_votes >= player_list.size
+
+      if positive_votes >= required_votes
+        log("PLUGIN MANAGER", "Passing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+        vote_passed = true
+
+        RenRem.cmd("evaa #{@active_vote_sound_effect}")
+        RenRem.cmd("cmsg 64,255,64 [MOBIUS] Vote has PASSED! #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+      end
+
+      if vote_passed
+        vote = @active_vote
+
+        begin
+          @active_vote_result.___mode = :commit
+
+          vote.block&.call(@active_vote_result)
+        rescue StandardError, ScriptError => e
+          log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
+          log "ERROR", "#{e.class}: #{e}"
+          formatted_backtrace(vote.plugin, e.backtrace)
+        end
+
+        reset_vote
+        return
+      end
+
+      if vote_failed
+        log("PLUGIN MANAGER", "Failing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+
+        RenRem.cmd("evaa #{@active_vote_sound_effect}")
+        reset_vote(reason: "Vote has FAILED. #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+
+        return
+      end
+    end
+
+    def self.reset_vote(reason: nil)
+      @active_vote = nil
+      @active_vote_result = nil
+      @active_vote_votes = {}
+      @active_vote_start_time = 0
+      @last_active_vote_announced = 0
+
+      RenRem.cmd("evaa #{@active_vote_sound_effect}")
+      RenRem.cmd("cmsg 64,255,64 [MOBIUS] #{reason}") if reason
     end
 
     def self.publish_event(event, *args)

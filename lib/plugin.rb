@@ -2,6 +2,7 @@ module Mobius
   class Plugin
     Timer = Struct.new(:type, :ticks, :delay, :block)
     Command = Struct.new(:plugin, :name, :aliases, :arguments, :help, :groups, :block)
+    Vote = Struct.new(:plugin, :name, :aliases, :arguments, :duration, :description, :groups, :block)
 
     attr_reader :___name, :___database_name, :___version, :___event_handlers, :___timers, :___data, :___plugin_file
 
@@ -78,6 +79,13 @@ module Mobius
     def command(name, aliases: [], arguments: 0, help:, groups: [:ingame], &block)
       PluginManager.register_command(
         Command.new(self, name, aliases, arguments, help, groups, block)
+      )
+    end
+
+    # register vote
+    def vote(name, aliases: [], arguments: 0, duration: 120.0, description:, groups: [:ingame], &block)
+      PluginManager.register_vote(
+        Vote.new(self, name, aliases, arguments, duration, description, groups, block)
       )
     end
 
