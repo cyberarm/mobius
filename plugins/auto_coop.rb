@@ -316,9 +316,13 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     when "soldier"
       @player_characters[hash[:object]] = hash[:preset]
 
-      if hash[:preset].downcase.include?("_spy_")
-        @known_spies[player.name] = true
-      elsif @known_spies.delete(player.name)
+      player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
+
+      if player
+        if hash[:preset].downcase.include?("_spy_")
+          @known_spies[player.name] = true
+        elsif @known_spies.delete(player.name)
+        end
       end
     end
   end
