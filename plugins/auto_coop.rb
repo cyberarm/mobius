@@ -71,6 +71,9 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     team_zero_count = PlayerData.players_by_team(0).size
     team_one_count = PlayerData.players_by_team(1).size
 
+    team_zero_count -= @known_spies.size
+    team_one_count += @known_spies.size
+
     team_diff = team_zero_count - team_one_count
     even_teams = (team_diff >= 2 || team_diff <= -2)
     even_team_zero = even_teams && team_diff.positive?
@@ -185,6 +188,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @player_characters = {}
     @last_autobalance_notified = 0
     @autobalance_notifier_interval = 30.0 # seconds
+    @known_spies = {}
 
     # Attempt to auto resume co-op if bot is restarted
     # NOTE: Probably won't work if a player is a spy
@@ -311,6 +315,11 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     case hash[:type].downcase
     when "soldier"
       @player_characters[hash[:object]] = hash[:preset]
+
+      if hash[:preset].downcase.include?("_spy_")
+        @known_spies[player.name] = true
+      elsif @known_spies.delete(player.name)
+      end
     end
   end
 
