@@ -83,8 +83,14 @@ module Mobius
       end
     end
 
+    def self.team(team)
+      id = id_from_name(team)
+
+      @teams.find { |h| h[:id] == id }
+    end
+
     def self.color(team)
-      hash = id_from_name(team)
+      hash = team(team)
 
       if hash
         hash[:color] || hash[:colour]
