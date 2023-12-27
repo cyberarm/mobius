@@ -421,7 +421,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     end
   end
 
-  command(:versus, arguments: 1, help: "!versus NOW - Switch to Player vs. Player for this round.", groups: [:admin, :mod, :director]) do |command|
+  command(:versus, arguments: 1, help: "!versus NOW/NEXT - Switch to Player vs. Player for this or next round.", groups: [:admin, :mod, :director]) do |command|
     if command.arguments.first == "NOW"
       @next_round_mode = :versus
 
@@ -433,6 +433,10 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       remix_teams
 
       broadcast_message("#{command.issuer.name} has started Player vs. Player.")
+    elsif command.arguments.first == "NEXT"
+      @next_round_mode = :versus
+
+      page_player(command.issuer, "The next round will be versus.")
     else
       page_player(command.issuer, "Use !versus NOW if you really mean it.")
     end
