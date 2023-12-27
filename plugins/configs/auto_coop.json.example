@@ -6,6 +6,7 @@
   "min_bot_count": 12,
   "hardcap_bot_count": 128,
   "hardcap_friendless_player_count": 12,
+  "versus_persistent_bot_padding": 10,
 
   "vote_required_percentage": 0.69,
 

@@ -21,9 +21,16 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       PluginManager.blackboard_store(:"team_0_bot_count", 0)
       PluginManager.blackboard_store(:"team_1_bot_count", 0)
     elsif @versus_started || !@coop_started
-      unless @versus_configured # Only call this once so that !fds botcount CAN take effect if desired
+      if !@versus_configured && @versus_persistent_bot_padding == 0
         @versus_configured = true
         bot_count = MapSettings.get_map_setting(:botcount) || 0
+
+        RenRem.cmd("botcount #{bot_count}")
+
+        PluginManager.blackboard_store(:"team_0_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+        PluginManager.blackboard_store(:"team_1_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+      elsif @versus_persistent_bot_padding > 0
+        bot_count = player_count + (@versus_persistent_bot_padding.clamp(0, @max_bot_count) * 2)
 
         RenRem.cmd("botcount #{bot_count}")
 
@@ -58,6 +65,23 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       player.change_team(@current_side)
     end
+  end
+
+  def autobalance_notifier
+    team_zero_count = PlayerData.players_by_team(0).size
+    team_one_count = PlayerData.players_by_team(1).size
+
+    team_diff = team_zero_count - team_one_count
+    even_teams = (team_diff >= 2 || team_diff <= -2)
+    even_team_zero = even_teams && team_diff.positive?
+
+    if even_teams
+      team_id = even_team_zero ? 0 : 1
+      RenRem.cmd("evat #{team_id} interface_escape.wav")
+      message_team(team_id, "[MOBIUS] Please even the teams. Use !rtc or !swap to change teams.", red: 64, green: 255, blue: 64)
+    end
+
+    @last_autobalance_notified = monotonic_time
   end
 
   def check_map(map)
@@ -156,8 +180,11 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @versus_started = false
     @versus_votes = {}
     @versus_configured = false
+    @versus_persistent_bot_padding = config[:versus_persistent_bot_padding] || 0
 
     @player_characters = {}
+    @last_autobalance_notified = 0
+    @autobalance_notifier_interval = 30.0 # seconds
 
     # Attempt to auto resume co-op if bot is restarted
     # NOTE: Probably won't work if a player is a spy
@@ -187,6 +214,8 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     # Check that a player is on the correct team and move them if not
     every(5) do
       move_players_to_coop_team if @coop_started
+
+      autobalance_notifier if @versus_started && monotonic_time - @last_autobalance_notified >= @autobalance_notifier_interval
     end
   end
 
@@ -398,6 +427,15 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     else
       page_player(command.issuer, "Use !versus NOW if you really mean it.")
     end
+  end
+
+  command(:versus_bot_padding, aliases: [:vbp], arguments: 1, help: "!vbp <number> - Set number of bots to have on each team along side players, 0 to disable and use map settings configured bot count.", groups: [:admin, :mod, :director]) do |command|
+    bot_padding = command.arguments.first.to_i
+
+    @versus_persistent_bot_padding = bot_padding
+    configure_bots
+
+    page_player(command.issuer, "Versus bot padding has been set to #{bot_padding}.")
   end
 
   command(:set_bot_diff, aliases: [:sbd], arguments: 1, help: "!set_bot_diff <bots_per_player>", groups: [:admin, :mod, :director]) do |command|
