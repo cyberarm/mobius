@@ -92,6 +92,12 @@ module Mobius
           else
             name = response.strip.split(" ").last
 
+            if name == "list"
+              exit_loop = true
+
+              next # acts like a return when inside a block
+            end
+
             ServerConfig.rotation << name
             log("SSGM", "Map in position #{i} is #{name}")
           end
