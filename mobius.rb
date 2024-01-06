@@ -12,6 +12,8 @@ require "ld-eventsource"
 require "bcrypt"
 require "discordrb"
 require "perlin_noise"
+require "openssl"
+require "ircparser"
 
 require_relative "lib/constants"
 require_relative "lib/log"

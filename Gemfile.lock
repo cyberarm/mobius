@@ -18,7 +18,6 @@ GEM
     event_emitter (0.2.6)
     excon (0.108.0)
     ffi (1.16.3)
-    ffi (1.16.3-x64-mingw-ucrt)
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
@@ -31,6 +30,7 @@ GEM
     http-cookie (1.0.5)
       domain_name (~> 0.5)
     http-form_data (2.3.0)
+    ircparser (1.0.0)
     ld-eventsource (2.2.2)
       concurrent-ruby (~> 1.0)
       http (>= 4.4.1, < 6.0.0)
@@ -54,8 +54,8 @@ GEM
       netrc (~> 0.8)
     sequel (5.75.0)
       bigdecimal
-    sqlite3 (1.6.9-x64-mingw-ucrt)
-    sqlite3 (1.6.9-x86_64-linux)
+    sqlite3 (1.7.0-x64-mingw-ucrt)
+    sqlite3 (1.7.0-x86_64-linux)
     websocket (1.2.10)
     websocket-client-simple (0.8.0)
       event_emitter
@@ -69,6 +69,7 @@ DEPENDENCIES
   bcrypt
   discordrb
   excon
+  ircparser
   ld-eventsource
   matrix
   perlin_noise
@@ -76,4 +77,4 @@ DEPENDENCIES
   sqlite3
 
 BUNDLED WITH
-   2.4.14
+   2.5.3

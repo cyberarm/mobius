@@ -1,0 +1,25 @@
+{
+  "server": {
+    "hostname": "irc.example.com",
+    "port": 6697, // SSL port (6697) always uses ssl
+    "use_ssl": false,
+    "verify_cert": true
+  },
+  "account": {
+    "username": "Mobius",
+    "password": "",
+    "fingerprint": "",
+    "client_private_key": "",
+    "client_public_key": ""
+  },
+  "channels": {
+    "public": {
+      "name": "#channel",
+      "key": ""
+    },
+    "admin": {
+      "name": "#channel-admin",
+      "key": "password"
+    }
+  }
+}
