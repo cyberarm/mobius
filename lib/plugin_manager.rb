@@ -134,7 +134,7 @@ module Mobius
     def self._register_command(name, command)
       existing_command = @commands[name]
 
-      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload, :disable, :v, :vote].include?(name)
+      raise "Plugin '#{command.plugin.___name}' attempted to register command '#{name}' but it is reserved" if [:help, :fds, :reload_config, :enable, :reload, :disable, :v, :vote, :yes, :no].include?(name)
 
       raise "Plugin '#{command.plugin.___name}' attempted to register command '#{existing_command.name}' but it's already registered to '#{existing_command.plugin.___name}'" if existing_command
 
@@ -215,6 +215,17 @@ module Mobius
 
       if cmd.downcase.to_sym == :vote || cmd.downcase.to_sym == :v
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        handle_vote_plugin_command(player, parts)
+
+        return
+      end
+
+      # Handle !yes and !no voting commands
+      if cmd.downcase.to_sym == :yes || cmd.downcase.to_sym == :no
+        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+
+        parts << cmd.downcase.strip
+
         handle_vote_plugin_command(player, parts)
 
         return
@@ -444,6 +455,12 @@ module Mobius
 
       case vt.downcase.to_sym
       when :y, :yes
+        unless @active_vote
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No active vote")
+
+          return
+        end
+
         # Already voted, yes.
         unless @active_vote_votes[player.name]
           @active_vote_votes[player.name] = true
@@ -453,6 +470,12 @@ module Mobius
         end
         return
       when :n, :no
+        unless @active_vote
+          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No active vote")
+
+          return
+        end
+
         # Already voted, no.
         unless @active_vote_votes[player.name] == false
           @active_vote_votes[player.name] = false
