@@ -31,6 +31,13 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       if ssl_context
         @ssl_socket = true
 
+        if @account_use_client_cert
+          ssl_context.add_certificate(
+            OpenSSL::X509::Certificate.new(File.read("#{ROOT_PATH}/conf/mobius_tls_pub.pem")),
+            OpenSSL::PKey::RSA.new(File.read("#{ROOT_PATH}/conf/mobius_tls.pem"))
+          )
+        end
+
         ssl_context = SSL.send(ssl_context) if ssl_context.is_a?(Symbol)
 
         OpenSSL::SSL::SSLSocket.new(socket, ssl_context).tap do |ssl_socket|
@@ -42,8 +49,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       end
     end
   rescue StandardError => e
-    logger.error(TAG) { e }
-    logger.error(TAG) { e.backtrace }
+    log e
+    log e.backtrace
 
     nil
   end
@@ -173,8 +180,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     @account_username = config.dig(:account, :username)
     @account_password = config.dig(:account, :password)
     @account_fingerprint = config.dig(:account, :fingerprint)
-    @account_client_private_key = config.dig(:account, :client_private_key)
-    @account_client_public_key = config.dig(:account, :client_public_key)
+    @account_use_client_cert = config.dig(:account, :use_client_cert)
 
     @channels_public = config.dig(:channels, :public)
     @channels_admin = config.dig(:channels, :admin)

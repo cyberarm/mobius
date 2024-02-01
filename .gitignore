@@ -4,3 +4,4 @@ plugins/configs/*.json
 *.bak
 data/*
 _*
+*.pem
