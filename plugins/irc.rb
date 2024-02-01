@@ -111,8 +111,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     messages = []
     messages << IRCParser::Message.new(command: "CAP", parameters: ["LS 302"])
     messages << IRCParser::Message.new(command: "PASS", parameters: [@account_password]) if @account_password.length.positive?
-    messages << IRCParser::Message.new(command: "NICK", parameters: [@account_nicknames.first])
-    messages << IRCParser::Message.new(command: "USER", parameters: [@account_username, "0", "*", ":#{@account_nicknames.first}"])
+    messages << IRCParser::Message.new(command: "NICK", parameters: [@account_username])
+    messages << IRCParser::Message.new(command: "USER", parameters: [@account_username, "0", "*", ":#{@account_username}"])
 
     while (msg = messages.shift)
       @socket.puts(msg)
@@ -122,8 +122,14 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   def join_channels
-    msg = IRCParser::Message.new(command: "JOIN", parameters: [[@channels_admin, @channels_public].join(",")])
-    @socket.puts(msg)
+    messages = []
+
+    messages << IRCParser::Message.new(command: "JOIN", parameters: @channels_public[:key].empty? ? [@channels_public[:name]] : [@channels_public[:name], @channels_public[:key]])
+    messages << IRCParser::Message.new(command: "JOIN", parameters: @channels_admin[:key].empty? ? [@channels_admin[:name]] : [@channels_admin[:name], @channels_admin[:key]])
+
+    while (msg = messages.shift)
+      @socket.puts(msg)
+    end
 
     @socket.flush
   end
@@ -164,7 +170,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     @server_use_ssl = config.dig(:server, :use_ssl) || @server_port == 6697
     @server_verify_cert = config.dig(:server, :verify_cert)
 
-    @account_nicknames = config.dig(:account, :nicknames)
     @account_username = config.dig(:account, :username)
     @account_password = config.dig(:account, :password)
     @account_fingerprint = config.dig(:account, :fingerprint)
@@ -226,11 +231,12 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
   on(:chat) do |player, message|
     msg = "<#{player.name}> #{message}"
-    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public, msg])
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], msg])
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], msg])
   end
 
   on(:team_chat) do |player, message|
     msg = "<#{player.name}> #{message}"
-    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin, msg])
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], msg])
   end
 end
