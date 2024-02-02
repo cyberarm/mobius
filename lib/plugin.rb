@@ -99,18 +99,28 @@ module Mobius
 
     def broadcast_message(message, red: 255, green: 255, blue: 255)
       renrem_cmd("cmsg #{red},#{green},#{blue} #{message}")
+      PluginManager.publish_event(:irc_broadcast, message, red, green, blue)
     end
 
     def message_team(team_id, message, red: 255, green: 255, blue: 255)
       renrem_cmd("cmsgt #{team_id} #{red},#{green},#{blue} #{message}")
+      PluginManager.publish_event(:irc_team_message, team_id, message, red, green, blue)
     end
 
     def message_player(player, message, red: 255, green: 255, blue: 255)
-      renrem_cmd("cmsgp #{player.id} #{red},#{green},#{blue} #{message}")
+      if player.ingame?
+        renrem_cmd("cmsgp #{player.id} #{red},#{green},#{blue} #{message}")
+      elsif player.irc?
+        PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+      end
     end
 
     def page_player(player, message, red: 255, green: 255, blue: 255)
-      renrem_cmd("ppage #{player.id} #{message}")
+      if player.ingame?
+        renrem_cmd("ppage #{player.id} #{message}")
+      elsif player.irc?
+        PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+      end
     end
 
     def renrem_cmd(data, delay = nil)

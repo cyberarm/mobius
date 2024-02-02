@@ -55,45 +55,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     nil
   end
 
-  # def authenticate_with_brenbot!(socket)
-  #   username = @irc_profile.username.empty? ? @irc_profile.nickname : @irc_profile.username
-
-  #   pass = IRCParser::Message.new(command: "PASS", parameters: [Base64.strict_decode64(@irc_profile.password)]) unless @irc_profile.password.empty?
-  #   user = IRCParser::Message.new(command: "USER", parameters: [username, "0", "*", ":#{@irc_profile.nickname}"])
-  #   nick = IRCParser::Message.new(command: "NICK", parameters: [@irc_profile.nickname])
-
-  #   socket.puts(pass)
-  #   socket.puts(user)
-  #   socket.puts(nick)
-
-  #   socket.flush
-
-  #   until socket.closed?
-  #     raw = socket.gets
-  #     next if raw.to_s.empty?
-
-  #     msg = IRCParser::Message.parse(raw)
-
-  #     if msg.command == "PING"
-  #       pong = IRCParser::Message.new(command: "PONG", parameters: [msg.parameters.first.sub("\r\n", "")])
-  #       socket.puts("#{pong}")
-  #       socket.flush
-  #     elsif msg.command == "001" && msg.parameters.join.include?("#{@irc_profile.nickname}!#{@irc_profile.username.split("/").first}")
-  #       pm = IRCParser::Message.new(command: "PRIVMSG", parameters: [@irc_profile.bot_username, "!auth #{@irc_profile.bot_auth_username} #{Base64.strict_decode64(@irc_profile.bot_auth_password)}"])
-  #       socket.puts(pm)
-
-  #       quit = IRCParser::Message.new(command: "QUIT", parameters: ["Quiting from an Asterisk"])
-  #       socket.puts(quit)
-  #       socket.flush
-
-  #       sleep 15
-  #       close_socket(socket)
-  #     elsif msg.command == "ERROR"
-  #       close_socket(socket)
-  #     end
-  #   end
-  # end
-
   def handle_message(raw)
     msg = IRCParser::Message.parse(raw)
 
@@ -112,6 +73,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       handle_names_list(msg)
     when "311" # WHOIS reply
       handle_whois(msg)
+    when "276"
+      handle_whois_cert_fingerprint(msg)
     when "mode" # a mode has moded
       handle_mode(msg)
     when "privmsg" # we've gotten a message
@@ -145,59 +108,94 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     _nick, _privacy, channel, names = msg.parameters
     names = names.strip
 
-    pp channel, names
-    admin_channel = channel == @channels_admin[:name]
-
-    # FIXME: Handle names having channel modes on them
     names.split(" ").each do |name|
-      next if name == @account_username # We know who we is, right?
-      next if @channels[admin_channel ? :admin : :public][:users][name]
-
-      @channels[admin_channel ? :admin : :public][:users][name] = {}
-
-      pp [admin_channel, name]
-
-      if admin_channel
-        # Send WHOIS to fetch client certificate fingerprint in order to authenticate them
-        @command_queue << IRCParser::Message.new(command: "WHOIS", parameters: [name])
-      end
+      add_irc_user(name, channel)
     end
   end
 
   def handle_whois(msg)
-    msg.parameters.each.each do |line|
-      next unless line.start_with?(":")
+    # msg.parameters.each.each do |value|
+    # end
+  end
 
-      message = IRCParser::Message.parse(line)
+  def handle_whois_cert_fingerprint(msg)
+    _my_nick, nickname, fingerprint = msg.parameters
+    fingerprint = fingerprint.strip.split(" ").last
 
-      puts message
-
-      next unless message.command.to_s.strip.downcase == "276"
-
-      pp message
-    end
+    @irc_users[nickname] ||= {}
+    @irc_users[nickname][:fingerprint] = fingerprint
   end
 
   def handle_mode(msg)
   end
 
   def handle_privmsg(msg)
+    pm = false
+    nickname = msg.prefix.nick
+    channel = nil
+    message = msg.parameters.last
+
+    if msg.parameters.first.start_with?("#")
+      channel = msg.parameters.first
+    else
+      pm = true
+    end
+
+    # TODO: handle CTCP?
+
+    # Actual PRIVATE MESSAGE
+    if pm
+      # echo for now
+      irc_pm(nickname, message)
+
+      return
+    end
+
+    # CHANNEL MESSAGE
+    # ignore messages from channels we don't care about
+    return unless channel == @channels_admin[:name] || channel == @channels_public[:name]
+
+    fake_player = PlayerData::Player.new(
+      origin: :irc,
+      id: -127,
+      name: nickname,
+      join_time: 0,
+      score: 0,
+      team: 2,
+      ping: 0,
+      address: "10.10.10.10;11999",
+      kbps: 0,
+      rank: 0,
+      kills: 0,
+      deaths: 0,
+      money: 0,
+      kd: 0,
+      time: 0,
+      last_updated: monotonic_time
+    )
+
+    irc_user_role(fake_player)
+
+    PluginManager.handle_command(fake_player, message)
   end
 
   def handle_join(msg)
-    if msg.prefix.nick == @account_username
-      # Work around bug? in ircparser library; retrieve names lists when we join channel
-      msg.parameters.first.lines.each do |line|
-        next unless line.start_with?(":")
+    # A user has joined one of our channels
+    channel = msg.parameters.first.strip
+    nickname = msg.prefix.nick
 
-        handle_message(line)
-      end
-    else
-      # A user has joined one of our channels
-    end
+    add_irc_user(nickname, channel)
+
+    log "#{nickname} joined channel #{channel}"
   end
 
   def handle_part(msg)
+    channel, _leave_message = msg.parameters
+    nickname = msg.prefix.nick
+
+    delete_irc_user(nickname, channel)
+
+    log "#{nickname} joined channel #{channel}"
   end
 
   def authenticate_to_server
@@ -212,6 +210,90 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     end
 
     @socket.flush
+  end
+
+  def add_irc_user(nickname, channel)
+    admin_channel = channel == @channels_admin[:name]
+
+    channel_level = nil
+    if nickname.start_with?(/\@|\%|\+|\&|\~/)
+      channel_level = nickname[0]
+      nickname = nickname[1..]
+    end
+
+    @channels[admin_channel ? :admin : :public][:users][nickname] ||= {}
+    @channels[admin_channel ? :admin : :public][:users][nickname][:level] ||= channel_level
+
+    @irc_users[nickname] ||= {}
+    @irc_users[nickname][:channels] ||= []
+    @irc_users[nickname][:channels] << (admin_channel ? :admin : :public)
+    @irc_users[nickname][:channels].uniq!
+
+    # Send WHOIS to fetch client certificate fingerprint in order to authenticate them
+    if @irc_users[nickname][:fingerprint].nil? && nickname != @account_username
+      @command_queue << IRCParser::Message.new(command: "WHOIS", parameters: [nickname])
+    end
+  end
+
+  def delete_irc_user(nickname, channel)
+    admin_channel = channel == @channels_admin[:name]
+
+    if (user = @irc_users[nickname])
+      user[:channels].delete(admin_channel ? :admin : :public)
+    end
+
+    @channels[admin_channel ? :admin : :public][:users].delete(nickname)
+  end
+
+  def irc_broadcast(message, channel = nil)
+    if channel
+      @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], message]) if channel == :public
+      @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], message]) if channel == :admin
+    else
+      @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], message])
+      @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], message])
+    end
+  end
+
+  def irc_pm(nickname, message)
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [nickname, message])
+  end
+
+  def irc_notice(nickname, message)
+      @command_queue << IRCParser::Message.new(command: "NOTICE", parameters: [nickname, message])
+  end
+
+  def irc_user_role(player)
+    irc_user = @irc_users[player.name]
+    found = false
+    return player unless irc_user
+
+    Config.staff.each do |level, list|
+      list.each do |hash|
+        next unless hash[:irc_fingerprints].to_a.find { |fingerprint| irc_user[:fingerprint] == fingerprint}
+        next if player.administrator? && level == :admin
+        next if player.moderator? && level == :mod
+        next if player.director? && level == :director
+
+        case level
+        when :admin
+          player.set_value(:administrator, true)
+          :admin
+        when :mod
+          player.set_value(:moderator, true)
+          :mod
+        when :director
+          player.set_value(:director, true)
+          :director
+        end
+
+        break if found
+      end
+
+      break if found
+    end
+
+    player
   end
 
   def join_channels
@@ -304,9 +386,14 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     @socket.flush if @socket
 
     begin
+      # FIXME: Buffer input and only feed complete lines to #handle_message
+
       # Drain messages from IRC server
-      while(@socket && (raw = @socket.read_nonblock(4096)))
-        handle_message(raw)
+      while(@socket && (raw = @socket.read_nonblock(8192)))
+        # Split up messages by TCP newline (\r\n)
+        raw.split("\r\n").each do |msg|
+          handle_message(msg)
+        end
       end
     rescue IO::WaitReadable
     rescue EOFError
@@ -325,19 +412,30 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:irc_broadcast) do |message, red, green, blue|
+    irc_broadcast(message)
+  end
+
+  on(:irc_team_message) do |team_id, message, red, green, blue|
+    irc_broadcast(message, :admin)
   end
 
   on(:irc_pm) do |player, message, red, green, blue|
+    irc_pm(player.name, message)
+  end
+
+  on(:player_joined) do |player|
+    irc_broadcast("#{player.name} has joined the game on team #{Teams.name(player.team)}")
+  end
+
+  on(:player_left) do |player|
+    irc_broadcast("#{player.name} has left the game from team #{Teams.name(player.team)}")
   end
 
   on(:chat) do |player, message|
-    msg = "<#{player.name}> #{message}"
-    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], msg])
-    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], msg])
+    irc_broadcast("<#{player.name}> #{message}")
   end
 
   on(:team_chat) do |player, message|
-    msg = "<#{player.name}> #{message}"
-    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], msg])
+    irc_broadcast("<#{player.name}> #{message}", :admin)
   end
 end
