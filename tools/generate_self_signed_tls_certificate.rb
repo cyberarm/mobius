@@ -1,3 +1,6 @@
+# --------------------------------------------
+# Adapted from code provided by Nicky Peeters
+# --------------------------------------------
 # Copyright © 2020 Nicky Peeters
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -7,13 +10,14 @@ require "rubygems"
 require "openssl"
 
 path = "#{File.expand_path("./../conf", __dir__)}"
+username = ARGV.shift || "Mobius"
 
 # ec = OpenSSL::PKey::EC.generate("prime256v1") # TODO: Use fancy new key gen
 # ec.export
 key = OpenSSL::PKey::RSA.new(4096) # TODO: Increase this to a higher number in future
 public_key = key.public_key
 
-subject = "/C=BE/O=Mobius/OU=Mobius/CN=Mobius"
+subject = "/C=BE/O=Mobius/OU=Mobius/CN=#{username}"
 
 cert = OpenSSL::X509::Certificate.new
 cert.subject = cert.issuer = OpenSSL::X509::Name.parse(subject)
@@ -41,5 +45,5 @@ File.write("#{path}/mobius_tls_pub.pem", cert.to_pem) # public key
 File.chmod(0600, "#{path}/mobius_tls.pem")
 File.chmod(0644, "#{path}/mobius_tls_pub.pem")
 
-puts "Generated self-signed certificate; valid until #{cert.not_after}"
+puts "Generated self-signed certificate for CN=#{username}; valid until #{cert.not_after}"
 puts

@@ -101,17 +101,103 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
     case msg.command.to_s.strip.downcase
     when "ping"
-      pong = IRCParser::Message.new(command: "PONG", parameters: [msg.parameters.first.strip])
-      @socket.puts(pong)
-      @socket.flush
+      handle_ping(msg)
     when "001" # Welcome
-      join_channels
+      handle_welcome(msg)
     when "433" # Nickname in use error
+      handle_nickname_in_use(msg)
     when "error" # something went fatally wrong, we've been disconnected.
-    when "privmsg"
-    when "join"
-    when "part"
+      # TODO: Probably call close socket, or do nothing?
+    when "353" # List of names in channel
+      handle_names_list(msg)
+    when "311" # WHOIS reply
+      handle_whois(msg)
+    when "mode" # a mode has moded
+      handle_mode(msg)
+    when "privmsg" # we've gotten a message
+      handle_privmsg(msg)
+    when "join" # a wild user joins
+      handle_join(msg)
+    when "part" # a tame user departs
+      handle_part(msg)
     end
+  end
+
+  def handle_ping(msg)
+    pong = IRCParser::Message.new(command: "PONG", parameters: [msg.parameters.first.strip])
+    @socket.puts(pong)
+    @socket.flush
+  end
+
+  def handle_welcome(msg)
+    join_channels
+
+    message = "Entry point found, Mobius v#{Mobius::VERSION} ready! Type !help for a list of available commands."
+
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], message])
+    @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], message])
+  end
+
+  def handle_nickname_in_use(msg)
+  end
+
+  def handle_names_list(msg)
+    _nick, _privacy, channel, names = msg.parameters
+    names = names.strip
+
+    pp channel, names
+    admin_channel = channel == @channels_admin[:name]
+
+    # FIXME: Handle names having channel modes on them
+    names.split(" ").each do |name|
+      next if name == @account_username # We know who we is, right?
+      next if @channels[admin_channel ? :admin : :public][:users][name]
+
+      @channels[admin_channel ? :admin : :public][:users][name] = {}
+
+      pp [admin_channel, name]
+
+      if admin_channel
+        # Send WHOIS to fetch client certificate fingerprint in order to authenticate them
+        @command_queue << IRCParser::Message.new(command: "WHOIS", parameters: [name])
+      end
+    end
+  end
+
+  def handle_whois(msg)
+    msg.parameters.each.each do |line|
+      next unless line.start_with?(":")
+
+      message = IRCParser::Message.parse(line)
+
+      puts message
+
+      next unless message.command.to_s.strip.downcase == "276"
+
+      pp message
+    end
+  end
+
+  def handle_mode(msg)
+  end
+
+  def handle_privmsg(msg)
+  end
+
+  def handle_join(msg)
+    if msg.prefix.nick == @account_username
+      # Work around bug? in ircparser library; retrieve names lists when we join channel
+      msg.parameters.first.lines.each do |line|
+        next unless line.start_with?(":")
+
+        handle_message(line)
+      end
+    else
+      # A user has joined one of our channels
+    end
+  end
+
+  def handle_part(msg)
   end
 
   def authenticate_to_server
@@ -184,6 +270,15 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
     @channels_public = config.dig(:channels, :public)
     @channels_admin = config.dig(:channels, :admin)
+
+    @irc_users = {}
+    @channels = {}
+    @channels[:public] = {
+      users: {}
+    }
+    @channels[:admin] = {
+      users: {}
+    }
 
     @priority_command_queue = []
     @command_queue = []
