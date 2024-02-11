@@ -342,7 +342,7 @@ module Mobius
 
         # ENSURE that the mapnum has been handled **BEFORE** sending :map_loaded event
         RenRem.cmd("mapnum") do |response|
-          result = response.strip
+          result = response.to_s.strip
 
           if result.start_with?("The Current Map Number is ")
             match_data = result.match(/The Current Map Number is (\d+)/)
@@ -398,8 +398,8 @@ module Mobius
         match_data = line.match(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
 
         id               = match_data[1].to_i
-        scripts_version  = match_data[2]
-        scripts_revision = match_data[3].to_s.strip
+        scripts_version  = Float(match_data[2])
+        scripts_revision = Integer(match_data[3].to_s.strip[1..])
 
         if (player = PlayerData.player(id))
           player.set_value(:scripts_version, scripts_version)
@@ -419,8 +419,8 @@ module Mobius
 
         log "The server is running scripts: #{match_data[1]} r#{match_data[2]}" if Config.debug_verbose
 
-        ServerConfig.scripts_version  = match_data[1]
-        ServerConfig.scripts_revision = match_data[2].to_s.strip
+        ServerConfig.scripts_version  = Float(match_data[1])
+        ServerConfig.scripts_revision = Integer(match_data[2].to_s.strip[1..])
 
         return true
       end

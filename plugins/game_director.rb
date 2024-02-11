@@ -197,8 +197,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     player = PlayerData.player(PlayerData.name_to_id(nickname, exact_match: false))
     spectating = @spectators[player ? player.name : command.issuer.name]
 
-    log player
-    log spectating
+    spectate_command = ServerConfig.scripts_version < 5.0 ? "spectate" : "toggle_spectator"
 
     if player
       if spectating
@@ -208,7 +207,7 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
         spectating = @spectators[player.name] = true
       end
 
-      RenRem.cmd("toggle_spectator #{player.id}")
+      RenRem.cmd("#{spectate_command} #{player.id}")
       page_player(player, "You are #{spectating ? 'now' : 'no longer' } spectating.")
       page_player(command.issuer, "#{player.name} is #{spectating ? 'now' : 'no longer' } spectating.")
     elsif nickname.to_s.empty?
@@ -219,8 +218,32 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
         spectating = @spectators[command.issuer.name] = true
       end
 
-      RenRem.cmd("toggle_spectator #{command.issuer.id}")
+      RenRem.cmd("#{spectate_command} #{command.issuer.id}")
       page_player(command.issuer, "You are #{spectating ? 'now' : 'no longer' } spectating.")
+    else
+      page_player(command.issuer, "Player is not in game or name is not unique!")
+    end
+  end
+
+  command(:setspeed, arguments: 0..2, help: "!setspeed [<nickname>] speed - 4.x only", groups: [:admin, :mod]) do |command|
+    unless ServerConfig.scripts_version < 5.0
+      page_player(command.issuer, "!setspeed only usable on 4.x servers.")
+      next # return, but for procs
+    end
+
+    on_self = command.arguments.last.to_s.empty?
+    nickname = on_self ? nil : command.arguments.first
+    player = on_self ? nil : PlayerData.player(PlayerData.name_to_id(nickname, exact_match: false))
+    speed = on_self ? command.arguments.first.to_f : command.arguments.last.to_f
+    # spectating = @spectators[player ? player.name : command.issuer.name]
+
+    if player
+      RenRem.cmd("setspeed #{player.id} #{speed}")
+      page_player(player, "Your spectate speed is now #{speed}")
+      page_player(command.issuer, "#{player.name} spectate speed is now #{speed}")
+    elsif nickname.to_s.empty?
+      RenRem.cmd("setspeed #{command.issuer.id} #{speed}")
+      page_player(command.issuer, "spectate speed is now #{speed}")
     else
       page_player(command.issuer, "Player is not in game or name is not unique!")
     end

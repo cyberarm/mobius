@@ -103,48 +103,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     RenRem.cmd("revivebuildingbypreset 1 All_Nyd")
   end
 
-  def check_coop_votes(silent:)
-    return if ServerStatus.total_players.zero?
-
-    player_list = PlayerData.player_list.select(&:ingame?)
-    required_votes = (player_list.size * @vote_required_percentage).ceil
-    total_votes = player_list.select { |ply| @coop_votes[ply.name] }.size
-
-    if total_votes >= required_votes
-      broadcast_message("[AutoCoop] Co-op will be enabled after this round.") unless silent
-      log("Co-op will be enabled after this round by player vote") unless silent
-
-      @next_round_mode = :coop
-
-      @coop_votes.clear
-      @versus_votes.clear
-    else
-      log "CO-OP votes required: #{required_votes}, total: #{total_votes}, voted: #{@coop_votes}"
-      broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote to start coop!") unless silent
-    end
-  end
-
-  def check_versus_votes(silent:)
-    return if ServerStatus.total_players.zero?
-
-    player_list = PlayerData.player_list.select(&:ingame?)
-    required_votes = (player_list.size * @vote_required_percentage).ceil
-    total_votes = player_list.select { |ply| @versus_votes[ply.name] }.size
-
-    if total_votes >= required_votes
-      broadcast_message("[AutoCoop] Co-op will be disabled after this round.") unless silent
-      log("PvP will be enabled after this round by player vote") unless silent
-
-      @next_round_mode = :versus
-
-      @versus_votes.clear
-      @coop_votes.clear
-    else
-      log "VERSUS votes required: #{required_votes}, total: #{total_votes}, voted: #{@versus_votes}"
-      broadcast_message("[AutoCoop] Still need #{required_votes - total_votes} to vote for PvP!") unless silent
-    end
-  end
-
   def bot_report
     return "#{(@last_bot_count / 2.0).round} bots per team" unless @coop_started
 
@@ -163,8 +121,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @hardcap_bot_count = config[:hardcap_bot_count] || 127 #64
     @hardcap_friendless_player_count = config[:hardcap_friendless_player_count] || 12
 
-    @vote_required_percentage = config[:vote_required_percentage] || 0.69 # 69% => (number_of_players * 0.69).round
-
     @advertise_mode_player_count = config[:advertise_mode_player_count] || 8
 
     @next_round_mode = @default_mode
@@ -178,10 +134,8 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     @coop_started = false
     @manual_bot_count = false
-    @coop_votes = {}
 
     @versus_started = false
-    @versus_votes = {}
     @versus_configured = false
     @versus_persistent_bot_padding = config[:versus_persistent_bot_padding] || 0
 
@@ -230,8 +184,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @coop_started = false
     @versus_started = false
 
-    @coop_votes.clear
-    @versus_votes.clear
     @player_characters.clear
 
     check_map(map)
@@ -280,10 +232,10 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     after(15) do
       if !@versus_started && @next_round_mode != :versus && ServerStatus.total_players >= @advertise_mode_player_count
         broadcast_message("[AutoCoop] Want some good old Player vs. Player?")
-        broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !request_versus (!vs), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
+        broadcast_message("[AutoCoop] Vote to switch the next round to PvP with !vote versus (!v versus), 69% of players must request it.")
       elsif !@coop_started && @next_round_mode != :coop && ServerStatus.total_players >= @advertise_mode_player_count
         broadcast_message("[AutoCoop] Want to switch back to co-op?")
-        broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !request_coop (!rc), #{(@vote_required_percentage * 100.0).round}% of players must request it.")
+        broadcast_message("[AutoCoop] Vote to switch the next round to co-op with !vote coop (!v coop), 69% of players must request it.")
       end
     end
   end
@@ -304,8 +256,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       message_player(player, "[AutoCoop] Running co-op on team #{Teams.name(@current_side)} with #{bot_report}")
       player.change_team(@current_side)
     elsif !baby_bot
-      broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.")
-      broadcast_message("[AutoCoop] Vote to start now on team #{Teams.name(@current_side)} with !request_coop, 100% of players must request it.")
+      broadcast_message("[AutoCoop] Co-op will automatically begin on the next map.") if @next_round_mode == :coop
 
       configure_bots
     end
@@ -346,9 +297,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   end
 
   on(:player_left) do |player|
-    @coop_votes.delete(player.name)
-    @versus_votes.delete(player.name)
-
     # Player is still logically connected until after this
     # callback has been issued by the PluginManager.
     after(1) do
@@ -379,24 +327,6 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
   command(:friendless_player_count, aliases: [:fpc], arguments: 0, help: "Reports friendless player count") do |command|
     broadcast_message("[AutoCoop] Friendless Player Count is set to #{@friendless_player_count}")
-  end
-
-  command(:request_coop, aliases: [:rc], arguments: 0, help: "Vote to start coop") do |command|
-    if @next_round_mode == :coop
-      page_player(command.issuer, "Co-op is already set to start on the next round!")
-    else
-      @coop_votes[command.issuer.name] = true
-      check_coop_votes(silent: false)
-    end
-  end
-
-  command(:request_versus, aliases: [:vs], arguments: 0, help: "Vote to start Player vs. Player") do |command|
-    if @next_round_mode == :versus
-      page_player(command.issuer, "PvP is already set to start on the next round!")
-    else
-      @versus_votes[command.issuer.name] = true
-      check_versus_votes(silent: false)
-    end
   end
 
   command(:coop, arguments: 1, help: "!coop <team>", groups: [:admin, :mod, :director]) do |command|
@@ -442,11 +372,15 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
       page_player(command.issuer, "The next round will be versus.")
     else
-      page_player(command.issuer, "Use !versus NOW if you really mean it.")
+      page_player(command.issuer, "Use !versus NOW/NEXT if you really mean it.")
     end
   end
 
-  command(:versus_bot_padding, aliases: [:vbp], arguments: 1, help: "!vbp <number> - Set number of bots to have on each team along side players, 0 to disable and use map settings configured bot count.", groups: [:admin, :mod, :director]) do |command|
+  command(:versus_bot_padding, aliases: [:vbp], arguments: 0, help: "!vbp - Number of bots on each team along side players, 0 is disabled and uses map settings configured bot count.", groups: [:admin, :mod, :director]) do |command|
+    page_player(command.issuer, "Versus bot padding is #{@versus_persistent_bot_padding}.")
+  end
+
+  command(:set_versus_bot_padding, aliases: [:svbp], arguments: 1, help: "!svbp <number> - Set number of bots to have on each team along side players, 0 to disable and use map settings configured bot count.", groups: [:admin, :mod, :director]) do |command|
     bot_padding = command.arguments.first.to_i
 
     @versus_persistent_bot_padding = bot_padding
@@ -497,6 +431,26 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       @friendless_player_count = player_count
 
       configure_bots
+    end
+  end
+
+  vote(:coop, arguments: 0, description: "Vote to switch next match to co-op") do |vote|
+    if vote.validate?
+      b = @next_round_mode != :coop
+      page_player(vote.issuer, "Cannot vote to start co-op on next match, already set.") unless b
+      b
+    elsif vote.commit?
+      @next_round_mode = :coop
+    end
+  end
+
+  vote(:versus, arguments: 0, description: "Vote to switch next match to versus") do |vote|
+    if vote.validate?
+      b = @next_round_mode != :versus
+      page_player(vote.issuer, "Cannot vote to start versus on next match, already set.") unless b
+      b
+    elsif vote.commit?
+      @next_round_mode = :versus
     end
   end
 end
