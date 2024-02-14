@@ -32,7 +32,7 @@ module Mobius
       map = ServerStatus.get(:current_map)
 
       default_setting = @@instance.data.dig(:defaults, setting)
-      map_setting = @@instance.data.dig(:maps, map, setting)
+      map_setting = @@instance.data.dig(:maps, map.to_sym, setting)
 
       map_setting ? map_setting : default_setting
     end
