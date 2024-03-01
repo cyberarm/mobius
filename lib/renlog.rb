@@ -399,7 +399,7 @@ module Mobius
 
         id               = match_data[1].to_i
         scripts_version  = Float(match_data[2])
-        scripts_revision = match_data[3].to_s.strip[1..].empty? ? 1 : Integer(match_data[3].to_s.strip[1..])
+        scripts_revision = match_data[3].to_s.strip.empty? ? 1 : Integer(match_data[3].to_s.strip)
 
         if (player = PlayerData.player(id))
           player.set_value(:scripts_version, scripts_version)
@@ -420,7 +420,7 @@ module Mobius
         log "The server is running scripts: #{match_data[1]} r#{match_data[2]}" if Config.debug_verbose
 
         ServerConfig.scripts_version  = Float(match_data[1])
-        ServerConfig.scripts_revision = match_data[2].to_s.strip[1..].empty? ? 1 : Integer(match_data[2].to_s.strip[1..])
+        ServerConfig.scripts_revision = match_data[2].to_s.strip.empty? ? 1 : Integer(match_data[2].to_s.strip)
 
         return true
       end
