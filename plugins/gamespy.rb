@@ -14,6 +14,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
     @query_socket = UDPSocket.new
     @query_port = Config.gamespy[:query_port]
     @game_name = Config.gamespy[:game_name] || "ccrenegade"
+    @game_version = Config.gamespy[:game_version] || 838
 
     # Manually track team total kills/deaths
     @team_0_kills = 0
@@ -176,7 +177,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
   end
 
   def generate_basic
-    append_fragment("\\gamename\\ccrenegade\\gamever\\838")
+    append_fragment("\\gamename\\#{@game_name}\\gamever\\#{@game_version}")
   end
 
   def generate_info

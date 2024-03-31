@@ -8,9 +8,6 @@
   "account": {
     "username": "Mobius",
     "password": "",
-    "fingerprint": "",
-    "client_private_key": "",
-    "client_public_key": ""
   },
   "channels": {
     "public": {

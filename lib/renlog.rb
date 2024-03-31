@@ -394,12 +394,12 @@ module Mobius
     end
 
     def handle_player_scripts_version(line)
-      if line.match?(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
-        match_data = line.match(/^The version of player (.+?) is (\d+\.\d+)( r%d+)?/)
+      if line.match?(/^The version of player (.+?) is (\d+\.\d+)( r\d+)?/)
+        match_data = line.match(/^The version of player (.+?) is (\d+\.\d+)( r\d+)?/)
 
         id               = match_data[1].to_i
         scripts_version  = Float(match_data[2])
-        scripts_revision = match_data[3].to_s.strip.empty? ? 1 : Integer(match_data[3].to_s.strip)
+        scripts_revision = match_data[3].to_s.strip.empty? ? 1 : Integer(match_data[3].to_s.strip.sub("r", ""))
 
         if (player = PlayerData.player(id))
           player.set_value(:scripts_version, scripts_version)
@@ -417,10 +417,10 @@ module Mobius
         match_data = line.match(/^The Version of the server is (.+)/) if line =~ /^The Version of the server is (.+)/
         match_data ||= line.match(/^The version of (?:(?:bhs|tt|bandtest).dll|(?:game|server).exe) on this machine is (\d+\.\d+)( r\d+)?/)
 
-        log "The server is running scripts: #{match_data[1]} r#{match_data[2]}" if Config.debug_verbose
-
         ServerConfig.scripts_version  = Float(match_data[1])
-        ServerConfig.scripts_revision = match_data[2].to_s.strip.empty? ? 1 : Integer(match_data[2].to_s.strip)
+        ServerConfig.scripts_revision = match_data[2].to_s.strip.empty? ? 1 : Integer(match_data[2].to_s.strip.sub("r", ""))
+
+        log "The server is running scripts: #{ServerConfig.scripts_version} r#{ServerConfig.scripts_revision}" if Config.debug_verbose
 
         return true
       end
