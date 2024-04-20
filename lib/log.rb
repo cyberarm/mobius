@@ -22,7 +22,7 @@ module Kernel
 
     puts "[#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}] #{msg}"
 
-    PluginManager.publish_event(:log, msg)
+    Mobius::PluginManager.publish_event(:log, msg)
 
     msg
   end
