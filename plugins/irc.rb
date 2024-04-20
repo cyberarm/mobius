@@ -137,6 +137,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   def handle_privmsg(msg)
+    pp msg
+
     pm = false
     nickname = msg.prefix.nick
     channel = nil
@@ -160,7 +162,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
     # CHANNEL MESSAGE
     # ignore messages from channels we don't care about
-    pp [channel != @channels_admin[:name] || channel != @channels_public[:name] || !pm, channel != @channels_admin[:name], channel != @channels_public[:name], !pm]
     return if channel != @channels_admin[:name] || channel != @channels_public[:name] || !pm
 
     fake_player = PlayerData::Player.new(
