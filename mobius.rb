@@ -15,6 +15,7 @@ require "perlin_noise"
 require "openssl"
 require "ircparser"
 
+require_relative "lib/common"
 require_relative "lib/constants"
 require_relative "lib/log"
 require_relative "lib/config"

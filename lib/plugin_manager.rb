@@ -1,5 +1,7 @@
 module Mobius
   class PluginManager
+    extend Common
+
     CommandResult = Struct.new(:issuer, :arguments)
     VoteResult = Struct.new(:issuer, :arguments, :___mode, :announcement)
     VoteResult.define_method(:validate?) do
