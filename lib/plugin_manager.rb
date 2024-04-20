@@ -238,7 +238,7 @@ module Mobius
       if command.nil? || !player.in_group?(command&.groups)
         log "PLUGIN MANAGER", "Player #{player.name} tried to use command #{message}"
 
-        RenRem.cmd("cmsgp #{player.id} 255,255,255, command: #{cmd} not found.")
+        message_player(player, "Command: #{cmd} not found.")
 
         return
       end
@@ -255,8 +255,8 @@ module Mobius
 
         arguments << parts.join(" ")
       else
-        RenRem.cmd("cmsgp #{player.id} 255,255,255 wrong number of arguments provided.")
-        RenRem.cmd("cmsgp #{player.id} 255,255,255 #{command.help}")
+        message_player(player, "Wrong number of arguments provided.")
+        message_player(player, command.help.to_s)
 
         return
       end
@@ -283,7 +283,7 @@ module Mobius
         if command
           command = command.last
 
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Help for command !#{command.name}:")
+          message_player(player, "[MOBIUS] Help for command !#{command.name}:", red: 255, green: 127, blue: 0)
           cmd_prefix_length = "cmsgp #{player.id} 255,127,0 [MOBIUS] ".length
           if command.help.length + cmd_prefix_length > 249
             current_chunk = 0
@@ -291,20 +291,20 @@ module Mobius
 
             while (chunk = command.help[current_chunk...(current_chunk + chunk_size)])
               current_chunk += chunk_size
-              RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{chunk}")
+              message_player(player, "[MOBIUS] #{chunk}", red: 255, green: 127, blue: 0)
             end
           else
-            RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{command.help}")
+            message_player(player, "[MOBIUS] #{command.help}", red: 255, green: 127, blue: 0)
           end
         else
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Command !#{parts.first} not found.")
+          message_player(player, "[MOBIUS] Command !#{parts.first} not found.", red: 255, green: 127, blue: 0)
         end
       else
         cmds = cmds.map { |name, _| name }
 
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Commands:")
+        message_player(player, "[MOBIUS] Available Commands:", red: 255, green: 127, blue: 0)
         cmds.map { |c| "!#{c}" }.each_slice(10) do |slice|
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+          message_player(player, "[MOBIUS] #{slice.join(', ')}", red: 255, green: 127, blue: 0)
         end
       end
     end
@@ -330,7 +330,7 @@ module Mobius
 
         parts[index] = player.id
       elsif magic && !command_player
-        RenRem.cmd("ppage #{player.id} Command aborted. Could not find player with nickname matching: #{magic.sub('%', '')}")
+        page_player(player, "Command aborted. Could not find player with nickname matching: #{magic.sub('%', '')}")
 
         return
       end
@@ -339,13 +339,13 @@ module Mobius
         response.each_line do |line|
           next if line.strip.empty?
 
-          RenRem.cmd("ppage #{player.id} #{line}")
+          page_player(player, line)
         end
       end
     end
 
     def self.handle_reload_config_command(player, parts)
-      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading config...")
+      message_player(player, "[MOBIUS] Reloading config...", red: 255, green: 127, blue: 0)
       Config.reload_config
     end
 
@@ -353,14 +353,14 @@ module Mobius
       enabled_plugins = @plugins.select{ |plugin| plugin.___enabled? }.map(&:___name)
       disabled_plugins = @plugins.select{ |plugin| !plugin.___enabled? }.map(&:___name)
 
-      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Enabled Plugins:")
+      message_player(player, "[MOBIUS] Enabled Plugins:", red: 255, green: 127, blue: 0)
       enabled_plugins.each_slice(5) do |slice|
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+        message_player(player, "[MOBIUS] #{slice.join(', ')}", red: 255, green: 127, blue: 0)
       end
 
-      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabled Plugins:") if disabled_plugins.size.positive?
+      message_player(player, "[MOBIUS] Disabled Plugins:", red: 255, green: 127, blue: 0) if disabled_plugins.size.positive?
       disabled_plugins.each_slice(5) do |slice|
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{slice.join(', ')}")
+        message_player(player, "[MOBIUS] #{slice.join(', ')}", red: 255, green: 127, blue: 0)
       end
     end
 
@@ -368,7 +368,7 @@ module Mobius
       name = parts[0]
 
       if name.nil?
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] !enable <plugin name>")
+        message_player(player, "[MOBIUS] !enable <plugin name>", red: 255, green: 127, blue: 0)
 
         return
       end
@@ -378,14 +378,14 @@ module Mobius
 
       if found_plugins.size == 1 || exact_match_plugin
         plugin = exact_match_plugin || found_plugins.first
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Enabling plugin: #{plugin.___name}")
+        message_player(player, "[MOBIUS] Enabling plugin: #{plugin.___name}", red: 255, green: 127, blue: 0)
         enable_plugin(plugin)
 
       elsif found_plugins.size > 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
+        message_player(player, "Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}", red: 255, green: 127, blue: 0)
 
       else
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No disabled plugins matching: #{name}.")
+        message_player(player, "[MOBIUS] No disabled plugins matching: #{name}.", red: 255, green: 127, blue: 0)
       end
     end
 
@@ -393,7 +393,7 @@ module Mobius
       name = parts[0]
 
       if name.nil?
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] !reload_plugin <plugin name>")
+        message_player(player, "[MOBIUS] !reload_plugin <plugin name>", red: 255, green: 127, blue: 0)
 
         return
       end
@@ -403,14 +403,14 @@ module Mobius
 
       if found_plugins.size == 1 || exact_match_plugin
         plugin = exact_match_plugin || found_plugins.first
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Reloading plugin: #{plugin.___name}")
+        message_player(player, "[MOBIUS] Reloading plugin: #{plugin.___name}", red: 255, green: 127, blue: 0)
         reload_plugin(plugin)
 
       elsif found_plugins.size > 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
+        message_player(player, "[MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}", red: 255, green: 127, blue: 0)
 
       else
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No plugins matching: #{name}.")
+        message_player(player, "[MOBIUS] No plugins matching: #{name}.", red: 255, green: 127, blue: 0)
       end
     end
 
@@ -418,7 +418,7 @@ module Mobius
       name = parts[0]
 
       if name.nil?
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] !disable <plugin name>")
+        message_player(player, "[MOBIUS] !disable <plugin name>", red: 255, green: 127, blue: 0)
 
         return
       end
@@ -428,14 +428,14 @@ module Mobius
 
       if found_plugins.size == 1 || exact_match_plugin
         plugin = exact_match_plugin || found_plugins.first
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Disabling plugin: #{plugin.___name}")
+        message_player(player, "[MOBIUS] Disabling plugin: #{plugin.___name}", red: 255, green: 127, blue: 0)
         disable_plugin(plugin)
 
       elsif found_plugins.size > 1
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}")
+        message_player(player, "[MOBIUS] Found multiple plugins: #{found_plugins.map(&:___name).join(', ')}", red: 255, green: 127, blue: 0)
 
       else
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No enabled plugins matching: #{name}.")
+        message_player(player, "[MOBIUS] No enabled plugins matching: #{name}.", red: 255, green: 127, blue: 0)
       end
     end
 
@@ -445,7 +445,7 @@ module Mobius
       unless vt
         # If a vote is active, report what it is
         if @active_vote
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Active vote: #{@active_vote_result.announcement}")
+          message_player(player, "[MOBIUS] Active vote: #{@active_vote_result.announcement}", red: 255, green: 127, blue: 0)
 
         # If not, return list of available votes
         else
@@ -458,7 +458,7 @@ module Mobius
       case vt.downcase.to_sym
       when :y, :yes
         unless @active_vote
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No active vote")
+          message_player(player, "[MOBIUS] No active vote", red: 255, green: 127, blue: 0)
 
           return
         end
@@ -466,14 +466,14 @@ module Mobius
         # Already voted, yes.
         unless @active_vote_votes[player.name]
           @active_vote_votes[player.name] = true
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You voted Yes to #{@active_vote.name}")
+          message_player(player, "[MOBIUS] You voted Yes to #{@active_vote.name}", red: 255, green: 127, blue: 0)
         else
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You already voted Yes to #{@active_vote.name}")
+          message_player(player, "[MOBIUS] You already voted Yes to #{@active_vote.name}", red: 255, green: 127, blue: 0)
         end
         return
       when :n, :no
         unless @active_vote
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] No active vote")
+          message_player(player, "[MOBIUS] No active vote", red: 255, green: 127, blue: 0)
 
           return
         end
@@ -481,15 +481,15 @@ module Mobius
         # Already voted, no.
         unless @active_vote_votes[player.name] == false
           @active_vote_votes[player.name] = false
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You voted No to #{@active_vote.name}")
+          message_player(player, "[MOBIUS] You voted No to #{@active_vote.name}", red: 255, green: 127, blue: 0)
         else
-          RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] You already voted No to #{@active_vote.name}")
+          message_player(player, "[MOBIUS] You already voted No to #{@active_vote.name}", red: 255, green: 127, blue: 0)
         end
         return
       end
 
       if @active_vote
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] A vote is already active: #{@active_vote_result.announcement}")
+        message_player(player, "[MOBIUS] A vote is already active: #{@active_vote_result.announcement}", red: 255, green: 127, blue: 0)
 
         return
       end
@@ -499,7 +499,7 @@ module Mobius
       if vote.nil? || !player.in_group?(vote&.groups)
         log "PLUGIN MANAGER", "Player #{player.name} tried to use vote #{parts.join(' ')}"
 
-        RenRem.cmd("cmsgp #{player.id} 255,255,255, vote: #{vt} not found.")
+        message_player(player, "vote: #{vt} not found.")
 
         return
       end
@@ -516,8 +516,8 @@ module Mobius
 
         arguments << parts.join(" ")
       else
-        RenRem.cmd("cmsgp #{player.id} 255,255,255 wrong number of arguments provided.")
-        RenRem.cmd("cmsgp #{player.id} 255,255,255 #{vote.description}")
+        message_player(player, "wrong number of arguments provided.")
+        message_player(player, "#{vote.description}")
 
         return
       end
@@ -535,7 +535,7 @@ module Mobius
           @active_vote_start_time = monotonic_time
 
           RenRem.cmd("evaa #{@active_vote_sound_effect}")
-          RenRem.cmd("cmsg 64,255,64 [MOBIUS] A vote is active: #{@active_vote_result.announcement}")
+          broadcast_message("[MOBIUS] A vote is active: #{@active_vote_result.announcement}", red: 64, green: 255, blue: 64)
         end
       rescue StandardError, ScriptError => e
         log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
@@ -549,9 +549,11 @@ module Mobius
         player.in_group?(vote.groups)
       end
 
-      RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] Available Votes:")
+      message_player(player, "[MOBIUS] Available Votes:", red: 64, green: 127, blue: 0)
+
       votes.map { |name, v| "#{name} - #{v.description}" }.each do |vote_info|
-        RenRem.cmd("cmsgp #{player.id} 255,127,0 [MOBIUS] #{vote_info}")
+        message_player(player, "[MOBIUS] #{vote_info}", red: 64, green: 127, blue: 0)
+
       end
     end
 
@@ -597,7 +599,7 @@ module Mobius
         @last_active_vote_announced = seconds
 
         RenRem.cmd("evaa #{@active_vote_sound_effect}")
-        RenRem.cmd("cmsg 64,255,64 [MOBIUS] A vote is active: #{@active_vote_result.announcement}")
+        broadcast_message("[MOBIUS] A vote is active: #{@active_vote_result.announcement}", red: 64, green: 255, blue: 64)
       end
 
       player_list = PlayerData.player_list.select(&:ingame?)
@@ -614,7 +616,7 @@ module Mobius
         vote_passed = true
 
         RenRem.cmd("evaa #{@active_vote_sound_effect}")
-        RenRem.cmd("cmsg 64,255,64 [MOBIUS] Vote has PASSED! #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+        broadcast_message("[MOBIUS] Vote has PASSED! #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.", red: 64, green: 255, blue: 64)
       end
 
       if vote_passed
@@ -652,7 +654,7 @@ module Mobius
       @last_active_vote_announced = 0
 
       RenRem.cmd("evaa #{@active_vote_sound_effect}")
-      RenRem.cmd("cmsg 64,255,64 [MOBIUS] #{reason}") if reason
+      broadcast_message("[MOBIUS] #{reason}", red: 64, green: 255, blue: 64) if reason
     end
 
     def self.publish_event(event, *args)
