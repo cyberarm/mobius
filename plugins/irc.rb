@@ -52,7 +52,9 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     end
   rescue SystemCallError, StandardError => e
     log e
-    log e.backtrace
+    e.backtrace.each do |line|
+      log line
+    end
 
     nil
   end
@@ -372,7 +374,11 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       ssl_context: @ssl_context
     )
 
-    authenticate_to_server
+    if @socket
+      authenticate_to_server
+    else
+      @schedule_reconnect = 15 # seconds
+    end
   end
 
   on(:start) do
@@ -415,7 +421,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     rescue EOFError
       close_socket
 
-      # TODO: Attempt to reconnect after 5, 10, 30, 60, 120 seconds, then abort.
       @schedule_reconnect = 15 # seconds
     end
   end
