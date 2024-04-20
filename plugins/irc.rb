@@ -50,7 +50,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
         socket
       end
     end
-  rescue StandardError => e
+  rescue SystemCallError, StandardError => e
     log e
     log e.backtrace
 
