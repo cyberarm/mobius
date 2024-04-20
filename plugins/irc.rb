@@ -58,7 +58,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   def handle_message(raw)
     msg = IRCParser::Message.parse(raw)
 
-    pp msg
+    # pp msg
 
     case msg.command.to_s.strip.downcase
     when "ping"
@@ -332,14 +332,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     @socket = nil
   end
 
-  on(:start) do
-    if config.nil? || config.empty?
-      log "Missing or invalid config"
-      PluginManager.disable_plugin(self)
-
-      next
-    end
-
+  def setup_and_dial
     @server_hostname = config.dig(:server, :hostname)
     @server_port = config.dig(:server, :port).to_i
     @server_use_ssl = config.dig(:server, :use_ssl) || @server_port == 6697
@@ -377,8 +370,26 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     authenticate_to_server
   end
 
+  on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
+    setup_and_dial
+  end
+
   on(:tick) do
-    next unless @socket
+    unless @socket
+      if @schedule_reconnect
+        @schedule_reconnect -= 1
+        setup_and_dial if @schedule_reconnect == 0
+      end
+
+      next
+    end
 
     while (@socket && (msg = @command_queue.shift))
       @socket.puts(msg)
@@ -400,6 +411,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       close_socket
 
       # TODO: Attempt to reconnect after 5, 10, 30, 60, 120 seconds, then abort.
+      @schedule_reconnect = 15 # seconds
     end
   end
 
