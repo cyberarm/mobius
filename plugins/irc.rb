@@ -181,7 +181,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       last_updated: monotonic_time
     )
 
-    fake_player.set_value(_irc_channel: channel)
+    fake_player.set_value(:_irc_channel, channel)
 
     irc_user_role(fake_player)
 
