@@ -27,7 +27,9 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   def dial(hostname, port = 6697, local_host: nil, local_port: nil, ssl_context: ssl_default_context)
-    Socket.tcp(hostname, port, local_host, local_port).then do |socket|
+    log "Connecting to server..."
+
+    Socket.tcp(hostname, port, local_host, local_port, connect_timeout: 5, timeout: 10).then do |socket|
       if ssl_context
         @ssl_socket = true
 
@@ -99,8 +101,11 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
     @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_public[:name], message])
     @command_queue << IRCParser::Message.new(command: "PRIVMSG", parameters: [@channels_admin[:name], message])
+
+    log "Connected!"
   end
 
+  # FIXME
   def handle_nickname_in_use(msg)
   end
 
