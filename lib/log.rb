@@ -21,6 +21,10 @@ module Kernel
     end
 
     puts "[#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}] #{msg}"
+
+    PluginManager.publish_event(:log, msg)
+
+    msg
   end
 end
 

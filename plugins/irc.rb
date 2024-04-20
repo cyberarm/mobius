@@ -460,4 +460,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   on(:team_chat) do |player, message|
     irc_broadcast("<#{player.name}> #{message}", :admin)
   end
+
+  on(:log) do |message|
+    irc_broadcast("#{message}", :admin)
+  end
 end
