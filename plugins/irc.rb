@@ -464,7 +464,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   on(:log) do |message|
     pp message
     begin
-      irc_broadcast("#{message}", :admin)
+      irc_broadcast("#{message}", :admin) if @socket
     rescue => e
       puts e
       puts e.backtrace
