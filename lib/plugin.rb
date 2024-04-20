@@ -99,10 +99,6 @@ module Mobius
       @___timers << Timer.new(:after, 0, seconds, block)
     end
 
-    def renrem_cmd(data, delay = nil)
-      RenRem.cmd(data, delay)
-    end
-
     def kick_player!(player, message = "")
       if player
         RenRem.cmd("kick #{player.id} #{message}")
