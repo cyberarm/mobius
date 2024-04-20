@@ -151,16 +151,16 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     # TODO: handle CTCP?
 
     # Actual PRIVATE MESSAGE
-    if pm
-      # echo for now
-      irc_pm(nickname, message)
+    # if pm
+    #   # echo for now
+    #   irc_pm(nickname, message)
 
-      return
-    end
+    #   return
+    # end
 
     # CHANNEL MESSAGE
     # ignore messages from channels we don't care about
-    return unless channel == @channels_admin[:name] || channel == @channels_public[:name]
+    return if channel != @channels_admin[:name] || channel != @channels_public[:name] || !pm
 
     fake_player = PlayerData::Player.new(
       origin: :irc,
@@ -180,6 +180,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       time: 0,
       last_updated: monotonic_time
     )
+
+    fake_player.set_value(_irc_channel: channel)
 
     irc_user_role(fake_player)
 
@@ -441,6 +443,10 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     irc_broadcast(message, :admin)
   end
 
+  on(:irc_admin_message) do |message, red, green, blue|
+    irc_broadcast(message, :admin)
+  end
+
   on(:irc_pm) do |player, message, red, green, blue|
     irc_pm(player.name, message)
   end
@@ -462,7 +468,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:log) do |message|
-    pp message
     begin
       irc_broadcast("#{message}", :admin) if @socket
     rescue => e

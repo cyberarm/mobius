@@ -16,7 +16,11 @@ module Mobius
       if player.ingame?
         renrem_cmd("cmsgp #{player.id} #{red},#{green},#{blue} #{message}")
       elsif player.irc?
-        PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+        if player.value(:_irc_channel)
+          PluginManager.publish_event(:irc_admin_message, message, red, green, blue)
+        else
+          PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+        end
       end
     end
 
@@ -24,7 +28,11 @@ module Mobius
       if player.ingame?
         renrem_cmd("ppage #{player.id} #{message}")
       elsif player.irc?
-        PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+        if player.value(:_irc_channel)
+          PluginManager.publish_event(:irc_admin_message, message, red, green, blue)
+        else
+          PluginManager.publish_event(:irc_pm, player, message, red, green, blue)
+        end
       end
     end
   end
