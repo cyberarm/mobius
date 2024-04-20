@@ -29,7 +29,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   def dial(hostname, port = 6697, local_host: nil, local_port: nil, ssl_context: ssl_default_context)
     log "Connecting to server..."
 
-    Socket.tcp(hostname, port, local_host, local_port, connect_timeout: 5, timeout: 10).then do |socket|
+    Socket.tcp(hostname, port, local_host, local_port, connect_timeout: 10).then do |socket|
       if ssl_context
         @ssl_socket = true
 
