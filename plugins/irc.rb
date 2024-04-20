@@ -462,6 +462,12 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:log) do |message|
-    irc_broadcast("#{message}", :admin)
+    pp message
+    begin
+      irc_broadcast("#{message}", :admin)
+    rescue => e
+      puts e
+      puts e.backtrace
+    end
   end
 end
