@@ -440,7 +440,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:irc_team_message) do |team_id, message, red, green, blue|
-    irc_broadcast(message, :admin)
+    irc_broadcast(Teams.colorize(team_id, message), :admin)
   end
 
   on(:irc_admin_message) do |message, red, green, blue|
@@ -452,24 +452,24 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:player_joined) do |player|
-    irc_broadcast("#{player.name} has joined the game on team #{Teams.name(player.team)}")
+    irc_broadcast(Teams.colorize(player.team, "#{player.name} has joined the game on team #{Teams.name(player.team)}"))
   end
 
   on(:player_left) do |player|
-    irc_broadcast("#{player.name} has left the game from team #{Teams.name(player.team)}")
+    irc_broadcast(Teams.colorize(player.team, "#{player.name} has left the game from team #{Teams.name(player.team)}"))
   end
 
   on(:chat) do |player, message|
-    irc_broadcast("<#{player.name}> #{message}")
+    irc_broadcast("#{Teams.colorize(player.team, "<#{player.name}>")} #{message}")
   end
 
   on(:team_chat) do |player, message|
-    irc_broadcast("<#{player.name}> #{message}", :admin)
+    irc_broadcast(Teams.colorize(player.team, "<#{player.name}> #{message}"), :admin)
   end
 
   on(:log) do |message|
     begin
-      irc_broadcast("#{message}", :admin) if @socket
+      irc_broadcast(Color.irc_color(Color.new(0x252525), "#{message}"), :admin) if @socket
     rescue => e
       puts e
       puts e.backtrace
