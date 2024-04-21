@@ -5,19 +5,19 @@ module Mobius
         id: 0,
         name: "Nod",
         abbreviation: "Nod",
-        color: "04"
+        color: "bf1b26"
       },
       {
         id: 1,
         name: "GDI",
         abbreviation: "GDI",
-        color: "08,15"
+        color: "ffb500"
       },
       {
         id: 2,
         name: "Neutral",
         abbreviation: "Neu",
-        color: "09"
+        color: "ffffff"
       }
     ]
 
