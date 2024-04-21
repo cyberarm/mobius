@@ -522,11 +522,11 @@ module Mobius
         broadcast_message("#{name} has been kicked by Mobius for having too short of a nickname!", red: 255, green: 127, blue: 0)
 
       elsif name =~ /[\001\002\037]/
-        RenRem.cmd("kick #{id} Non-ascii characters detected in nickname..")
+        RenRem.cmd("kick #{id} Non-ascii characters detected in nickname.")
         broadcast_message("[MOBIUS] Player has been kicked by Mobius for having non-ascii characters in nickname.", red: 255, green: 127, blue: 0)
 
       elsif name.length > 30
-        RenRem.cmd("kick #{id} Nickname may only be 30 characters long..")
+        RenRem.cmd("kick #{id} Nickname may only be 30 characters long.")
         broadcast_message("#{name} has been kicked by Mobius for having too long of a nickname!", red: 255, green: 127, blue: 0)
       end
     end
