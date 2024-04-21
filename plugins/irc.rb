@@ -437,27 +437,27 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
   on(:irc_broadcast) do |message, red, green, blue|
     # Treat white as default color and don't do anything
-    color = (red.to_i + green.to_i + blue.to_i >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    color = ((red.nil? || green.nil? || blue.nil?) || (red.to_i + green.to_i + blue.to_i >= 255 * 3)) ? nil : Color.new(red:, green:, blue:)
     irc_broadcast(Color.irc_colorize(color, message)) if color
     irc_broadcast(message) unless color
   end
 
   on(:irc_team_message) do |team_id, message, red, green, blue|
     # Treat white as default color and use team color
-    color = (red.to_i + green.to_i + blue.to_i >= 255 * 3) ? Teams.rgb_color(team_id) : Color.new(red:, green:, blue:)
+    color = ((red.nil? || green.nil? || blue.nil?) || (red.to_i + green.to_i + blue.to_i >= 255 * 3)) ? Teams.rgb_color(team_id) : Color.new(red:, green:, blue:)
     irc_broadcast(Color.irc_colorize(color, message), :admin)
   end
 
   on(:irc_admin_message) do |message, red, green, blue|
     # Treat white as default color and don't do anything
-    color = (red.to_i + green.to_i + blue.to_i >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    color = ((red.nil? || green.nil? || blue.nil?) || (red.to_i + green.to_i + blue.to_i >= 255 * 3)) ? nil : Color.new(red:, green:, blue:)
     irc_broadcast(Color.irc_colorize(color, message), :admin) if color
     irc_broadcast(message, :admin) unless color
   end
 
   on(:irc_pm) do |player, message, red, green, blue|
     # Treat white as default color and don't do anything
-    color = (red.to_i + green.to_i + blue.to_i >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    color = ((red.nil? || green.nil? || blue.nil?) || (red.to_i + green.to_i + blue.to_i >= 255 * 3)) ? nil : Color.new(red:, green:, blue:)
     irc_pm(player.name, Color.irc_colorize(color, message)) if color
     irc_pm(player.name, message) unless color
   end
