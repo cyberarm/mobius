@@ -96,13 +96,14 @@ module Mobius
         username = match_data[1]
         puts "USERNAME: #{username}"
 
-        # TODO: Deliver message to IRC/mod tool
+        PluginManager.publish_event(:irc_broadcast, message)
         # PlayerData.player(username).set_value(:changed_team, true)
 
         RenRem.cmd("game_info")
         RenRem.cmd("pinfo")
+
       else
-        # TODO: Deliver message to IRC/mod tool
+        PluginManager.publish_event(:irc_broadcast, message)
       end
     end
 
@@ -334,7 +335,7 @@ module Mobius
 
     def handle_level_loaded(line)
       if line == "Level loaded OK"
-        # TODO: Send message to IRC/mod tool
+        PluginManager.publish_event(:irc_broadcast, line)
         ServerConfig.read_server_settings
 
         # "reload" map settings
@@ -378,7 +379,7 @@ module Mobius
            "Channel created OK",
            "Terminating game"
 
-        # TODO: Send message to admin channel of IRC/mod tool
+        PluginManager.publish_event(:irc_admin_message, line)
 
         return true
       end
@@ -386,7 +387,8 @@ module Mobius
 
     def handle_server_crash(line)
       if line =~ /^Initializing .+ Mode$/
-        # TODO: Send message to IRC/mod tool
+        PluginManager.publish_event(:irc_broadcast, line)
+
         PlayerData.clear
         RenRem.cmd("sversion")
         ServerConfig.fetch_available_maps
@@ -455,7 +457,7 @@ module Mobius
     def handle_loading_level(line)
       if line =~ /Loading level (.+)/
         match_data = line.match(/Loading level (.+)/)
-        # Send message to IRC/mod tool
+        PluginManager.publish_event(:irc_broadcast, line)
 
         pp match_data[1] if Config.debug_verbose
 
@@ -485,7 +487,6 @@ module Mobius
     end
 
     def handle_player_lost_connection(line)
-      # TODO: send raw line to IRC/mod tool
       return false unless (match_data = line.match(/\AConnection broken to client. (.+)\z/))
 
       player = PlayerData.player(match_data.to_a[1].to_i)
@@ -493,12 +494,15 @@ module Mobius
 
       # NOTE: {player} variable might be nil
       PluginManager.publish_event(:player_lost_connection, player)
+      PluginManager.publish_event(:irc_broadcast, "#{player&.name || "?"} left the game. Game crashed or ping was too high.")
 
       return true
     end
 
     def handle_player_was_kicked(line)
-      # TODO: send raw line to IRC/mod tool
+      return false unless line =~ /was kicked/
+
+      PluginManager.publish_event(:irc_broadcast, line)
     end
 
     def check_player_list
