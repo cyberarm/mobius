@@ -513,25 +513,21 @@ module Mobius
     end
 
     def check_username(id, name, address)
-      if name =~ /(:|\!|\&|\s)/
-        RenRem.cmd("kick #{id} disallowed characters in nickname (:, !, &, and whitespace is not allowed.)")
+      if name =~ /(:|\!|\&|\s|\\)/
+        RenRem.cmd("kick #{id} Disallowed characters in nickname (:, !, &, \\, and whitespace is not allowed.)")
         broadcast_message("[MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name", red: 255, green: 127, blue: 0)
 
       elsif name.length < 3
-        RenRem.cmd("kick #{id} nickname must be at least 3 characters long. Please lengthen it, and reconnect.")
+        RenRem.cmd("kick #{id} Nickname must be at least 3 characters long.")
         broadcast_message("#{name} has been kicked by Mobius for having too short of a nickname!", red: 255, green: 127, blue: 0)
 
       elsif name =~ /[\001\002\037]/
-        RenRem.cmd("kick #{id} non-ascii characters detected in nickname. Please remove them, and reconnect.")
+        RenRem.cmd("kick #{id} Non-ascii characters detected in nickname..")
         broadcast_message("[MOBIUS] Player has been kicked by Mobius for having non-ascii characters in nickname.", red: 255, green: 127, blue: 0)
 
       elsif name.length > 30
-        RenRem.cmd("kick #{id} nickname may only be 30 characters long. Please shorten it, and reconnect.")
+        RenRem.cmd("kick #{id} Nickname may only be 30 characters long..")
         broadcast_message("#{name} has been kicked by Mobius for having too long of a nickname!", red: 255, green: 127, blue: 0)
-
-      elsif name.include?("\\")
-        RenRem.cmd("kick #{id} you have backslashes (\\) in your name. Please remove them, and reconnect.")
-        broadcast_message("#{name} has been kicked by Mobius for backslashes in nickname!", red: 255, green: 127, blue: 0)
       end
     end
 
