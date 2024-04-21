@@ -54,8 +54,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to ban you!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not ban your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to ban you!")
+        page_player(command.issuer, "#{command.issuer.id} you may not ban your benefactor!")
       elsif command.issuer.id == player.id
         page_player(command.issuer, "#{player.name} Cannot ban yourself!")
       else
@@ -140,8 +140,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to kick you!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not kick your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to kick you!")
+        page_player(command.issuer, "you may not kick your benefactor!")
       elsif command.issuer.id == player.id
         page_player(command.issuer, "#{player.name} Cannot kick yourself!")
       else
@@ -175,8 +175,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to warn you!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not issue a warning against your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to give you a warning!")
+        page_player(command.issuer, "You may not issue a warning against your benefactor!")
       elsif command.issuer.id == player.id
         page_player(command.issuer, "#{player.name} Cannot issue a warning against yourself!")
       else
@@ -209,8 +209,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to mute you!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not mute your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to mute you!")
+        page_player(command.issuer, "You may not mute your benefactor!")
       elsif command.issuer.id == player.id
         page_player(command.issuer, "#{player.name} Cannot mute yourself!")
       else
@@ -263,8 +263,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if command.issuer != player
         log "Granting #{player.name} Moderator powers, temporarily."
 
-        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Server Moderator")
-        RenRem.cmd("ppage #{player.id} You've been made a temporary Server Moderator")
+        page_player(command.issuer, "You've made #{player.name} a temporary Server Moderator")
+        page_player(player, "You've been made a temporary Server Moderator")
 
         player.set_value(:given_moderator_power_from, command.issuer.name)
         player.set_value(:moderator, true)
@@ -276,7 +276,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           log: "[STAFF] #{player.name} was made a temporarily Server Moderator by #{command.issuer.name}."
         )
       else
-        RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Moderator!")
+        page_player(player, "You can't add yourself, you already are a Moderator!")
       end
     else
       page_player(command.issuer, "Player not in game or name is not unique!")
@@ -290,8 +290,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       if command.issuer != player
         log "Granting #{player.name} Director powers, temporarily."
 
-        RenRem.cmd("ppage #{command.issuer.id} You've made #{player.name} a temporary Game Director")
-        RenRem.cmd("ppage #{player.id} You've been made a temporary Game Director")
+        page_player(command.issuer, "You've made #{player.name} a temporary Game Director")
+        page_player(player, "You've been made a temporary Game Director")
 
         player.set_value(:given_director_power_from, command.issuer.name)
         player.set_value(:director, true)
@@ -303,7 +303,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           log: "[STAFF] #{player.name} was made a temporary Game Director by #{command.issuer.name}."
         )
       else
-        RenRem.cmd("ppage #{player.id} You can't add yourself, you already are a Director!")
+        page_player(player, "You can't add yourself, you already are a Director!")
+
       end
     else
       page_player(command.issuer, "Player not in game or name is not unique!")
@@ -315,8 +316,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to remove your Moderator power!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not remove power from your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to remove your Moderator power!")
+        page_player(command.issuer, "You may not remove power from your benefactor!")
       else
         log "Removing #{player.name} Moderator powers."
 
@@ -335,8 +336,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
     if player
       if (granter = player_granted_authority?(player, command.issuer))
-        RenRem.cmd("ppage #{granter.id} #{command.issuer.name} attempted to remove your Director power!")
-        RenRem.cmd("ppage #{command.issuer.id} you may not remove power from your benefactor!")
+        page_player(granter, "#{command.issuer.name} attempted to remove your Director power!")
+        page_player(command.issuer, "You may not remove power from your benefactor!")
       else
         log "Removing #{player.name} Director powers."
 

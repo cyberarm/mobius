@@ -1,5 +1,7 @@
 module Mobius
   class MapSettings
+    extend Common
+
     @@instance = nil
 
     def self.init
@@ -25,7 +27,11 @@ module Mobius
       RenRem.cmd("vlimit #{vehicle_limit}")
       RenRem.cmd("botcount #{botcount}")
 
-      RenRem.cmd("msg [MOBIUS] Special rules for #{ServerStatus.get(:current_map)}: #{rules}", 5) unless rules.empty?
+      unless rules.empty?
+        after(5) do
+          broadcast_message("[MOBIUS] Special rules for #{ServerStatus.get(:current_map)}: #{rules}", red: 255, green: 127, blue: 0)
+        end
+      end
     end
 
     def self.get_map_setting(setting)
