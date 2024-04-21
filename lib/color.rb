@@ -176,5 +176,25 @@ module Mobius
 
       format("\x03%s%s\x03", irc_color, message)
     end
+
+    def self.irc_bold(message)
+      format("\x02%s\x02", message)
+    end
+
+    def self.irc_italics(message)
+      format("\x1D%s\x1D", message)
+    end
+
+    def self.irc_underline(message)
+      format("\x1F%s\x1F", message)
+    end
+
+    def self.irc_strikethrough(message)
+      format("\x1E%s\x1E", message)
+    end
+
+    def self.irc_monospace(message)
+      format("\x11%s\x11", message)
+    end
   end
 end

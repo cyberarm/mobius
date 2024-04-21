@@ -436,35 +436,46 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   on(:irc_broadcast) do |message, red, green, blue|
-    irc_broadcast(message)
+    # Treat white as default color and don't do anything
+    color = (red + green + blue >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    irc_broadcast(Color.irc_colorize(color, message)) if color
+    irc_broadcast(message) unless color
   end
 
   on(:irc_team_message) do |team_id, message, red, green, blue|
-    irc_broadcast(Teams.colorize(team_id, message), :admin)
+    # Treat white as default color and use team color
+    color = (red + green + blue >= 255 * 3) ? Teams.rgb_color(team_id) : Color.new(red:, green:, blue:)
+    irc_broadcast(Color.irc_colorize(color, message), :admin)
   end
 
   on(:irc_admin_message) do |message, red, green, blue|
-    irc_broadcast(message, :admin)
+    # Treat white as default color and don't do anything
+    color = (red + green + blue >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    irc_broadcast(Color.irc_colorize(color, message), :admin) if color
+    irc_broadcast(message, :admin) unless color
   end
 
   on(:irc_pm) do |player, message, red, green, blue|
-    irc_pm(player.name, message)
+    # Treat white as default color and don't do anything
+    color = (red + green + blue >= 255 * 3) ? nil : Color.new(red:, green:, blue:)
+    irc_pm(player.name, Color.irc_colorize(color, message)) if color
+    irc_pm(player.name, message) unless color
   end
 
   on(:player_joined) do |player|
-    irc_broadcast(Teams.colorize(player.team, "#{player.name} has joined the game on team #{Teams.name(player.team)}"))
+    irc_broadcast(Teams.colorize(player.team, "#{player.name} has joined the game on team #{Color.irc_bold("#{Teams.name(player.team)}")}"))
   end
 
   on(:player_left) do |player|
-    irc_broadcast(Teams.colorize(player.team, "#{player.name} has left the game from team #{Teams.name(player.team)}"))
+    irc_broadcast(Teams.colorize(player.team, "#{player.name} has left the game from team #{Color.irc_bold("#{Teams.name(player.team)}")}"))
   end
 
   on(:chat) do |player, message|
-    irc_broadcast("#{Teams.colorize(player.team, "<#{player.name}>")} #{message}")
+    irc_broadcast("#{Teams.colorize(player.team, "#{Color.irc_bold("<#{player.name}>")}")} #{message}")
   end
 
   on(:team_chat) do |player, message|
-    irc_broadcast(Teams.colorize(player.team, "<#{player.name}> #{message}"), :admin)
+    irc_broadcast(Teams.colorize(player.team, "#{Color.irc_bold("<#{player.name}>")} #{message}"), :admin)
   end
 
   on(:log) do |message|
