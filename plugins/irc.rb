@@ -469,7 +469,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
   on(:log) do |message|
     begin
-      irc_broadcast(Color.irc_colorize(Color.new(0x7f7f7f), "#{message}"), :admin) if @socket
+      irc_broadcast(Color.irc_colorize(Color.new(0xd2d2d2), "#{message}"), :admin) if @socket
     rescue => e
       puts e
       puts e.backtrace
