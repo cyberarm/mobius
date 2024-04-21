@@ -1,5 +1,7 @@
 module Mobius
   class RenLog
+    include Common
+
     @@instance = nil
 
     def self.init
@@ -487,7 +489,7 @@ module Mobius
       return false unless (match_data = line.match(/\AConnection broken to client. (.+)\z/))
 
       player = PlayerData.player(match_data.to_a[1].to_i)
-      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player&.name || "?"} left the game. Game crashed or ping was too high.") if Config.messages[:player_lost_connection]
+      broadcast_message("[MOBIUS] #{player&.name || "?"} left the game. Game crashed or ping was too high.", red: 255, green: 127, blue: 0) if Config.messages[:player_lost_connection]
 
       # NOTE: {player} variable might be nil
       PluginManager.publish_event(:player_lost_connection, player)
@@ -513,11 +515,11 @@ module Mobius
     def check_username(id, name, address)
       if name =~ /(:|\!|\&|\s)/
         RenRem.cmd("kick #{id} disallowed characters in nickname")
-        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name")
+        broadcast_message("[MOBIUS] #{name} has been kicked by Mobius for having disallowed characters in their name", red: 255, green: 127, blue: 0)
 
       elsif name.length <= 1 || name =~ /[\001\002\037]/
         RenRem.cmd("kick #{id} non-ascii characters detected in nickname")
-        RenRem.cmd("cmsg 255,127,0 [MOBIUS] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!")
+        broadcast_message("[MOBIUS] Playername with non-ascii characters detected. Do not use umlauts or accents. Kicking Player!", red: 255, green: 127, blue: 0)
 
       elsif name.length > 30
         RenRem.cmd("kick #{id} nickname may only be 30 characters long")

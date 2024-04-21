@@ -1,5 +1,7 @@
 module Mobius
   class GameLog
+    include Common
+
     @@instance = nil
 
     def self.init
@@ -277,9 +279,9 @@ module Mobius
                 captured_by&.increment_value(:stats_vehicles_captured)
                 stolen_from&.increment_value(:stats_vehicles_stolen)
 
-                RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!") if Config.messages[:vehicle_stolen]
+                broadcast_message("[MOBIUS] #{player_obj[:name]} has stolen #{last_driver[:name]}'s #{vehicle_name}!", red: 255, green: 127, blue: 0) if Config.messages[:vehicle_stolen]
               else
-                RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!") if Config.messages[:vehicle_stolen]
+                broadcast_message("[MOBIUS] #{player_obj[:name]} has stolen a #{vehicle_name}!", red: 255, green: 127, blue: 0) if Config.messages[:vehicle_stolen]
               end
             end
 
@@ -455,7 +457,7 @@ module Mobius
     end
 
     def killed_building(object, killed_obj, killer_obj)
-      RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{Presets.translate(object[:killed_preset])}.") if Config.messages[:building_killed]
+      broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{Presets.translate(object[:killed_preset])}.", red: 255, green: 127, blue: 0) if Config.messages[:building_killed]
 
       killer_player_data = PlayerData.player(PlayerData.name_to_id(killer_obj[:name].to_s.downcase))
 
@@ -463,7 +465,7 @@ module Mobius
     end
 
     def killed_vehicle(object, killed_obj, killer_obj)
-      # RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.") if Config.messages[:vehicle_killed]
+      # broadcast_message("[MOBIUS] #{killer_obj[:name]} destroyed the #{object[:killed_preset]}.", red: 255, green: 127, blue: 0) if Config.messages[:vehicle_killed]
 
       _killed_obj = @game_objects[killed_obj[:driver]]
       killed_player_data = PlayerData.player(PlayerData.name_to_id(_killed_obj[:name].to_s.downcase)) if _killed_obj
@@ -479,12 +481,12 @@ module Mobius
       case killer_obj[:type].downcase
       when "soldier"
         if killed_obj[:name] == killer_obj[:name]
-          RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killer_obj[:name]} killed theirself.") if Config.messages[:soldier_killed]
+          broadcast_message("[MOBIUS] #{killer_obj[:name]} killed theirself.", red: 255, green: 127, blue: 0) if Config.messages[:soldier_killed]
         else
           PlayerData.player(PlayerData.name_to_id(killer_obj[:name]))&.increment_value(:stats_kills)
         end
       when "vehicle" # THIS ONLY TRIGGERS WITH AI HARVESTERS for some reason...
-        RenRem.cmd("cmsg 255,127,0 [MOBIUS] #{killed_obj[:name]} was ran over by a #{Presets.translate(object[:killer_preset])}.") if Config.messages[:soldier_killed]
+        broadcast_message("[MOBIUS] #{killed_obj[:name]} was ran over by a #{Presets.translate(object[:killer_preset])}.", red: 255, green: 127, blue: 0) if Config.messages[:soldier_killed]
       end
     end
 
@@ -510,9 +512,9 @@ module Mobius
 
       case object[:type].downcase
       when "character"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:name]} changed to #{object[:preset_name]}") if Config.messages[:soldier_purchase]
+        message_team(player_team, "[MOBIUS] #{object[:name]} changed to #{object[:preset_name]}", red: 255, green: 127, blue: 0) if Config.messages[:soldier_purchase]
       when "vehicle"
-        RenRem.cmd("cmsgt #{player_team} 255,127,0 [MOBIUS] #{object[:name]} purchased a #{object[:preset_name]}") if Config.messages[:vehicle_purchase]
+        message_team(player_team, "[MOBIUS] #{object[:name]} purchased a #{object[:preset_name]}", red: 255, green: 127, blue: 0) if Config.messages[:vehicle_purchase]
       end
 
       object[:_player_object] = game_obj
