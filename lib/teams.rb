@@ -114,15 +114,15 @@ module Mobius
     end
 
     def self.colorize(team, message)
-      Color.irc_colorize(color(team), message)
+      Color.irc_colorize(rgb_color(team), message)
     end
 
     def self.colorize_name(team)
-      Color.irc_colorize(color(team), name(team))
+      Color.irc_colorize(rgb_color(team), name(team))
     end
 
     def self.colorize_abbreviation(team)
-      Color.irc_colorize(color(team), abbreviation(team))
+      Color.irc_colorize(rgb_color(team), abbreviation(team))
     end
 
     def self.skill_sort_teams
