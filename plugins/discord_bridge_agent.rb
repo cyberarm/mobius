@@ -1,4 +1,4 @@
-mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent", version: "0.0.1") do
+mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent", version: "0.1.0") do
   def full_payload
     teams = Teams.list.each.map do |team|
       {
@@ -191,7 +191,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
             this.connection_error!
           end
         end
-      rescue Errno::ECONNREFUSED, Errno::ECONNRESET => error
+      rescue SystemCallError => error
         this.log error
 
         this.connection_error!
