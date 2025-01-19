@@ -48,15 +48,6 @@ module Mobius
       @last_purchase_team_one = nil # NOD, Soviets
       @last_purchase_team_two = nil # GDI, Allies
       @vehicle_from_create = nil
-
-      if Config.record_gamelog
-        FileUtils.mkdir_p("#{ROOT_PATH}/data")
-        @data_recorder = File.open("#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat", "a+")
-
-        at_exit do
-          @data_recorder&.close
-        end
-      end
     end
 
     def parse_line(line)
@@ -120,7 +111,7 @@ module Mobius
 
       object[:type]   = data[1]
       object[:param]  = data[2]
-      object[:object] = data[3]
+      object[:object] = data[3].to_i
       object[:preset] = data[4]
       object[:x]      = data[5].to_f
       object[:y]      = data[6].to_f
@@ -131,6 +122,7 @@ module Mobius
       object[:team]   = data[11].to_i
 
       PluginManager.publish_event(:crate, object, data)
+      SSGM.data_logger&.log(:gamelog, :crate, object)
 
       pp object if Config.debug_verbose
     end
@@ -140,7 +132,7 @@ module Mobius
       object = {}
 
       object[:type]       = data[1]
-      object[:object]     = data[2]
+      object[:object]     = data[2].to_i
       object[:preset]     = data[3]
       object[:x]          = data[4].to_f
       object[:y]          = data[5].to_f
@@ -173,6 +165,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:created, object, data)
+      SSGM.data_logger&.log(:gamelog, :created, object)
 
       pp object if Config.debug_verbose
     end
@@ -182,7 +175,7 @@ module Mobius
       object = {}
 
       object[:type]   = data[1]
-      object[:object] = data[2]
+      object[:object] = data[2].to_i
       object[:preset] = data[3]
       object[:x]      = data[4].to_f
       object[:y]      = data[5].to_f
@@ -194,6 +187,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:destroyed, object, data)
+      SSGM.data_logger&.log(:gamelog, :destroyed, object)
 
       case object[:type].downcase
       when "soldier"
@@ -212,7 +206,7 @@ module Mobius
       object = {}
 
       object[:type]       = data[1]
-      object[:object]     = data[2]
+      object[:object]     = data[2].to_i
       object[:preset]     = data[3]
       object[:x]          = data[4].to_f
       object[:y]          = data[5].to_f
@@ -232,6 +226,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:position, object, data)
+      SSGM.data_logger&.log(:gamelog, :position, object)
 
       pp object if Config.debug_verbose
     end
@@ -240,13 +235,13 @@ module Mobius
       data = line.split(";")
       object = {}
 
-      object[:vehicle_object] = data[1]
+      object[:vehicle_object] = data[1].to_i
       object[:vehicle_preset] = data[2]
       object[:vehicle_x]      = data[3].to_f
       object[:vehicle_y]      = data[4].to_f
       object[:vehicle_z]      = data[5].to_f
 
-      object[:player_object]  = data[6]
+      object[:player_object]  = data[6].to_i
       object[:player_preset]  = data[7]
       object[:player_x]       = data[8].to_f
       object[:player_y]       = data[9].to_f
@@ -294,6 +289,7 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:enter_vehicle, object, data)
+      SSGM.data_logger&.log(:gamelog, :enter_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -302,13 +298,13 @@ module Mobius
       data = line.split(";")
       object = {}
 
-      object[:vehicle_object] = data[1]
+      object[:vehicle_object] = data[1].to_i
       object[:vehicle_preset] = data[2]
       object[:vehicle_x]      = data[3].to_f
       object[:vehicle_y]      = data[4].to_f
       object[:vehicle_z]      = data[5].to_f
 
-      object[:player_object]  = data[6]
+      object[:player_object]  = data[6].to_i
       object[:player_preset]  = data[7]
       object[:player_x]       = data[8].to_f
       object[:player_y]       = data[9].to_f
@@ -331,6 +327,7 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:exit_vehicle, object, data)
+      SSGM.data_logger&.log(:gamelog, :exit_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -340,14 +337,14 @@ module Mobius
       object = {}
 
       object[:type]      = data[1]
-      object[:object]    = data[2]
+      object[:object]    = data[2].to_i
       object[:preset]    = data[3]
       object[:x]         = data[4].to_f
       object[:y]         = data[5].to_f
       object[:z]         = data[6].to_f
       object[:facing]    = data[7].to_f
 
-      object[:damager_object] = data[8]
+      object[:damager_object] = data[8].to_i
       object[:damager_preset] = data[9]
       object[:damager_x]      = data[10].to_f
       object[:damager_y]      = data[11].to_f
@@ -399,6 +396,7 @@ module Mobius
       object[:_damaged_player_object] = damaged_player if damaged_player
 
       PluginManager.publish_event(:damaged, object, data)
+      SSGM.data_logger&.log(:gamelog, :damaged, object)
 
       pp object if Config.debug_verbose
     end
@@ -408,14 +406,14 @@ module Mobius
       object = {}
 
       object[:killed_type]      = data[1]
-      object[:killed_object]    = data[2]
+      object[:killed_object]    = data[2].to_i
       object[:killed_preset]    = data[3]
       object[:killed_x]         = data[4].to_f
       object[:killed_y]         = data[5].to_f
       object[:killed_z]         = data[6].to_f
       object[:killed_facing]    = data[7].to_f
 
-      object[:killer_object]    = data[8]
+      object[:killer_object]    = data[8].to_i
       object[:killer_preset]    = data[9]
       object[:killer_x]         = data[10].to_f
       object[:killer_y]         = data[11].to_f
@@ -452,6 +450,7 @@ module Mobius
       object[:_killer_object] = killer_obj if killer_obj
 
       PluginManager.publish_event(:killed, object, data)
+      SSGM.data_logger&.log(:gamelog, :killed, object)
 
       pp object if Config.debug_verbose
     end
@@ -520,6 +519,7 @@ module Mobius
       object[:_player_object] = game_obj
 
       PluginManager.publish_event(:purchased, object, data)
+      SSGM.data_logger&.log(:gamelog, :purchased, object)
 
       pp object if Config.debug_verbose
     end
@@ -530,11 +530,12 @@ module Mobius
       object = {}
 
       # TODO: Validate thise keys
-      object[:object]  = data[1]
-      object[:score]   = data[2]
-      object[:credits] = data[3]
+      object[:object]  = data[1].to_i
+      object[:score]   = data[2].to_i
+      object[:credits] = data[3].to_i
 
       PluginManager.publish_event(:score, object, data)
+      SSGM.data_logger&.log(:gamelog, :score, object)
 
       pp object if Config.debug_verbose
     end
@@ -550,6 +551,7 @@ module Mobius
       }
 
       PluginManager.publish_event(:win, object, data)
+      SSGM.data_logger&.log(:gamelog, :win, object)
       PluginManager.reset_vote
       Presets.save_presets
 
@@ -560,8 +562,6 @@ module Mobius
       return unless Config.record_gamelog
 
       @data_recorder&.close
-      @data_recorder = File.open("#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat", "a+")
-      @data_recorder.puts(line)
     end
 
     def config(line)

@@ -6,7 +6,7 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Connecting to SSGM 4...")
+      log("INIT", "Connecting to SSGM...")
 
       new(
         address: Config.ssgm_address,
@@ -38,6 +38,10 @@ module Mobius
       @@instance&.retrieve_server_rotation
     end
 
+    def self.data_recorder
+      @@instance&.data_recorder
+    end
+
     def initialize(address:, port:)
       raise "SSGM instance already active!" if @@instance
 
@@ -47,6 +51,14 @@ module Mobius
       @port = port
 
       @lost_connection = false
+
+      if Config.record_gamelog
+        @data_recorder = DataRecorder.new
+
+        at_exit do
+          @data_recorder&.close
+        end
+      end
 
       retrieve_server_rotation || parse_tt_rotation
 
@@ -113,6 +125,10 @@ module Mobius
       log("SSGM", "Failed to retrieve server rotation from RenRem.")
 
       nil
+    end
+
+    def data_recorder
+      @data_recorder
     end
 
     def monitor_stream
