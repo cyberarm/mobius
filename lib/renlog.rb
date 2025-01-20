@@ -59,7 +59,7 @@ module Mobius
 
       PluginManager.publish_event(:renlog, line)
 
-      SSGM.data_logger&.log(:renlog, nil, line)
+      SSGM.data_recorder&.log(:renlog, nil, line)
     end
 
     def handle_chat(team_chat, username, message)

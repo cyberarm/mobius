@@ -122,7 +122,7 @@ module Mobius
       object[:team]   = data[11].to_i
 
       PluginManager.publish_event(:crate, object, data)
-      SSGM.data_logger&.log(:gamelog, :crate, object)
+      SSGM.data_recorder&.log(:gamelog, :crate, object)
 
       pp object if Config.debug_verbose
     end
@@ -165,7 +165,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:created, object, data)
-      SSGM.data_logger&.log(:gamelog, :created, object)
+      SSGM.data_recorder&.log(:gamelog, :created, object)
 
       pp object if Config.debug_verbose
     end
@@ -187,7 +187,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:destroyed, object, data)
-      SSGM.data_logger&.log(:gamelog, :destroyed, object)
+      SSGM.data_recorder&.log(:gamelog, :destroyed, object)
 
       case object[:type].downcase
       when "soldier"
@@ -226,7 +226,7 @@ module Mobius
       end
 
       PluginManager.publish_event(:position, object, data)
-      SSGM.data_logger&.log(:gamelog, :position, object)
+      SSGM.data_recorder&.log(:gamelog, :position, object)
 
       pp object if Config.debug_verbose
     end
@@ -289,7 +289,7 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:enter_vehicle, object, data)
-      SSGM.data_logger&.log(:gamelog, :enter_vehicle, object)
+      SSGM.data_recorder&.log(:gamelog, :enter_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -327,7 +327,7 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:exit_vehicle, object, data)
-      SSGM.data_logger&.log(:gamelog, :exit_vehicle, object)
+      SSGM.data_recorder&.log(:gamelog, :exit_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -396,7 +396,7 @@ module Mobius
       object[:_damaged_player_object] = damaged_player if damaged_player
 
       PluginManager.publish_event(:damaged, object, data)
-      SSGM.data_logger&.log(:gamelog, :damaged, object)
+      SSGM.data_recorder&.log(:gamelog, :damaged, object)
 
       pp object if Config.debug_verbose
     end
@@ -450,7 +450,7 @@ module Mobius
       object[:_killer_object] = killer_obj if killer_obj
 
       PluginManager.publish_event(:killed, object, data)
-      SSGM.data_logger&.log(:gamelog, :killed, object)
+      SSGM.data_recorder&.log(:gamelog, :killed, object)
 
       pp object if Config.debug_verbose
     end
@@ -519,7 +519,7 @@ module Mobius
       object[:_player_object] = game_obj
 
       PluginManager.publish_event(:purchased, object, data)
-      SSGM.data_logger&.log(:gamelog, :purchased, object)
+      SSGM.data_recorder&.log(:gamelog, :purchased, object)
 
       pp object if Config.debug_verbose
     end
@@ -535,7 +535,7 @@ module Mobius
       object[:credits] = data[3].to_i
 
       PluginManager.publish_event(:score, object, data)
-      SSGM.data_logger&.log(:gamelog, :score, object)
+      SSGM.data_recorder&.log(:gamelog, :score, object)
 
       pp object if Config.debug_verbose
     end
@@ -546,12 +546,12 @@ module Mobius
       object = {
         winning_team_name: data[1],
         win_type: data[2],
-        team_0_score: data[3],
-        team_1_score: data[4]
+        team_0_score: data[3].to_i,
+        team_1_score: data[4].to_i
       }
 
       PluginManager.publish_event(:win, object, data)
-      SSGM.data_logger&.log(:gamelog, :win, object)
+      SSGM.data_recorder&.log(:gamelog, :win, object)
       PluginManager.reset_vote
       Presets.save_presets
 
@@ -561,11 +561,28 @@ module Mobius
     def maploaded(line)
       return unless Config.record_gamelog
 
+      data = line.split(";")
+
+      object = {
+        map_name: data.last
+      }
+
+      SSGM.data_recorder&.log(:gamelog, :maploaded, object)
+
       @data_recorder&.close
     end
 
     def config(line)
       # TODO: RESET DATA FOR NEXT GAME
+
+      data = line.split(";")
+
+      object = {
+        time_limit: data[1].to_i,
+        game_name: data[2]
+      }
+
+      SSGM.data_recorder&.log(:gamelog, :config, object)
 
       clear_data
     end
