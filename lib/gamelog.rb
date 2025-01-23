@@ -567,9 +567,8 @@ module Mobius
         map_name: data.last
       }
 
+      SSGM.data_recorder&.close
       SSGM.data_recorder&.log(:gamelog, :maploaded, object)
-
-      @data_recorder&.close
     end
 
     def config(line)
