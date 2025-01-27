@@ -11,6 +11,7 @@ buffer = StringIO.new
 path = "#{File.expand_path("./../conf", __dir__)}/untrusted_ips.dat"
 
 URLS.each_with_index do |url, i|
+  puts "Fetching #{url}..."
   response = Excon.get(url)
 
   if response.status == 200
@@ -23,3 +24,5 @@ URLS.each_with_index do |url, i|
 end
 
 File.write(path, buffer.string)
+puts "Done."
+puts

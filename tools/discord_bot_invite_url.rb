@@ -9,3 +9,4 @@ raise "Discord Bot TOKEN is missing!" unless token
 bot = Discordrb::Bot.new(token: token)
 
 puts bot.invite_url
+puts
