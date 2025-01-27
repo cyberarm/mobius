@@ -185,6 +185,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @versus_started = false
 
     @player_characters.clear
+    @known_spies.clear
 
     check_map(map)
 
