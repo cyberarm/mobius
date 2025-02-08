@@ -42,4 +42,6 @@ def monotonic_time
   Process.clock_gettime(Process::CLOCK_MONOTONIC)
 end
 
+Dir.chdir(__dir__)
+
 Mobius.init unless defined?(MOBIUS_NO_INIT)
