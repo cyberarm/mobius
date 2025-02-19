@@ -58,6 +58,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
+    rubyzip (2.4.1)
     sequel (5.89.0)
       bigdecimal
     sqlite3 (2.5.0-x64-mingw-ucrt)
@@ -68,7 +69,6 @@ GEM
       event_emitter
       mutex_m
       websocket
-    zip (2.0.2)
 
 PLATFORMS
   x64-mingw-ucrt
@@ -82,9 +82,9 @@ DEPENDENCIES
   ld-eventsource
   matrix
   perlin_noise
+  rubyzip
   sequel
   sqlite3
-  zip
 
 BUNDLED WITH
    2.6.2
