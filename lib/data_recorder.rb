@@ -132,7 +132,7 @@ module Mobius
       case stream
       when :gamelog
         index = EVENTS.keys.index(:"#{stream}_#{event}")
-        pp [monotonic_time - @seconds, 1, index, :"#{stream}_#{event}", data.values, "GCC#{EVENTS[:"#{stream}_#{event}"]}"]
+        # pp [monotonic_time - @seconds, 1, index, :"#{stream}_#{event}", data.values, "GCC#{EVENTS[:"#{stream}_#{event}"]}"]
         @file.write([monotonic_time - @seconds, 1, index, data.values].flatten.pack("GCC#{EVENTS[:"#{stream}_#{event}"]}"))
       when :renlog
         @file.write([monotonic_time - @seconds, 2, data].pack("GC#{EVENTS[:"#{stream}"]}"))
