@@ -146,8 +146,7 @@ module Mobius
 
       # Compress log file as the renlog bit of it can easily be significantly compressed
       Zip::File.open("#{@filename}.zip", create: true) do |zf|
-          zf.add(File.basename(@filename), @filename)
-        end
+        zf.add(File.basename(@filename), @filename)
       end
 
       # Delete fat file if the zipped file saved
