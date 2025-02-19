@@ -14,6 +14,7 @@ require "discordrb"
 require "perlin_noise"
 require "openssl"
 require "ircparser"
+require "zip"
 
 require_relative "lib/data_recorder"
 require_relative "lib/common"

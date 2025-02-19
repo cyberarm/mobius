@@ -112,6 +112,7 @@ module Mobius
 
     def initialize
       @seconds = monotonic_time
+      @filename = nil
       @file = nil
     end
 
@@ -119,7 +120,8 @@ module Mobius
       @seconds = monotonic_time
 
       FileUtils.mkdir_p("#{ROOT_PATH}/data")
-      @file = File.open("#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat", "a+b")
+      @filename = "#{ROOT_PATH}/data/gamelog_#{Time.now.strftime('%Y-%m-%d-%s')}.dat"
+      @file = File.open(@filename, "a+b")
       @file.sync = true
       @file.puts(["MOBIUS", SCHEMA_VERSION, Time.now.to_i].pack(HEADER))
     end
@@ -141,6 +143,19 @@ module Mobius
 
     def close
       @file&.close
+
+      # Compress log file as the renlog bit of it can easily be significantly compressed
+      Zip::File.open("#{@filename}.zip", create: true) do |zf|
+          zf.add(File.basename(@filename), @filename)
+        end
+      end
+
+      # Delete fat file if the zipped file saved
+      if File.exist?("#{@filename}.zip") && File.size("#{@filename}.zip") > 0
+        File.delete(@filename)
+      end
+
+      @filename = nil
       @file = nil
     end
 

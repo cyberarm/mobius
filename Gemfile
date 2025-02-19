@@ -10,6 +10,7 @@ gem "discordrb"
 gem "perlin_noise"
 gem "matrix"
 gem "ircparser"
+gem "zip"
 
 # Packaging
 # --- bundle exec ocran --debug-extract --console --add-all-core --gem-all .\mobius.rb
