@@ -2,98 +2,38 @@
 
 module Mobius
   class DataRecorder
-    SCHEMA_VERSION = 0
+    SCHEMA_VERSION = 1
     HEADER = "Z*CQ".freeze
     HEADER_BYTE_SIZE = 7 + 1 + 8
 
+    GAMEMESSAGE_CHUNK = 0
     GAMELOG_CHUNK = 1
     RENLOG_CHUNK = 2
 
-    EVENTS = {
-      :gamelog_crate => "Z*CZ*ggggggN",
-      :gamelog_created => "Z*NZ*ggggggggcZ*",
-      :gamelog_destroyed => "Z*NZ*gggg",
-      :gamelog_pos => "", # NO OP
-      :gamelog_enter_vehicle => "NZ*gggNZ*ggg",
-      :gamelog_exit_vehicle => "NZ*gggNZ*ggg",
-      :gamelog_damaged => "Z*NZ*ggggNZ*ggggggg",
-      :gamelog_killed => "Z*NZ*ggggNZ*ggggZ*Z*Z*Z*Z*",
-      :gamelog_purchased => "Z*Z*Z*Z*",
-      :gamelog_score => "NNN",
-      :gamelog_win => "Z*Z*NN",
-      :gamelog_maploaded => "Z*",
-      :gamelog_config => "NZ*",
-      :gamelog_chat => "",
-
-      :renlog => "Z*"
-    }.freeze
-
-    EVENT_BYTE_SIZES = []
-
-    EVENT_ENTITY_TYPE = %w[
-      SOLDIER
-      VEHICLE
-      BUILDING
-    ]
-
-    def self._calculate_base_offsets
-      i = 0
-
-      EVENTS.each do |key, pattern|
-        offset = 0
-
-        pattern.each_char do |char|
-          case char
-          when "C", "c"
-            offset += 1
-          when "N", "g"
-            offset += 4
-          when "Q", "G"
-            offset += 8
-          when "*", "Z" # NO OP
-          else
-            raise "Unknown size for char: #{char}"
-          end
-        end
-
-
-        EVENT_BYTE_SIZES[i] = offset
-        i += 1
-      end
-    end
-
     def self.delog(file)
-      e_k_s = EVENTS.keys.size
-      v_a = EVENTS.values
+      header = []
 
-      string = File.read(file)
-      s_s = string.size
-      offset = 0
+      File.open(file, "r") do |f|
+        header_line = true
+        f.each_line do |line|
+          line = line.strip
 
-      header = string.unpack("#{HEADER}")
-      offset += HEADER_BYTE_SIZE
-      puts "#{header[0]}v#{header[1]} #{Time.at(header[2])}"
+          if header_line
+            header_line = false
+            header = line.unpack("#{HEADER}")
+            puts "#{header[0]}v#{header[1]} #{Time.at(header[2])}"
 
-      while (offset < s_s + 9)
-        # pp offset
-        chunk_header = string.unpack("GC", offset: offset + 1)
-        offset += 8 + 1 # offset_size(chunk_header, "GC")
+            next
+          end
 
-        case chunk_header[1]
-        when GAMELOG_CHUNK
-          chunk_type = string.unpack1("C", offset: offset + 1)
-          offset += 1
+          chunk = line.unpack("GCZ*")
+          puts chunk
 
-          # pp EVENTS.keys[chunk_type]
-          # pp offset
-          chunk = string.unpack(v_a[chunk_type], offset: offset + 1)
-          offset += offset_size(chunk, chunk_type)
-          # pp chunk
-        when RENLOG_CHUNK
-          chunk = string.unpack(EVENTS[:renlog], offset: offset + 1)
-          offset += offset_size(chunk, e_k_s - 1)
-
-          # pp chunk
+          case chunk[1]
+          when GAMEMESSAGE_CHUNK
+          when GAMELOG_CHUNK
+          when RENLOG_CHUNK
+          end
         end
       end
     end
@@ -126,19 +66,23 @@ module Mobius
       @file.puts(["MOBIUS", SCHEMA_VERSION, Time.now.to_i].pack(HEADER))
     end
 
-    def log(stream = :gamelog, event, data)
+    def log(stream = :gamelog, event)
       init_log_file unless @file
 
-      case stream
+      data = event.split(" ", 2).last # drop somewhat useless [HH:mm:ss] bit of event message to be replaced with monotonic (milli)seconds
+
+      chunk_type = case stream
+      when :gamemessage
+        GAMEMESSAGE_CHUNK
       when :gamelog
-        index = EVENTS.keys.index(:"#{stream}_#{event}")
-        # pp [monotonic_time - @seconds, 1, index, :"#{stream}_#{event}", data.values, "GCC#{EVENTS[:"#{stream}_#{event}"]}"]
-        @file.write([monotonic_time - @seconds, 1, index, data.values].flatten.pack("GCC#{EVENTS[:"#{stream}_#{event}"]}"))
+        GAMELOG_CHUNK
       when :renlog
-        @file.write([monotonic_time - @seconds, 2, data].pack("GC#{EVENTS[:"#{stream}"]}"))
+        RENLOG_CHUNK
       else
         raise "Unknown stream type: #{stream}"
       end
+
+      @file.puts([monotonic_time - @seconds, chunk_type, data].pack("GCZ*"))
     end
 
     def close
@@ -157,7 +101,5 @@ module Mobius
       @filename = nil
       @file = nil
     end
-
-    _calculate_base_offsets
   end
 end

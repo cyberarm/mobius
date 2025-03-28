@@ -176,12 +176,15 @@ module Mobius
             end
 
             case id
-            when 0 # SSGMLog
+            when 0 # GameMessage
               feed(event)
+              @data_recorder.log(:gamemessage, event)
             when 1 # GameLog
               GameLog.feed(event)
+              @data_recorder.log(:gamelog, event)
             when 2 # RenLog
               RenLog.feed(event)
+              @data_recorder.log(:renlog, event)
             else
               # Enable when debugging
               # pp [:unhandled_event, type, event]

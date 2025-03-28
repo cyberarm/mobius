@@ -58,8 +58,6 @@ module Mobius
       end
 
       PluginManager.publish_event(:renlog, line)
-
-      SSGM.data_recorder&.log(:renlog, nil, line)
     end
 
     def handle_chat(team_chat, username, message)
@@ -366,6 +364,10 @@ module Mobius
 
         RenRem.cmd("game_info")
         RenRem.cmd("pinfo")
+        RenRem.cmd("vlimitd")
+        RenRem.cmd("alimitd")
+        RenRem.cmd("nlimitd")
+        RenRem.cmd("mlimitd")
 
         return true
       end

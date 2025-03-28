@@ -51,8 +51,6 @@ module Mobius
     end
 
     def parse_line(line)
-      @data_recorder&.puts(line) if Config.record_gamelog
-
       return unless @ready
 
       case line
@@ -99,7 +97,7 @@ module Mobius
         log("GameLog", "CHAT") if Config.debug_verbose
         chat(line)
       else
-        log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
+        log("GameLog", "UNHANDLED LINE: #{line}")# if Config.debug_verbose
       end
 
       PluginManager.publish_event(:gamelog, line)
@@ -122,7 +120,6 @@ module Mobius
       object[:team]   = data[11].to_i
 
       PluginManager.publish_event(:crate, object, data)
-      SSGM.data_recorder&.log(:gamelog, :crate, object)
 
       pp object if Config.debug_verbose
     end
@@ -139,9 +136,9 @@ module Mobius
       object[:z]          = data[6].to_f
       object[:facing]     = data[7].to_f
       object[:max_health] = data[8].to_f
-      object[:health]     = data[8].to_f
+      object[:health]     = data[8].to_f # Yes, they're the same as max health, because they are.
       object[:max_armor]  = data[9].to_f
-      object[:armor]      = data[9].to_f
+      object[:armor]      = data[9].to_f # Yes, they're the same as max health, because they are.
       object[:team]       = data[10].to_i
       object[:name]       = data[11]
       object[:destroyed]  = false
@@ -165,7 +162,6 @@ module Mobius
       end
 
       PluginManager.publish_event(:created, object, data)
-      SSGM.data_recorder&.log(:gamelog, :created, object)
 
       pp object if Config.debug_verbose
     end
@@ -187,7 +183,6 @@ module Mobius
       end
 
       PluginManager.publish_event(:destroyed, object, data)
-      SSGM.data_recorder&.log(:gamelog, :destroyed, object)
 
       case object[:type].downcase
       when "soldier"
@@ -226,7 +221,6 @@ module Mobius
       end
 
       PluginManager.publish_event(:position, object, data)
-      SSGM.data_recorder&.log(:gamelog, :position, object)
 
       pp object if Config.debug_verbose
     end
@@ -289,7 +283,6 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:enter_vehicle, object, data)
-      SSGM.data_recorder&.log(:gamelog, :enter_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -327,7 +320,6 @@ module Mobius
       object[:_vehicle_object] = vehicle_obj if vehicle_obj
 
       PluginManager.publish_event(:exit_vehicle, object, data)
-      SSGM.data_recorder&.log(:gamelog, :exit_vehicle, object)
 
       pp object if Config.debug_verbose
     end
@@ -396,7 +388,6 @@ module Mobius
       object[:_damaged_player_object] = damaged_player if damaged_player
 
       PluginManager.publish_event(:damaged, object, data)
-      SSGM.data_recorder&.log(:gamelog, :damaged, object)
 
       pp object if Config.debug_verbose
     end
@@ -450,7 +441,6 @@ module Mobius
       object[:_killer_object] = killer_obj if killer_obj
 
       PluginManager.publish_event(:killed, object, data)
-      SSGM.data_recorder&.log(:gamelog, :killed, object)
 
       pp object if Config.debug_verbose
     end
@@ -519,7 +509,6 @@ module Mobius
       object[:_player_object] = game_obj
 
       PluginManager.publish_event(:purchased, object, data)
-      SSGM.data_recorder&.log(:gamelog, :purchased, object)
 
       pp object if Config.debug_verbose
     end
@@ -535,7 +524,6 @@ module Mobius
       object[:credits] = data[3].to_i
 
       PluginManager.publish_event(:score, object, data)
-      SSGM.data_recorder&.log(:gamelog, :score, object)
 
       pp object if Config.debug_verbose
     end
@@ -551,7 +539,6 @@ module Mobius
       }
 
       PluginManager.publish_event(:win, object, data)
-      SSGM.data_recorder&.log(:gamelog, :win, object)
       PluginManager.reset_vote
       Presets.save_presets
 
@@ -568,7 +555,6 @@ module Mobius
       }
 
       SSGM.data_recorder&.close
-      SSGM.data_recorder&.log(:gamelog, :maploaded, object)
     end
 
     def config(line)
@@ -580,8 +566,6 @@ module Mobius
         time_limit: data[1].to_i,
         game_name: data[2]
       }
-
-      SSGM.data_recorder&.log(:gamelog, :config, object)
 
       clear_data
     end
