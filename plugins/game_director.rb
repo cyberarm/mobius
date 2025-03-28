@@ -285,6 +285,86 @@ mobius_plugin(name: "GameDirector", database_name: "game_director", version: "0.
     end
   end
 
+  command(:vlimit, arguments: 0, help: "!vlimit - Reports vehicle limit") do |command|
+    broadcast_message("Vehicle limit is #{ServerStatus.get(:vehicle_limit)} vehicles.")
+  end
+
+  command(:alimit, arguments: 0, help: "!alimit - Reports air vehicle limit") do |command|
+    broadcast_message("Air vehicle limit is #{ServerStatus.get(:vehicle_air_limit)} aircraft.")
+  end
+
+  command(:nlimit, arguments: 0, help: "!nlimit - Reports naval vehicle limit") do |command|
+    broadcast_message("Naval vehicle limit is #{ServerStatus.get(:vehicle_naval_limit)} vessels.")
+  end
+
+  command(:mlimit, arguments: 0, help: "!mlimit - Reports mine limit") do |command|
+    broadcast_message("Mine limit is #{ServerStatus.get(:mine_limit)} mines.")
+  end
+
+  command(:svlimit, arguments: 1, help: "!svlimit <limit> - Set vehicle limit", groups: [:admin, :mod, :director]) do |command|
+    limit = begin
+      Integer(command.arguments.first)
+    rescue ArgumentError
+      -1
+    end
+
+    if limit.negative?
+      message_player(command.issuer, "Invalid value for limit, must be a non-negative number.")
+    else
+      renrem_cmd("vlimit #{limit}")
+      ServerStatus.update_vehicle_limit(limit)
+      broadcast_message("Vehicle limit is now #{limit} vehicles.")
+    end
+  end
+
+  command(:salimit, arguments: 1, help: "!salimit <limit> - Set air vehicle limit", groups: [:admin, :mod, :director]) do |command|
+    limit = begin
+      Integer(command.arguments.first)
+    rescue ArgumentError
+      -1
+    end
+
+    if limit.negative?
+      message_player(command.issuer, "Invalid value for limit, must be a non-negative number.")
+    else
+      renrem_cmd("alimit #{limit}")
+      ServerStatus.update_vehicle_air_limit(limit)
+      broadcast_message("Air vehicle limit is now #{limit} aircraft.")
+    end
+  end
+
+  command(:snlimit, arguments: 1, help: "!snlimit <limit> - Set naval vehicle limit", groups: [:admin, :mod, :director]) do |command|
+    limit = begin
+      Integer(command.arguments.first)
+    rescue ArgumentError
+      -1
+    end
+
+    if limit.negative?
+      message_player(command.issuer, "Invalid value for limit, must be a non-negative number.")
+    else
+      renrem_cmd("nlimit #{limit}")
+      ServerStatus.update_vehicle_naval_limit(limit)
+      broadcast_message("Naval vehicle limit is now #{limit} vessels.")
+    end
+  end
+
+  command(:smlimit, arguments: 1, help: "!smlimit <limit> - Set mine limit", groups: [:admin, :mod, :director]) do |command|
+    limit = begin
+      Integer(command.arguments.first)
+    rescue ArgumentError
+      -1
+    end
+
+    if limit.negative?
+      message_player(command.issuer, "Invalid value for limit, must be a non-negative number.")
+    else
+      renrem_cmd("mlimit #{limit}")
+      ServerStatus.update_mine_limit(limit)
+      broadcast_message("Mine limit now #{limit} mines.")
+    end
+  end
+
   vote(:cyclemap, arguments: 0, description: "Vote to end match and cycle map", groups: [:admin, :mod, :director]) do |vote|
     if vote.validate?
       true

@@ -97,7 +97,7 @@ module Mobius
         log("GameLog", "CHAT") if Config.debug_verbose
         chat(line)
       else
-        log("GameLog", "UNHANDLED LINE: #{line}")# if Config.debug_verbose
+        log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
       end
 
       PluginManager.publish_event(:gamelog, line)

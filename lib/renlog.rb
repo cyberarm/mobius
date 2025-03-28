@@ -206,6 +206,14 @@ module Mobius
       return if handle_player_lost_connection(line)
 
       return if handle_player_was_kicked(line) # TODO
+
+      return if handle_vehicle_limit(line)
+
+      return if handle_vehicle_air_limit(line)
+
+      return if handle_vehicle_naval_limit(line)
+
+      return if handle_mine_limit(line)
     end
 
     def handle_list_game_defs(line)
@@ -507,6 +515,58 @@ module Mobius
       return false unless line =~ /was kicked/
 
       PluginManager.publish_event(:irc_broadcast, line)
+    end
+
+    def handle_vehicle_limit(line)
+      if line =~ /Current Vehicle Limit is (.+)/
+        match_data = line.match(/Current Vehicle Limit is (.+)/)
+
+        vlimit = match_data[1].to_i
+        ServerStatus.update_vehicle_limit(vlimit)
+
+        return true
+      end
+
+      return false
+    end
+
+    def handle_vehicle_air_limit(line)
+      if line =~ /Current Air Vehicle Limit is (.+)/
+        match_data = line.match(/Current Air Vehicle Limit is (.+)/)
+
+        vlimit = match_data[1].to_i
+        ServerStatus.update_vehicle_air_limit(vlimit)
+
+        return true
+      end
+
+      return false
+    end
+
+    def handle_vehicle_naval_limit(line)
+      if line =~ /Current Naval Vehicle Limit is (.+)/
+        match_data = line.match(/Current Naval Vehicle Limit is (.+)/)
+
+        vlimit = match_data[1].to_i
+        ServerStatus.update_vehicle_naval_limit(vlimit)
+
+        return true
+      end
+
+      return false
+    end
+
+    def handle_mine_limit(line)
+      if line =~ /The Current Mine Limit is (.+)/
+        match_data = line.match(/The Current Mine Limit is (.+)/)
+
+        vlimit = match_data[1].to_i
+        ServerStatus.update_mine_limit(vlimit)
+
+        return true
+      end
+
+      return false
     end
 
     def check_player_list

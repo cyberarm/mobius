@@ -27,6 +27,11 @@ module Mobius
     @data[:update_interval] = 30.0 # seconds
     @data[:internal_data_reset] = false
 
+    @data[:vehicle_limit] = 0
+    @data[:vehicle_air_limit] = 0
+    @data[:vehicle_naval_limit] = 0
+    @data[:mine_limit] = 0
+
     def self.get(key)
       @data.fetch(key)
     end
@@ -142,6 +147,22 @@ module Mobius
 
     def self.update_start_map(start_map)
       @data[:start_map] = start_map
+    end
+
+    def self.update_vehicle_limit(limit)
+      @data[:vehicle_limit] = limit
+    end
+
+    def self.update_vehicle_air_limit(limit)
+      @data[:vehicle_air_limit] = limit
+    end
+
+    def self.update_vehicle_naval_limit(limit)
+      @data[:vehicle_naval_limit] = limit
+    end
+
+    def self.update_mine_limit(limit)
+      @data[:mine_limit] = limit
     end
 
     def self.game_status

@@ -16,15 +16,19 @@ module Mobius
     def self.apply_map_settings(apply_time: true)
       return unless @@instance
 
-      time          = get_map_setting(:time)
-      mine_limit    = get_map_setting(:mines)
-      vehicle_limit = get_map_setting(:vehicles)
-      rules         = get_map_setting(:rules)
-      botcount      = get_map_setting(:botcount) || 0
+      time           = get_map_setting(:time)
+      mine_limit     = get_map_setting(:mines)
+      vehicle_limit  = get_map_setting(:vehicles)
+      aircraft_limit = get_map_setting(:aircraft)
+      vessels_limit  = get_map_setting(:vessels)
+      rules          = get_map_setting(:rules)
+      botcount       = get_map_setting(:botcount) || 0
 
       RenRem.cmd("time #{time * 60}") if apply_time && time && time.is_a?(Numeric)
       RenRem.cmd("mlimit #{mine_limit}")
       RenRem.cmd("vlimit #{vehicle_limit}")
+      RenRem.cmd("alimit #{aircraft_limit}")
+      RenRem.cmd("nlimit #{vessels_limit}")
       RenRem.cmd("botcount #{botcount}")
 
       unless rules.empty?
