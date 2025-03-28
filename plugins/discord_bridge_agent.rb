@@ -191,7 +191,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
             this.connection_error!
           end
         end
-      rescue SystemCallError => error
+      rescue SystemCallError, StandardError => error
         this.log error
 
         this.connection_error!
