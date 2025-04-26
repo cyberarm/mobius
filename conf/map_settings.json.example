@@ -3,6 +3,8 @@
     "time": 30,
     "mines": 40,
     "vehicles": 30,
+    "aircraft": 30,
+    "vessels": 30,
     "donatelimit": 2,
     "rules": ""
   },
