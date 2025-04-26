@@ -142,6 +142,10 @@ module Mobius
           if @lost_connection
             @lost_connection = false
 
+            # DataRecorder is no long valid
+            # close it so it can auto reopen for the restarted server
+            @data_recorder&.close
+
             # Purge player data
             PlayerData.player_list.each do |player|
               PluginManager.publish_event(:player_left, player)
