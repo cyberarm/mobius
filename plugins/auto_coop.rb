@@ -150,7 +150,12 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       team_0 = ServerStatus.get(:team_0_players)
       team_1 = ServerStatus.get(:team_1_players)
 
-      if team_0 > 1 && team_1.zero?
+      if @default_mode == :versus
+        @versus_started = true
+        @versus_configured = false
+
+        configure_bots
+      elsif team_0 > 1 && team_1.zero?
         @coop_started = true
         @versus_started = false
         @current_side = 0
