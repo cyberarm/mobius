@@ -139,6 +139,17 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     @versus_configured = false
     @versus_persistent_bot_padding = config[:versus_persistent_bot_padding] || 0
 
+    @allow_spy_purchases_in_coop = config[:allow_spy_purchases_in_coop] || false
+    @spy_presets = (config[:spy_presets] || [
+      "Allied_Spy_Rifle",
+      "Allied_Spy_Flame",
+      "Allied_Spy_Shock",
+      "Allied_Spy_Tech"
+    ]).map(&:downcase).map(&:strip)
+
+    PluginManager.blackboard_store(:allow_spy_purchases_in_coop, @allow_spy_purchases_in_coop)
+    PluginManager.blackboard_store(:auto_coop_spy_presets, @spy_presets)
+
     @player_characters = {}
     @last_autobalance_notified = 0
     @autobalance_notifier_interval = 30.0 # seconds
@@ -276,7 +287,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
 
       if player
-        if hash[:preset].downcase.include?("_spy_")
+        if !@allow_spy_purchases_in_coop && @spy_presets.include?(hash[:preset].downcase)
           @known_spies[player.name] = true
         elsif @known_spies.delete(player.name)
         end
@@ -293,7 +304,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
 
     case hash[:type].downcase
     when "character"
-      if hash[:preset].downcase.include?("_spy_")
+      if !@allow_spy_purchases_in_coop && @spy_presets.include?(hash[:preset].downcase)
         RenRem.cmd("ChangeChar #{player.id} #{@player_characters[hash[:object]]}")
         RenRem.cmd("GiveCredits #{player.id} 500")
 

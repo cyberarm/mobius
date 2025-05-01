@@ -480,6 +480,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   on(:created) do |hash|
     player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
+    allow_spy_purchases_in_coop = PluginManager.blackboard_get(:allow_spy_purchases_in_coop) || true
+    auto_coop_spy_presets = PluginManager.blackboard_get(:auto_coop_spy_presets) || []
 
     next unless player
 
@@ -487,7 +489,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     case hash[:type].downcase
     when "soldier"
-      if hash[:preset].downcase.include?("_spy_")
+      if !allow_spy_purchases_in_coop && auto_coop_spy_presets.include?(hash[:preset].downcase)
         @known_spies[player.name] = true
         team_in_flux = true
       elsif @known_spies.delete(player.name)
