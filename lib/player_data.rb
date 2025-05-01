@@ -82,6 +82,10 @@ module Mobius
         @origin == :mobius_moderation_tool
       end
 
+      def discord?
+        @origin == :discord
+      end
+
       def irc?
         @origin == :irc
       end

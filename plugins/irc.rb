@@ -69,10 +69,15 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       handle_ping(msg)
     when "001" # Welcome
       handle_welcome(msg)
+    when "464" # ERR_PASSWDMISMATCH
+      log "ERROR:Password Mismatch: #{msg.parameters.last}"
+      close_socket
     when "433" # Nickname in use error
       handle_nickname_in_use(msg)
     when "error" # something went fatally wrong, we've been disconnected.
       # TODO: Probably call close socket, or do nothing?
+      log "ERROR: #{msg.parameters.last}"
+      close_socket
     when "353" # List of names in channel
       handle_names_list(msg)
     when "311" # WHOIS reply
@@ -97,6 +102,8 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
   end
 
   def handle_welcome(msg)
+    @command_queue << IRCParser::Message.new(command: "OPER", parameters: [@operator_username, @operator_password]) if !@operator_username.empty? && !@operator_password.empty?
+
     join_channels
 
     message = "Entry point found, Mobius v#{Mobius::VERSION} ready! Type !help for a list of available commands."
@@ -213,12 +220,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     messages << IRCParser::Message.new(command: "PASS", parameters: [@account_password]) if @account_password.length.positive?
     messages << IRCParser::Message.new(command: "NICK", parameters: [@account_username])
     messages << IRCParser::Message.new(command: "USER", parameters: [@account_username, "0", "*", ":#{@account_username}"])
-
-    while (msg = messages.shift)
-      @socket.puts(msg)
-    end
-
-    @socket.flush
   end
 
   def add_irc_user(nickname, channel)
@@ -310,12 +311,6 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
 
     messages << IRCParser::Message.new(command: "JOIN", parameters: @channels_public[:key].empty? ? [@channels_public[:name]] : [@channels_public[:name], @channels_public[:key]])
     messages << IRCParser::Message.new(command: "JOIN", parameters: @channels_admin[:key].empty? ? [@channels_admin[:name]] : [@channels_admin[:name], @channels_admin[:key]])
-
-    while (msg = messages.shift)
-      @socket.puts(msg)
-    end
-
-    @socket.flush
   end
 
   def leave_channels_and_quit
@@ -347,10 +342,13 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
     @server_use_ssl = config.dig(:server, :use_ssl) || @server_port == 6697
     @server_verify_cert = config.dig(:server, :verify_cert)
 
-    @account_username = config.dig(:account, :username)
-    @account_password = config.dig(:account, :password)
-    @account_fingerprint = config.dig(:account, :fingerprint)
-    @account_use_client_cert = config.dig(:account, :use_client_cert)
+    @account_username = config.dig(:account, :username) || ""
+    @account_password = config.dig(:account, :password) || ""
+    @account_fingerprint = config.dig(:account, :fingerprint) || ""
+    @account_use_client_cert = config.dig(:account, :use_client_cert) || false
+
+    @operator_username = config.dig(:operator, :username) || ""
+    @operator_password = config.dig(:operator, :password) || ""
 
     @channels_public = config.dig(:channels, :public)
     @channels_admin = config.dig(:channels, :admin)
@@ -404,13 +402,11 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       next
     end
 
-    while (@socket && (msg = @command_queue.shift))
-      @socket.puts(msg)
-    end
-    @socket.flush if @socket
-
     begin
-      # FIXME: Buffer input and only feed complete lines to #handle_message
+      while (@socket && (msg = @command_queue.shift))
+        @socket.puts(msg)
+      end
+      @socket.flush if @socket
 
       # Drain messages from IRC server
       while(@socket && (raw = @socket.read_nonblock(8192)))
@@ -421,6 +417,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       end
     rescue IO::WaitReadable
     rescue EOFError
+    rescue SystemCallError
       close_socket
 
       @schedule_reconnect = 15 # seconds
@@ -486,4 +483,28 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       puts e.backtrace
     end
   end
+
+  # command(:message, aliases: [:msg], arguments: 1, help: "Send a public message from IRC/remote", groups: [:admin, :mod, :director]) do |command|
+  #   if command.issuer.irc?
+  #     broadcast_message("<#{command.issuer.name}@IRC> #{message}")
+  #   else
+  #     message_player(command.issuer, "Command only available from IRC/remote.")
+  #   end
+  # end
+
+  # command(:game_info, aliases: [:gi], arguments: 1, help: "Send a public message from IRC/remote") do |command|
+  #   if command.issuer.irc?
+  #     irc_broadcast(Teams.colorize(player.team, "#{Color.irc_bold("<#{player.name}>")} #{message}"))
+  #   else
+  #     message_player(command.issuer, "Command only available from IRC/remote.")
+  #   end
+  # end
+
+  # command(:player_info, aliases: [:pi], arguments: 1, help: "Send a public message from IRC/remote", groups: [:admin, :mod]) do |command|
+  #   if command.issuer.irc?
+  #     irc_broadcast(Teams.colorize(player.team, "#{Color.irc_bold("<#{player.name}>")} #{message}"))
+  #   else
+  #     message_player(command.issuer, "Command only available from IRC/remote.")
+  #   end
+  # end
 end

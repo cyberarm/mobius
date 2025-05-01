@@ -7,7 +7,11 @@
   },
   "account": {
     "username": "Mobius",
-    "password": "",
+    "password": ""
+  },
+  "operator": {
+    "username": "",
+    "password": ""
   },
   "channels": {
     "public": {
