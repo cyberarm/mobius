@@ -480,8 +480,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
   on(:created) do |hash|
     player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
-    allow_spy_purchases_in_coop = PluginManager.blackboard_get(:allow_spy_purchases_in_coop) || true
-    auto_coop_spy_presets = PluginManager.blackboard_get(:auto_coop_spy_presets) || []
+    allow_spy_purchases_in_coop = PluginManager.blackboard(:allow_spy_purchases_in_coop) || true
+    auto_coop_spy_presets = PluginManager.blackboard(:auto_coop_spy_presets) || []
 
     next unless player
 
