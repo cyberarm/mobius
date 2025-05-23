@@ -254,6 +254,40 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
   end
 
+  command(:kill, arguments: 2, help: "!kill <nickname> <reason>", groups: [:admin, :mod]) do |command|
+    player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
+
+    if player
+      if (granter = player_granted_authority?(player, command.issuer))
+        page_player(granter, "#{command.issuer.name} attempted to kill you!")
+        page_player(command.issuer, "You may not kill your benefactor!")
+      elsif command.issuer.id == player.id
+        page_player(command.issuer, "#{player.name} Cannot kill yourself!")
+      else
+        page_player(command.issuer, "#{player.name} has been kill!")
+
+        RenRem.cmd("kill #{player.id}")
+
+        ip = player.address.split(";").first
+        kill = Database::ModeratorAction.create(
+          name: player.name.downcase,
+          ip: ip,
+          serial: "00000000000000000000000000000000",
+          moderator: command.issuer.name.downcase,
+          reason: command.arguments.last,
+          action: Mobius::MODERATOR_ACTION[:kill]
+        )
+
+        Database::Log.create(
+          log_code: Mobius::LOG_CODE[:killlog],
+          log: "[KILL] #{player.name} (#{ip}) was killed by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{kill.id})"
+        )
+      end
+    else
+      page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
+    end
+  end
+
   command(:add_tempmod, aliases: [:atm], arguments: 1, help: "!add_tempmod <nickname>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
