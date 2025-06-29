@@ -33,9 +33,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
       if (ip = untrusted_ip?(player_ip))
         notify_moderators("[Moderation] #{player.name} might be using a VPN!")
-        notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
+        # notify_moderators("[Moderation] #{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
 
-        log("#{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
+        log("Possible VPN use: #{player.name}'s IP #{player_ip} matched #{ip[0]} (#{ip[1]})")
       end
     end
   end
