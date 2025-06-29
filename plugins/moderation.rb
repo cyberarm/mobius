@@ -80,6 +80,67 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
       end
     else
       page_player(command.issuer, "Failed to find player in game named: #{command.arguments.first}")
+      page_player(command.issuer, "Use \"!bannick\" to ban offline players by nickname or \"!audit <nickname>\" to find their IP(s) and use \"!banip\".")
+    end
+  end
+
+  command(:bannick, arguments: 2, help: "!bannick <exact_nickname> <reason>", groups: [:admin, :mod]) do |command|
+    if command.issuer.value(:given_moderator_power_from)
+      page_player(command.issuer, "Temporarily moderators may not ban players.")
+
+      next
+    end
+
+    nickname = command.arguments.first
+
+    if nickname
+      ban = Database::ModeratorAction.create(
+        name: nickname,
+        ip: "",
+        serial: "00000000000000000000000000000000",
+        moderator: command.issuer.name.downcase,
+        reason: command.arguments.last,
+        action: Mobius::MODERATOR_ACTION[:ban]
+      )
+
+      Database::Log.create(
+        log_code: Mobius::LOG_CODE[:banlog],
+        log: "[BANNICK] Nickname #{nickname} was banned by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{ban.id})"
+      )
+    else
+      page_player(command.issuer, "This should not be possible. Please contact your universe's administrator to ensure quarks are behaving correctly.")
+    end
+  end
+
+  command(:banip, arguments: 2, help: "!banip <ip/range> <reason>", groups: [:admin, :mod]) do |command|
+    if command.issuer.value(:given_moderator_power_from)
+      page_player(command.issuer, "Temporarily moderators may not ban players.")
+
+      next
+    end
+
+    ip_chunk = command.arguments.first
+    ip_address = ip_chunk =~ /\A(\d+\.\d+\.\d+\.\d+)\z/
+    ip_range = !!ip_address && ip_chunk =~ /\A(\d+\.\d+\.\d+)\z/
+
+    ip_chunk += ".*" if ip_range
+
+    if ip_address || ip_range
+      ban = Database::ModeratorAction.create(
+        name: "",
+        ip: ip_chunk,
+        serial: "00000000000000000000000000000000",
+        moderator: command.issuer.name.downcase,
+        reason: command.arguments.last,
+        action: Mobius::MODERATOR_ACTION[:ban]
+      )
+
+      Database::Log.create(
+        log_code: Mobius::LOG_CODE[:banlog],
+        log: "[BANIP] IP #{ip_range ? "range" : "address"} (#{ip_chunk}) was banned by #{command.issuer.name} for \"#{command.arguments.last}\". (ID #{ban.id})"
+      )
+    else
+      page_player(command.issuer, "Invalid IP/range provided, got: \"#{command.arguments.first}\", expected range like: \"123.123.123\" or exact ip like: \"123.123.123.123\"")
     end
   end
 
@@ -126,11 +187,11 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
           )
         end
       else
-        page_player(command.issuer, "Failed to find banned player: #{nickname}")
+        page_player(command.issuer, "Failed to find banned player \"#{nickname}\" in BanList.tsv. #{db_ban ? 'Removing database ban.' : ''}")
         db_ban&.destroy
       end
     else
-      page_player(command.issuer, "BanList.tsv does not exist. #{db_ban ? 'Removing database ban' : ''}")
+      page_player(command.issuer, "BanList.tsv does not exist. #{db_ban ? 'Removing database ban.' : ''}")
       db_ban&.destroy
     end
   end
