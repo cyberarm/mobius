@@ -175,7 +175,7 @@ mobius_plugin(name: "IRC", database_name: "irc", version: "0.0.1") do
       name: nickname,
       join_time: 0,
       score: 0,
-      team: 2,
+      team: Teams::NEUTRAL,
       ping: 0,
       address: "10.10.10.10;11999",
       kbps: 0,

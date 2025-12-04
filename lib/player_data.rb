@@ -114,6 +114,8 @@ module Mobius
       end
 
       def change_team(team, kill: true)
+        raise ArgumentError "Don't use teams less than -4 (SPECTATOR) or greater than 1 (GDI/TEAM_ONE)." if team < Teams::SPECTATOR || team > Teams::TEAM_ONE
+
         old_team = @team
 
         @team = team

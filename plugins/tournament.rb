@@ -507,7 +507,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
           if is_ghost
             change_player(player: player, ghost: true)
-            player.change_team(3, kill: false)
+            player.change_team(Mobius::Teams::NEUTRAL, kill: false)
           else
             if preset_needs_changing
               change_player(player: player)

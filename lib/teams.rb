@@ -1,5 +1,14 @@
 module Mobius
   class Teams
+    SPECTATOR = -4
+    MUTANT = -3
+    NEUTRAL = -2
+    RENEGADE = -1
+    NOD = 0
+    TEAM_ZERO = 0
+    GDI = 1
+    TEAM_ONE = 1
+
     @teams = [
       {
         id: 0,
