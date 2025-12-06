@@ -6,7 +6,7 @@ mobius_plugin(name: "ARYuriMode", database_name: "ar_yuri_mode", version: "0.0.1
   end
 
   command(:ban, aliases: [:ym], arguments: 1, help: "yuri_mode <on/off>", groups: [:admin, :mod]) do |command|
-    if command.arguments.first.to_s.downcase.strip ~= /true|on|1/
+    if command.arguments.first.to_s.downcase.strip =~ /true|on|1/
       @yuri_mode = true
     else
       @yuri_mode = false
