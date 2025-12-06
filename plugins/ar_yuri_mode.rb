@@ -5,7 +5,7 @@ mobius_plugin(name: "ARYuriMode", database_name: "ar_yuri_mode", version: "0.0.1
     @yuri_mode_announce_sound = "c_initiate_created_5.wav"
   end
 
-  command(:ban, aliases: [:ym], arguments: 1, help: "yuri_mode <on/off>", groups: [:admin, :mod]) do |command|
+  command(:yuri_mode, aliases: [:ym], arguments: 1, help: "yuri_mode <on/off>", groups: [:admin, :mod]) do |command|
     if command.arguments.first.to_s.downcase.strip =~ /true|on|1/
       @yuri_mode = true
     else
