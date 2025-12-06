@@ -4,10 +4,18 @@ module Mobius
     MUTANT = -3
     NEUTRAL = -2
     RENEGADE = -1
+    UNTEAMED = -1
     NOD = 0
     TEAM_ZERO = 0
     GDI = 1
     TEAM_ONE = 1
+    TEAM_DONOTUSE = 2 # some scripts do special things with Team 2
+    TEAM_THREE = 3
+    TEAM_FOUR = 4
+    TEAM_FIVE = 5
+    TEAM_SIX = 6
+    TEAM_SEVEN = 7
+    TEAM_EIGHT = 8
 
     @teams = [
       {
