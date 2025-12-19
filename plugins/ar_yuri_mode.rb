@@ -39,14 +39,14 @@ mobius_plugin(name: "ARYuriMode", database_name: "ar_yuri_mode", version: "0.0.1
     end
 
     if player.team != @yuri_team
-      @team_history[command.issuer.name] = command.issuer.team
+      @team_history[player.name] = player.team
       RenRem.cmd("snda #{@yuri_mode_gain_teammate_sound}")
-      player.change_team(3)
+      player.change_team(@yuri_team)
       # Prevent auto coop from automatically moving player back to team.
       player.set_value(:manual_team, true)
     else
       RenRem.cmd("snda #{@yuri_mode_lose_teammate_sound}")
-      player.change_team(@team_history[command.issuer.name])
+      player.change_team(@team_history[player.name])
       player.set_value(:manual_team, false)
     end
   end
