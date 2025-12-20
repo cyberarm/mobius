@@ -31,6 +31,8 @@ module Mobius
 
       find_plugins
       init_plugins
+
+      @inited = true
     end
 
     def self.tick
@@ -53,13 +55,15 @@ module Mobius
 
         begin
           register_plugin(plugin)
-        rescue StandardError, ScriptError => e
+        rescue StandardError, ScriptError, SyntaxError => e
           puts "Failed to load plugin: #{File.basename(plugin)}"
           log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)
 
           # Don't raise again since we want to use our own backtrace printer
-          exit
+          
+          # We're just starting up, exit so that the error is overt:
+          exit unless @inited
         end
       end
     end
@@ -265,7 +269,7 @@ module Mobius
         log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
 
         command.block&.call(CommandResult.new(player, arguments))
-      rescue StandardError, ScriptError => e
+      rescue StandardError, ScriptError, SyntaxError => e
         log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(command.plugin, e.backtrace)
@@ -537,7 +541,7 @@ module Mobius
           RenRem.cmd("evaa #{@active_vote_sound_effect}")
           broadcast_message("[MOBIUS] A vote is active: #{@active_vote_result.announcement}", red: 64, green: 255, blue: 64)
         end
-      rescue StandardError, ScriptError => e
+      rescue StandardError, ScriptError, SyntaxError => e
         log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(vote.plugin, e.backtrace)
@@ -626,7 +630,7 @@ module Mobius
           @active_vote_result.___mode = :commit
 
           vote.block&.call(@active_vote_result)
-        rescue StandardError, ScriptError => e
+        rescue StandardError, ScriptError, SyntaxError => e
           log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
           log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(vote.plugin, e.backtrace)
@@ -679,7 +683,7 @@ module Mobius
     def self.deliver_event(plugin, event, *args)
       begin
         plugin.___tick if event == :tick
-      rescue StandardError, ScriptError => e
+      rescue StandardError, ScriptError, SyntaxError => e
         log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
         log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(plugin, e.backtrace)
@@ -692,7 +696,7 @@ module Mobius
       handlers.each do |handler|
         begin
           handler.call(*args)
-        rescue StandardError, ScriptError => e
+        rescue StandardError, ScriptError, SyntaxError => e
           log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
           log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)
