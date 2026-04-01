@@ -20,7 +20,7 @@ module Mobius
 
     modules.each(&:init)
 
-    log("INIT", "Successfully initialized Mobius v#{Mobius::VERSION}")
+    Mobius.log("INIT", "Successfully initialized Mobius v#{Mobius::VERSION}")
 
     # TODO: start sane main loop
 

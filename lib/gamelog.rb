@@ -5,12 +5,12 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Enabling GameLog...")
+      Mobius.log("INIT", "Enabling GameLog...")
       new
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown GameLog...")
+      Mobius.log("TEARDOWN", "Shutdown GameLog...")
     end
 
     def self.feed(line)
@@ -55,49 +55,49 @@ module Mobius
 
       case line
       when /\[(.+?)\] CRATE/
-        log("GameLog", "CRATE") if Config.debug_verbose
+        Mobius.log("GameLog", "CRATE") if Config.debug_verbose
         crate(line)
       when /\[(.+?)\] CREATED/
-        log("GameLog", "CREATED") if Config.debug_verbose
+        Mobius.log("GameLog", "CREATED") if Config.debug_verbose
         created(line)
       when /\[(.+?)\] DESTROYED/
-        log("GameLog", "DESTROYED") if Config.debug_verbose
+        Mobius.log("GameLog", "DESTROYED") if Config.debug_verbose
         destroyed(line)
       when /\[(.+?)\] POS/
-        log("GameLog", "POS") if Config.debug_verbose
+        Mobius.log("GameLog", "POS") if Config.debug_verbose
         position(line)
       when /\[(.+?)\] ENTER/
-        log("GameLog", "ENTER") if Config.debug_verbose
+        Mobius.log("GameLog", "ENTER") if Config.debug_verbose
         enter_vehicle(line)
       when /\[(.+?)\] EXIT/
-        log("GameLog", "EXIT") if Config.debug_verbose # exit is a reserved keyword
+        Mobius.log("GameLog", "EXIT") if Config.debug_verbose # exit is a reserved keyword
         exit_vehicle(line)
       when /\[(.+?)\] DAMAGED/
-        log("GameLog", "DAMAGED") if Config.debug_verbose
+        Mobius.log("GameLog", "DAMAGED") if Config.debug_verbose
         damaged(line)
       when /\[(.+?)\] KILLED/
-        log("GameLog", "KILLED") if Config.debug_verbose
+        Mobius.log("GameLog", "KILLED") if Config.debug_verbose
         killed(line)
       when /\[(.+?)\] PURCHASED/
-        log("GameLog", "PURCHASED") if Config.debug_verbose
+        Mobius.log("GameLog", "PURCHASED") if Config.debug_verbose
         purchased(line)
       when /\[(.+?)\] SCORE/
-        log("GameLog", "SCORE") if Config.debug_verbose
+        Mobius.log("GameLog", "SCORE") if Config.debug_verbose
         score(line)
       when /\[(.+?)\] WIN/
-        log("GameLog", "WIN") if Config.debug_verbose
+        Mobius.log("GameLog", "WIN") if Config.debug_verbose
         win(line)
       when /\[(.+?)\] 2.03/ # This is sadness
-        log("GameLog", "MAPLOADED") if Config.debug_verbose
+        Mobius.log("GameLog", "MAPLOADED") if Config.debug_verbose
         maploaded(line)
       when /\[(.+?)\] CONFIG/
-        log("GameLog", "CONFIG") if Config.debug_verbose
+        Mobius.log("GameLog", "CONFIG") if Config.debug_verbose
         config(line)
       when /\[(.+?)\] CHAT/
-        log("GameLog", "CHAT") if Config.debug_verbose
+        Mobius.log("GameLog", "CHAT") if Config.debug_verbose
         chat(line)
       else
-        log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
+        Mobius.log("GameLog", "UNHANDLED LINE: #{line}") if Config.debug_verbose
       end
 
       PluginManager.publish_event(:gamelog, line)

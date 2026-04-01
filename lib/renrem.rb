@@ -4,7 +4,7 @@ module Mobius
     @@queue = []
 
     def self.init
-      log("INIT", "Enabling RenRem access...")
+      Mobius.log("INIT", "Enabling RenRem access...")
 
       new(
         address: Config.renrem_address,
@@ -22,7 +22,7 @@ module Mobius
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown RenRem...")
+      Mobius.log("TEARDOWN", "Shutdown RenRem...")
 
       @@instance&.teardown
     end
@@ -159,10 +159,10 @@ module Mobius
 
     def deliver_command(command, send_password)
       # Quite verbose, enable for debugging
-      # log "RENREM", "Sent command '#{command.command[0..249]}' to RenRem!"
+      # Mobius.log "RENREM", "Sent command '#{command.command[0..249]}' to RenRem!"
       # t = monotonic_time
 
-      log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless command.command.length <= 249
+      Mobius.log "RENREM", "WARNING: attempt to send more than 249 characters to renrem detected!" unless command.command.length <= 249
 
       # Drain potential garbage that appears on level change/load.
       # Don't wait for packet as there shouldn't be a packet most of the time.
@@ -178,11 +178,11 @@ module Mobius
       response = drain_socket
 
       command.block&.call(response)
-      # log "Completed command after: #{(monotonic_time - t.round(2))}s"
+      # Mobius.log "Completed command after: #{(monotonic_time - t.round(2))}s"
 
       ServerStatus.fds_renrem_response_okay if response
     rescue Errno::ECONNREFUSED
-      log "RENREM", "Failed to send command '#{command.command}' to RenRem!"
+      Mobius.log "RENREM", "Failed to send command '#{command.command}' to RenRem!"
       ServerStatus.fds_renrem_no_communication!
     end
 
@@ -197,7 +197,7 @@ module Mobius
       rescue IO::WaitReadable # Done receiving response from FDS/RenRem
         return buffer.join
       rescue Errno::ECONNREFUSED
-        log "RENREM", "Unable to connect to RemRem!"
+        Mobius.log "RENREM", "Unable to connect to RemRem!"
         ServerStatus.fds_renrem_no_communication!
 
         nil

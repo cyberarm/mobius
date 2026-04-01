@@ -3,7 +3,7 @@ module Mobius
     @@instance = nil
 
     def self.init(path: nil)
-      log("INIT", "Loading Config...")
+      Mobius.log("INIT", "Loading Config...")
 
       path ? new(path: path) : new
     end

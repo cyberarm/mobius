@@ -266,7 +266,7 @@ module Mobius
 
         Database::Rank.first(name: name.downcase) || Database::Rank.create(name: name.downcase, skill: Player::DEFAULT_SKILL)
 
-        log "PlayerData", "#{player.name} has joined the game"
+        Mobius.log "PlayerData", "#{player.name} has joined the game"
 
         PlayerData.update_match_stats(player)
         PluginManager.publish_event(

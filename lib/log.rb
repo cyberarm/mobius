@@ -1,5 +1,5 @@
-module Kernel
-  def log(*args)
+module Mobius
+  def self.log(*args)
     msg = case args.size
           when 1
             "[LOG] #{args[0]}"
@@ -19,6 +19,8 @@ module Kernel
         )
       )
     end
+
+    puts caller if args[1] && args[0].to_s == "gamelog"
 
     puts "[#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}] #{msg}"
 

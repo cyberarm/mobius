@@ -8,6 +8,8 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
     @bone = "C Head"
     @player_selected_hat = {}
 
+    @debug_hat_index = 0
+
     @hats = %w[
       animal-beaver
       animal-bee
@@ -49,15 +51,17 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
 
   command(:coolhats, arguments: 0..2, help: "!coolhats [[team zero] hat, [team_one_hat]] - Wear cool hats",
                      groups: %i[admin mod]) do |command|
-    @enabled = !@enabled
+    @team_zero_hat = @hats.find { |h| h == command.arguments.first }
+    @team_one_hat = @hats.find { |h| h == command.arguments.last }
 
-    @team_zero_hat = command.arguments.first
-    @team_one_hat = command.arguments.last
+    @enabled = true if @team_zero_hat || @team_one_hat
+    @enabled = !@enabled unless @team_zero_hat || @team_one_hat
 
     if @enabled
       PlayerData.player_list.each do |player|
         next unless can_wear_hat?(player) # keep hats off spectators and ghosts
 
+        remove_hat(player)
         wear_hat(player, select_hat(player))
 
         page_player(player, "[CoolHats] Try out third person ;)")
@@ -74,8 +78,6 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
   end
 
   command(:hats, arguments: 0, help: "!hats - List available hats") do |command|
-    next unless @enabled
-
     page_player(command.issuer, "[CoolHats] Available hats:")
     @hats.each_slice(8).each do |subset|
       page_player(command.issuer, subset.join(", "))
@@ -83,17 +85,24 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
   end
 
   command(:hat, arguments: 1, help: "!hat <hat> - Choose your hat, unless admin has chosen teamed hats.") do |command|
-    next unless @enabled
-
     if (hat = @hats.find { |h| h == command.arguments.first })
       @player_selected_hat[command.issuer] = hat
 
-      remove_hat(player)
-      wear_hat(player, select_hat(player)) if can_wear_hat?(player)
+      remove_hat(command.issuer)
+      wear_hat(command.issuer, select_hat(command.issuer)) if can_wear_hat?(command.issuer)
 
-      page_player(player, "[CoolHats] Hat `#{hat}` selected.")
+      page_player(command.issuer, "[CoolHats] Hat `#{hat}` selected.")
     else
-      page_player(player, "[CoolHats] Hat `#{hat}` not found, see !hats for a list of available hats.")
+      page_player(command.issuer, "[CoolHats] Hat `#{hat}` not found, see !hats for a list of available hats.")
+    end
+  end
+
+  command(:debughats, arguments: 0, help: "!debughats - Cycle through all the hats to weed out any with issues.", groups: [:admin]) do |command|
+    every(3) do
+      message_player(command.issuer, "[CoolHats] Debug: #{@hats[@debug_hat_index]} [ID: #{@debug_hat_index}]")
+      remove_hat(command.issuer)
+      wear_hat(command.issuer, @hats[@debug_hat_index])
+      @debug_hat_index = (@debug_hat_index + 1) % @hats.size
     end
   end
 
@@ -103,13 +112,13 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
 
   def select_hat(player)
     # choose pseudo random hat based on player name
-    hat = player.name.bytes.sum % @hats.size
+    hat = @hats[player.name.bytes.sum % @hats.size]
 
     # choose hat based on team
-    if player.team.zero? && (team_zero_hat = @hats.find { |h| h == @team_zero_hat })
-      hat = team_zero_hat
-    elsif player.team.positive? && (team_one_hat = @hats.find { |h| h == @team_one_hat })
-      hat = team_one_hat
+    if player.team.zero? && @team_zero_hat
+      hat = @team_zero_hat
+    elsif player.team.positive? && @team_one_hat
+      hat = @team_one_hat
     # choose player's selected hat
     elsif (player_hat = @player_selected_hat.find { |key, _h| key == player }&.last)
       hat = player_hat
@@ -119,6 +128,8 @@ mobius_plugin(name: "CoolHats", database_name: "cool_hats", version: "0.0.1") do
   end
 
   def wear_hat(player, hat)
+    log "attachscript #{player.id} #{@script} #{hat},#{@bone}"
+
     return unless hat
 
     RenRem.cmd("attachscript #{player.id} #{@script} #{hat},#{@bone}")

@@ -41,7 +41,7 @@ module Mobius
     @team_first_picking = 0
 
     def self.init
-      log "INIT", "Loading Teams..."
+      Mobius.log "INIT", "Loading Teams..."
 
       read_config
     end

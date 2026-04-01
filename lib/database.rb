@@ -1,7 +1,7 @@
 module Mobius
   class Database
     def self.init
-      log "INIT", "Connecting to Database..."
+      Mobius.log "INIT", "Connecting to Database..."
 
       Sequel.extension(:migration)
 
@@ -9,9 +9,9 @@ module Mobius
       migrations_path = File.expand_path("./db/migrations", __dir__)
 
       unless Sequel::Migrator.is_current?(@db, migrations_path)
-        log "DATABASE", "Applying new migrations..."
+        Mobius.log "DATABASE", "Applying new migrations..."
         Sequel::Migrator.run(@db, migrations_path)
-        log "DATABASE", "Done migrating."
+        Mobius.log "DATABASE", "Done migrating."
       end
 
       require_relative "db/models/plugin_data"
@@ -30,7 +30,7 @@ module Mobius
     end
 
     def self.teardown
-      log "TEARDOWN", "Closing Database..."
+      Mobius.log "TEARDOWN", "Closing Database..."
     end
   end
 end

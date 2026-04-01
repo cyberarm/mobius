@@ -23,7 +23,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     elsif @versus_started || !@coop_started
       if !@versus_configured && @versus_persistent_bot_padding == 0
         @versus_configured = true
-        bot_count = MapSettings.get_map_setting(:botcount) || 0
+        bot_count = MapSettings.get_map_setting(:botcount, 0)
 
         RenRem.cmd("botcount #{bot_count}")
 

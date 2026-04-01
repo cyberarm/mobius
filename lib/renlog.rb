@@ -5,12 +5,12 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Enabling RenLog...")
+      Mobius.log("INIT", "Enabling RenLog...")
       new
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown RenLog...")
+      Mobius.log("TEARDOWN", "Shutdown RenLog...")
     end
 
     def self.feed(line)
@@ -273,7 +273,7 @@ module Mobius
           player
         )
 
-        log "PlayerData", "#{player.name} left the game"
+        Mobius.log "PlayerData", "#{player.name} left the game"
 
         RenRem.cmd("game_info")
         RenRem.cmd("pinfo")
@@ -421,7 +421,7 @@ module Mobius
           player.set_value(:scripts_version, scripts_version)
           player.set_value(:scripts_reversion, scripts_revision)
 
-          log "#{player.name} has scripts #{scripts_version} (revision: #{scripts_revision})"
+          Mobius.log "#{player.name} has scripts #{scripts_version} (revision: #{scripts_revision})"
         end
 
         return true
@@ -436,7 +436,7 @@ module Mobius
         ServerConfig.scripts_version  = Float(match_data[1])
         ServerConfig.scripts_revision = match_data[2].to_s.strip.empty? ? 1 : Integer(match_data[2].to_s.strip.sub("r", ""))
 
-        log "The server is running scripts: #{ServerConfig.scripts_version} r#{ServerConfig.scripts_revision}" if Config.debug_verbose
+        Mobius.log "The server is running scripts: #{ServerConfig.scripts_version} r#{ServerConfig.scripts_revision}" if Config.debug_verbose
 
         return true
       end
@@ -480,7 +480,7 @@ module Mobius
         RenRem.cmd("mapnum")
 
         if ServerConfig.data[:nextmap_changed_id]
-          log "Restoring map at index #{ServerConfig.data[:nextmap_changed_id]} to #{ServerConfig.data[:nextmap_changed_mapname]}"
+          Mobius.log "Restoring map at index #{ServerConfig.data[:nextmap_changed_id]} to #{ServerConfig.data[:nextmap_changed_mapname]}"
           RenRem.cmd("mlistc #{ServerConfig.data[:nextmap_changed_id]} #{ServerConfig.data[:nextmap_changed_mapname]}")
 
           # Update rotation
@@ -572,7 +572,7 @@ module Mobius
     def check_player_list
       PlayerData.player_list.reverse.each do |player|
         if monotonic_time - player.last_updated > 40
-          log "Deleting data for player #{player.name} (ID: #{player.id})"
+          Mobius.log "Deleting data for player #{player.name} (ID: #{player.id})"
           PlayerData.delete(player)
         end
 

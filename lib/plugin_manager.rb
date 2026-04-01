@@ -27,7 +27,7 @@ module Mobius
     @blackboard = {}
 
     def self.init
-      log("INIT", "Initializing plugins...")
+      Mobius.log("INIT", "Initializing plugins...")
 
       find_plugins
       init_plugins
@@ -40,7 +40,7 @@ module Mobius
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown Plugins...")
+      Mobius.log("TEARDOWN", "Shutdown Plugins...")
 
       @plugins.each do |plugin|
         deliver_event(plugin, :shutdown, nil)
@@ -57,11 +57,11 @@ module Mobius
           register_plugin(plugin)
         rescue StandardError, ScriptError, SyntaxError => e
           puts "Failed to load plugin: #{File.basename(plugin)}"
-          log "ERROR", "#{e.class}: #{e}"
+          Mobius.log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)
 
           # Don't raise again since we want to use our own backtrace printer
-          
+
           # We're just starting up, exit so that the error is overt:
           exit unless @inited
         end
@@ -71,7 +71,7 @@ module Mobius
     def self.register_plugin(plugin_file)
       @plugins << Plugin.new(plugin_file)
 
-      log "PLUGIN MANAGER", "Found plugin: #{@plugins.last.___name}"
+      Mobius.log "PLUGIN MANAGER", "Found plugin: #{@plugins.last.___name}"
     end
 
     def self.init_plugins
@@ -86,7 +86,7 @@ module Mobius
     def self.enable_plugin(plugin)
       plugin.___enable_plugin
 
-      log "PLUGIN MANAGER", "Enabled plugin: #{plugin.___name}"
+      Mobius.log "PLUGIN MANAGER", "Enabled plugin: #{plugin.___name}"
 
       deliver_event(plugin, :start, nil)
     end
@@ -117,7 +117,7 @@ module Mobius
         end
       end
 
-      log "PLUGIN MANAGER", "Disabled plugin: #{plugin.___name}"
+      Mobius.log "PLUGIN MANAGER", "Disabled plugin: #{plugin.___name}"
     end
 
     def self.register_command(command)
@@ -171,56 +171,56 @@ module Mobius
       cmd = parts.shift.sub("!", "")
 
       if cmd.downcase.to_sym == :help
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_help_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :fds && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_fds_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :reload_config && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_reload_config_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :plugins && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_plugins_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :enable && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_enable_plugin_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :reload && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_reload_plugin_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :disable && player.administrator?
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_disable_plugin_command(player, parts)
 
         return
       end
 
       if cmd.downcase.to_sym == :vote || cmd.downcase.to_sym == :v
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
         handle_vote_plugin_command(player, parts)
 
         return
@@ -228,7 +228,7 @@ module Mobius
 
       # Handle !yes and !no voting commands
       if cmd.downcase.to_sym == :yes || cmd.downcase.to_sym == :no
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
 
         parts << cmd.downcase.strip
 
@@ -240,7 +240,7 @@ module Mobius
       command = @commands[cmd.downcase.to_sym]
 
       if command.nil? || !player.in_group?(command&.groups)
-        log "PLUGIN MANAGER", "Player #{player.name} tried to use command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} tried to use command #{message}"
 
         message_player(player, "Command: #{cmd} not found.")
 
@@ -266,12 +266,12 @@ module Mobius
       end
 
       begin
-        log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} issued command #{message}"
 
         command.block&.call(CommandResult.new(player, arguments))
       rescue StandardError, ScriptError, SyntaxError => e
-        log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
-        log "ERROR", "#{e.class}: #{e}"
+        Mobius.log "PLUGIN MANAGER", "An error occurred while delivering command: #{command.name}, to plugin: #{command.plugin.___name}"
+        Mobius.log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(command.plugin, e.backtrace)
       end
     end
@@ -501,7 +501,7 @@ module Mobius
       vote = @votes[vt.downcase.to_sym]
 
       if vote.nil? || !player.in_group?(vote&.groups)
-        log "PLUGIN MANAGER", "Player #{player.name} tried to use vote #{parts.join(' ')}"
+        Mobius.log "PLUGIN MANAGER", "Player #{player.name} tried to use vote #{parts.join(' ')}"
 
         message_player(player, "vote: #{vt} not found.")
 
@@ -542,8 +542,8 @@ module Mobius
           broadcast_message("[MOBIUS] A vote is active: #{@active_vote_result.announcement}", red: 64, green: 255, blue: 64)
         end
       rescue StandardError, ScriptError, SyntaxError => e
-        log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
-        log "ERROR", "#{e.class}: #{e}"
+        Mobius.log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
+        Mobius.log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(vote.plugin, e.backtrace)
       end
     end
@@ -616,7 +616,7 @@ module Mobius
       vote_failed = total_votes >= player_list.size
 
       if positive_votes >= required_votes
-        log("PLUGIN MANAGER", "Passing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+        Mobius.log("PLUGIN MANAGER", "Passing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
         vote_passed = true
 
         RenRem.cmd("evaa #{@active_vote_sound_effect}")
@@ -631,8 +631,8 @@ module Mobius
 
           vote.block&.call(@active_vote_result)
         rescue StandardError, ScriptError, SyntaxError => e
-          log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
-          log "ERROR", "#{e.class}: #{e}"
+          Mobius.log "PLUGIN MANAGER", "An error occurred while delivering vote: #{vote.name}, to plugin: #{vote.plugin.___name}"
+          Mobius.log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(vote.plugin, e.backtrace)
         end
 
@@ -641,7 +641,7 @@ module Mobius
       end
 
       if vote_failed
-        log("PLUGIN MANAGER", "Failing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
+        Mobius.log("PLUGIN MANAGER", "Failing Vote [#{@active_vote.name}]: #{player_list.size} Players, #{total_votes} Total votes, #{required_votes} Required votes, #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
 
         RenRem.cmd("evaa #{@active_vote_sound_effect}")
         reset_vote(reason: "Vote has FAILED. #{positive_votes} Ayes, #{negative_votes} Nays, and #{player_list.size - total_votes} Abstained.")
@@ -684,8 +684,8 @@ module Mobius
       begin
         plugin.___tick if event == :tick
       rescue StandardError, ScriptError, SyntaxError => e
-        log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
-        log "ERROR", "#{e.class}: #{e}"
+        Mobius.log "PLUGIN MANAGER", "An error occurred while delivering timer tick to plugin: #{plugin.___name}"
+        Mobius.log "ERROR", "#{e.class}: #{e}"
         formatted_backtrace(plugin, e.backtrace)
       end
 
@@ -697,8 +697,8 @@ module Mobius
         begin
           handler.call(*args)
         rescue StandardError, ScriptError, SyntaxError => e
-          log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
-          log "ERROR", "#{e.class}: #{e}"
+          Mobius.log "PLUGIN MANAGER", "An error occurred while delivering event: #{event}, for plugin: #{plugin.___name}"
+          Mobius.log "ERROR", "#{e.class}: #{e}"
           formatted_backtrace(plugin, e.backtrace)
         end
       end

@@ -5,12 +5,12 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Enabling MapSettings...")
+      Mobius.log("INIT", "Enabling MapSettings...")
       new
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown MapSettings...")
+      Mobius.log("TEARDOWN", "Shutdown MapSettings...")
     end
 
     def self.apply_map_settings(apply_time: true)
@@ -38,7 +38,9 @@ module Mobius
       end
     end
 
-    def self.get_map_setting(setting)
+    def self.get_map_setting(setting, default_value)
+      return default_value unless @@instance
+
       map = ServerStatus.get(:current_map)
 
       default_setting = @@instance.data.dig(:defaults, setting)
@@ -50,6 +52,8 @@ module Mobius
     attr_reader :data
 
     def initialize(path: "#{ROOT_PATH}/conf/map_settings.json")
+      return unless File.exist?(path)
+
       @@instance = self
 
       @data = JSON.parse(File.read(path), symbolize_names: true).freeze

@@ -1,6 +1,6 @@
 mobius_plugin(name: "Donate", database_name: "donate", version: "0.0.1") do
   def donations_available?(player)
-    donate_limit = MapSettings.get_map_setting(:donatelimit)
+    donate_limit = MapSettings.get_map_setting(:donatelimit, 2)
     map = ServerStatus.get(:current_map)
     map_elapsed_time = monotonic_time.to_i - ServerStatus.get(:map_start_time)
 

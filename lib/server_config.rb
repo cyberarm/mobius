@@ -100,7 +100,7 @@ module Mobius
           case key
           when "AllowRemoteAdmin"
             unless value == "true" || value == "1"
-              log "ServerConfig", "WARNING: AllowRemoteAdmin option in server.ini is not set to true. Mobius will not be able to communicate properly with the server!"
+              Mobius.log "ServerConfig", "WARNING: AllowRemoteAdmin option in server.ini is not set to true. Mobius will not be able to communicate properly with the server!"
             end
           when "RemoteAdminPassword"
             @data[:renrem_password] = value

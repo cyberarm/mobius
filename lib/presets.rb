@@ -3,7 +3,7 @@ module Mobius
     PATH = "#{ROOT_PATH}/conf/presets.json".freeze
 
     def self.init
-      log("INIT", "Enabling Preset Translation...")
+      Mobius.log("INIT", "Enabling Preset Translation...")
 
       @presets = {}
 
@@ -20,7 +20,7 @@ module Mobius
     end
 
     def self.teardown
-      log("INIT", "Shutdown Preset Translation...")
+      Mobius.log("INIT", "Shutdown Preset Translation...")
 
       save_presets
     end

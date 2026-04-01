@@ -6,7 +6,7 @@ module Mobius
     @@instance = nil
 
     def self.init
-      log("INIT", "Connecting to SSGM...")
+      Mobius.log("INIT", "Connecting to SSGM...")
 
       new(
         address: Config.ssgm_address,
@@ -15,7 +15,7 @@ module Mobius
     end
 
     def self.teardown
-      log("TEARDOWN", "Shutdown SSGM...")
+      Mobius.log("TEARDOWN", "Shutdown SSGM...")
 
       @@instance&.teardown
     end
@@ -81,7 +81,7 @@ module Mobius
             next unless line.start_with?("\"")
 
             _, name = line.split('"')
-            log("SSGM", "Map in position #{i} is #{name}")
+            Mobius.log("SSGM", "Map in position #{i} is #{name}")
             ServerConfig.rotation << name
 
             i += 1
@@ -111,7 +111,7 @@ module Mobius
             end
 
             ServerConfig.rotation << name
-            log("SSGM", "Map in position #{i} is #{name}")
+            Mobius.log("SSGM", "Map in position #{i} is #{name}")
           end
         end
 
@@ -122,7 +122,7 @@ module Mobius
 
       ServerConfig.rotation
     rescue NoMethodError
-      log("SSGM", "Failed to retrieve server rotation from RenRem.")
+      Mobius.log("SSGM", "Failed to retrieve server rotation from RenRem.")
 
       nil
     end
@@ -137,7 +137,7 @@ module Mobius
           @socket = TCPSocket.new(@address, @port)
           @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
 
-          log("SSGM", "Connected to SSGM.")
+          Mobius.log("SSGM", "Connected to SSGM.")
 
           if @lost_connection
             @lost_connection = false
@@ -149,7 +149,7 @@ module Mobius
             # Purge player data
             PlayerData.player_list.each do |player|
               PluginManager.publish_event(:player_left, player)
-              log("SSGM", "Deleting data for player #{player.name} (ID: #{player.id})")
+              Mobius.log("SSGM", "Deleting data for player #{player.name} (ID: #{player.id})")
               PlayerData.delete(player)
             end
 
@@ -182,13 +182,13 @@ module Mobius
             case id
             when 0 # GameMessage
               feed(event)
-              @data_recorder.log(:gamemessage, event)
+              @data_recorder&.log(:gamemessage, event)
             when 1 # GameLog
               GameLog.feed(event)
-              @data_recorder.log(:gamelog, event)
+              @data_recorder&.log(:gamelog, event)
             when 2 # RenLog
               RenLog.feed(event)
-              @data_recorder.log(:renlog, event)
+              @data_recorder&.log(:renlog, event)
             else
               # Enable when debugging
               # pp [:unhandled_event, type, event]
@@ -197,8 +197,8 @@ module Mobius
 
           raise SSGMCommunicationLostError, "Lost connection to SSGM."
         rescue SystemCallError, StandardError => e
-          log("SSGM", "An error occurred while attempting to communicate with SSGM. Retrying in 10s...")
-          log "SSGM", "#{e.class}: #{e}"
+          Mobius.log("SSGM", "An error occurred while attempting to communicate with SSGM. Retrying in 10s...")
+          Mobius.log "SSGM", "#{e.class}: #{e}"
           puts e.backtrace
 
           @socket&.close unless @socket&.closed?

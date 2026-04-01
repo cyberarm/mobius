@@ -37,12 +37,12 @@ module Mobius
     end
 
     def self.init
-      log "INIT", "Enabling ServerStatus..."
+      Mobius.log "INIT", "Enabling ServerStatus..."
       monitor
     end
 
     def self.teardown
-      log "TEARDOWN", "Shutdown ServerStatus..."
+      Mobius.log "TEARDOWN", "Shutdown ServerStatus..."
       @monitor_thread&.kill
     end
 

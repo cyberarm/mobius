@@ -153,7 +153,7 @@ module Mobius
     end
 
     def log(message)
-      Kernel.log("PLUGIN: #{@___name}", message)
+      Mobius.log("PLUGIN: #{@___name}", message)
     end
 
     def database_set(key, value)

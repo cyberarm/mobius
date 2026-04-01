@@ -4,7 +4,7 @@ module Mobius
     @server = Excon.new("http://localhost:32068/mobius/ingest", persistent: true)
 
     def self.init
-      log "INIT", "Enabling ModerationServerClient..."
+      Mobius.log "INIT", "Enabling ModerationServerClient..."
       @running = true
 
       monitor
@@ -15,7 +15,7 @@ module Mobius
     end
 
     def self.teardown
-      log "TEARDOWN", "Shutdown ModerationServerClient..."
+      Mobius.log "TEARDOWN", "Shutdown ModerationServerClient..."
       @sse_client&.close
     end
 
@@ -45,9 +45,9 @@ module Mobius
         case response.status
         when 200
         when 401
-          log "Misconfigured Agent, got 401..."
+          Mobius.log "Misconfigured Agent, got 401..."
         else
-          log "Something went wrong: #{response.status}"
+          Mobius.log "Something went wrong: #{response.status}"
         end
 
       rescue Errno::ECONNRESET, Errno::ECONNABORTED, Excon::Error::Socket, Excon::Error
@@ -64,16 +64,16 @@ module Mobius
     def self.handle_payload(payload)
       case payload[:type]
       when "chat"
-        log "ModerationServerClient", "CHAT: #{payload[:message]}"
+        Mobius.log "ModerationServerClient", "CHAT: #{payload[:message]}"
         # TODO: Inject this as a normal chat message so that commands are parsed
         RenRem.cmd("msg [MOBIUS+REMOTE] #{payload[:message][0..210]}")
       when "fds"
-        log "ModerationServerClient", "FDS: #{payload[:message]}"
+        Mobius.log "ModerationServerClient", "FDS: #{payload[:message]}"
         RenRem.cmd(payload[:message])
       when "keep_alive"
         # NO OP
       else
-        log "ModerationServerClient", "UNHANDLED PAYLOAD: #{payload}"
+        Mobius.log "ModerationServerClient", "UNHANDLED PAYLOAD: #{payload}"
       end
     end
 
