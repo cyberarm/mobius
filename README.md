@@ -1,10 +1,10 @@
 ![Mobius Banner](https://raw.githubusercontent.com/cyberarm/mobius/master/media/mobius_banner.png)
 
 # Mobius
-A Brenbot replacement/reimplmentation
+A Brenbot replacement/reimplementation
 
 ## Is it any good?
-No, not at all yet.
+Yes.
 
 ## Installation
 TODO
