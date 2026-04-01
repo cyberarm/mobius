@@ -1,7 +1,7 @@
 module Mobius
   def self.init
-    major, minor, _point = RUBY_VERSION.split(".").map(&:to_i)
-    raise "Must use Ruby 3.2.0 or newer due to changes to Struct class (Using Ruby #{RUBY_VERSION})" unless major >= 3 && minor >= 2
+    v = Gem::Version.new(RUBY_VERSION)
+    raise "Must use Ruby 3.2.0 or newer due to changes to Struct class (Using Ruby #{RUBY_VERSION})" unless v >= "3.2.0"
 
     modules = [
       Config,
