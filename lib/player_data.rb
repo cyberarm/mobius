@@ -4,9 +4,9 @@ module Mobius
       DEFAULT_SKILL = 0.0
 
       attr_reader :origin, :data
-      attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :rank, :kills, :deaths, :money, :kd, :time, :last_updated
+      attr_accessor :id, :name, :join_time, :score, :team, :ping, :address, :kbps, :rank, :kills, :deaths, :money, :kd, :object_team, :time, :last_updated
 
-      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, time:, last_updated:)
+      def initialize(origin:, id:, name:, join_time:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, object_team:, time:, last_updated:)
         # Connection method
         @origin = origin
 
@@ -22,6 +22,7 @@ module Mobius
         @deaths       =  deaths # Integer
         @money        =  money # Integer
         @kd           =  kd # Float
+        @object_team  =  object_team # Integer
         @kbps         = kbps # Integer
         @time         = time # Float | Monotonic Time
         @last_updated = last_updated # Float | Monotonic Time
@@ -195,7 +196,7 @@ module Mobius
     @player_data = {}
     @match_stats = {}
 
-    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, last_updated:)
+    def self.update(origin:, id:, name:, score:, team:, ping:, address:, kbps:, rank:, kills:, deaths:, money:, kd:, object_team:, last_updated:)
       if (player = @player_data[id])
         player_updated = player.score != score ||
                          player.team != team ||
@@ -205,7 +206,8 @@ module Mobius
                          player.kills != kills ||
                          player.deaths != deaths ||
                          player.money != money ||
-                         player.kd != kd
+                         player.kd != kd ||
+                         player.object_team != object_team
                          # Time is not a useful metric
 
         old_team = player.team
@@ -219,6 +221,7 @@ module Mobius
         player.deaths = deaths
         player.money = money
         player.kd = kd
+        player.object_team = object_team
         player.time += last_updated - player.last_updated
         player.last_updated = last_updated
 
@@ -344,11 +347,20 @@ module Mobius
 
     def self.players_by_team(team)
       if team.is_a?(Integer)
-        player_list.select { |ply| ply.team == team }
+        player_list.select { |player| player.team == team }
       elsif team.is_a?(String)
         raise NotImplementedError
       else
-        # caller.__warn("PlayerData#players_by_team invalid argument for team, expected an Integer or a String, got #{team.class}")
+        nil
+      end
+    end
+
+    def self.players_by_object_team(object_team)
+      if object_team.is_a?(Integer)
+        player_list.select { |player| player.object_team == object_team }
+      elsif object_team.is_a?(String)
+        raise NotImplementedError
+      else
         nil
       end
     end

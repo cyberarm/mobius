@@ -15,7 +15,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
         team: player.team
       }
 
-      h[:spy] = true if @known_spies[player.name]
+      h[:spy] = true if player.team != player.object_team
 
       h
     end
@@ -384,8 +384,6 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     @last_connection_attempt = 0.0
     @status_last_sent = 0
 
-    @known_spies = {}
-
     connect_to_bridge
 
     after(5) do
@@ -405,7 +403,6 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
     deliver(fetch_staff(@auth_channel)) if @auth_channel
 
     @send_status = true
-    @known_spies = {}
 
     @suppress_voice_channel_changes = true
 
@@ -476,35 +473,6 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     # Sync voice channel data and send channel announcements
     handle_voice_channel_data(@voice_channel_data) if @voice_channel_data_updated
-  end
-
-  on(:created) do |hash|
-    player = PlayerData.player(PlayerData.name_to_id(hash[:name]))
-    allow_spy_purchases_in_coop = PluginManager.blackboard(:allow_spy_purchases_in_coop) || true
-    auto_coop_spy_presets = PluginManager.blackboard(:auto_coop_spy_presets) || []
-
-    next unless player
-
-    team_in_flux = false
-
-    case hash[:type].downcase
-    when "soldier"
-      if !allow_spy_purchases_in_coop && auto_coop_spy_presets.include?(hash[:preset].downcase)
-        @known_spies[player.name] = true
-        team_in_flux = true
-      elsif @known_spies.delete(player.name)
-        team_in_flux = true
-      end
-    end
-
-    # Prevent/mitigate voice channel change spam due to player team not in sync
-    if team_in_flux
-      RenRem.cmd("pinfo")
-
-      after(1) do
-        @send_status = true
-      end
-    end
   end
 
   on(:_discord_bot_verify_staff) do |player, discord_id|

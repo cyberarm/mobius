@@ -303,23 +303,23 @@ module Mobius
     end
 
     def parse_player_info(line)
-      # i, m_pName, m_Score, m_Team, m_Ping, m_IP, m_KB, m_Rank, m_Kills, m_Deaths, m_Money, m_KD
+      # i, m_pName, m_Score, m_Team, m_Ping, m_IP, m_KB, m_Rank, m_Kills, m_Deaths, m_Money, m_KD, m_Object_Team
 
       split_data = line.split(",")
 
-      id       = split_data[0].to_i
-      name     = split_data[1]
-      score    = split_data[2].to_i
-      team     = split_data[3].to_i
-      ping     = split_data[4].to_i
-      address  = split_data[5]
-      kbps     = split_data[6].to_i
-      rank     = split_data[7].to_i
-      kills    = split_data[8].to_i
-      deaths   = split_data[9].to_i
-      money    = split_data[10].to_i
-      kd       = split_data[11].to_f
-      # time     = split_data[7]
+      id          = split_data[0].to_i
+      name        = split_data[1]
+      score       = split_data[2].to_i
+      team        = split_data[3].to_i
+      ping        = split_data[4].to_i
+      address     = split_data[5]
+      kbps        = split_data[6].to_i
+      rank        = split_data[7].to_i
+      kills       = split_data[8].to_i
+      deaths      = split_data[9].to_i
+      money       = split_data[10].to_i
+      kd          = split_data[11].to_f
+      object_team = split_data[12]&.to_i || team # added in 5.1 b13741, fallback to copying team if object_team is not present.
 
       PlayerData.update(
         origin: :game,
@@ -335,6 +335,7 @@ module Mobius
         deaths: deaths,
         money: money,
         kd: kd,
+        object_team: object_team,
         last_updated: monotonic_time
       )
 
