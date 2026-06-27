@@ -612,7 +612,7 @@ module Mobius
       # ignore CONFIG gamelog event
       if win_data
         # Create a dummy playerdata player object
-        tally = PlayerData::Player.new(origin: "NULL", id: "", name: "", join_time: nil, score: 0, team: -1, ping: 0, address: ";", kbps: 0, rank: 0, kills: 0, deaths: 0, money: 0, kd: 0, time: nil, last_updated: nil)
+        tally = PlayerData::Player.new(origin: "NULL", id: "", name: "", join_time: nil, score: 0, team: -1, ping: 0, address: ";", kbps: 0, rank: 0, kills: 0, deaths: 0, money: 0, kd: 0, object_team: -1, time: nil, last_updated: nil)
         ### Use PlayerData.match_stats data instead of PlayerData.player_list so that all match players affect ranking
         player_list = PlayerData.match_stats
 
