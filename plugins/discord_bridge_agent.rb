@@ -12,7 +12,8 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       h = {
         name: player.name,
         score: player.score,
-        team: player.team
+        team: player.team,
+        object_team: player.object_team
       }
 
       h[:spy] = true if player.team != player.object_team
