@@ -256,6 +256,7 @@ module Mobius
           deaths: deaths,
           money: money,
           kd: kd,
+          object_team: object_team,
           time: 0,
           last_updated: last_updated
         )
