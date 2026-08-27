@@ -344,6 +344,7 @@ module Mobius
 
     def handle_level_loaded(line)
       if line == "Level loaded OK"
+        ParticipantData.clear
         PluginManager.publish_event(:irc_broadcast, line)
         ServerConfig.read_server_settings
 
@@ -403,6 +404,7 @@ module Mobius
         PluginManager.publish_event(:irc_broadcast, line)
 
         PlayerData.clear
+        ParticipantData.reset!
         RenRem.cmd("sversion")
         ServerConfig.fetch_available_maps
 
@@ -470,6 +472,7 @@ module Mobius
     def handle_loading_level(line)
       if line =~ /Loading level (.+)/
         match_data = line.match(/Loading level (.+)/)
+        ParticipantData.clear
         PluginManager.publish_event(:irc_broadcast, line)
 
         pp match_data[1] if Config.debug_verbose

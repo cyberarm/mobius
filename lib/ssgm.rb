@@ -153,6 +153,7 @@ module Mobius
               PlayerData.delete(player)
             end
 
+            ParticipantData.reset!
             PluginManager.reset_blackboard!
 
             # Soft re-init Mobius on server crash

@@ -29,7 +29,7 @@ module Mobius
       RenRem.cmd("vlimit #{vehicle_limit}") unless vehicle_limit.negative?
       RenRem.cmd("alimit #{aircraft_limit}") unless aircraft_limit.negative?
       RenRem.cmd("nlimit #{vessels_limit}") unless vessels_limit.negative?
-      RenRem.cmd("botcount #{botcount}")
+      ParticipantData.set_bot_population(botcount)
 
       unless rules.empty?
         after(5) do
