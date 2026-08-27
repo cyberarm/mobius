@@ -65,6 +65,7 @@ module Mobius
 
       RenRem.cmd("pinfo")
       RenRem.cmd("game_info")
+      ParticipantData.refresh
     end
 
     def self.fds_renrem_response_okay

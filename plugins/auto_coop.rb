@@ -16,39 +16,24 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     # end
 
     if player_count.zero? # Idle server
-      RenRem.cmd("botcount 0")
-
-      PluginManager.blackboard_store(:"team_0_bot_count", 0)
-      PluginManager.blackboard_store(:"team_1_bot_count", 0)
+      ParticipantData.set_bot_population(0)
     elsif @versus_started || !@coop_started
       if !@versus_configured && @versus_persistent_bot_padding == 0
         @versus_configured = true
         bot_count = MapSettings.get_map_setting(:botcount, 0)
 
-        RenRem.cmd("botcount #{bot_count}")
-
-        PluginManager.blackboard_store(:"team_0_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
-        PluginManager.blackboard_store(:"team_1_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+        ParticipantData.set_bot_population(bot_count)
       elsif @versus_persistent_bot_padding > 0
         bot_count = player_count + (@versus_persistent_bot_padding.clamp(0, @max_bot_count) * 2)
 
-        RenRem.cmd("botcount #{bot_count}")
-
-        PluginManager.blackboard_store(:"team_0_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
-        PluginManager.blackboard_store(:"team_1_bot_count", bot_count > 0 ? (bot_count / 2.0).ceil : 0)
+        ParticipantData.set_bot_population(bot_count)
       end
     elsif player_count >= @friendless_player_count
       # NOTE: Prevent sudden influx of enemy bots when transitioning to exclusive PvE mode
       bot_count = (bot_count / 2.0).round
-      RenRem.cmd("botcount #{bot_count} #{(@current_side + 1) % 2}")
-
-      PluginManager.blackboard_store(:"team_#{@current_side}_bot_count", 0)
-      PluginManager.blackboard_store(:"team_#{(@current_side + 1) % 2}_bot_count", bot_count)
+      ParticipantData.set_bot_population(bot_count, team: (@current_side + 1) % 2)
     else
-      RenRem.cmd("botcount #{bot_count}")
-
-      PluginManager.blackboard_store(:"team_#{@current_side}_bot_count", bot_count / 2 - player_count)
-      PluginManager.blackboard_store(:"team_#{(@current_side + 1) % 2}_bot_count", bot_count / 2)
+      ParticipantData.set_bot_population(bot_count)
     end
 
     @last_bot_count = bot_count
@@ -101,6 +86,17 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
   end
 
   def bot_report
+    snapshot = ParticipantData.snapshot
+    if snapshot&.native_enabled?
+      team_zero = snapshot.actual_bot_count(0)
+      team_one = snapshot.actual_bot_count(1)
+      actual = team_zero + team_one
+      requested = snapshot.requested_bot_count
+      request_note = actual == requested ? "" : " (#{requested} requested)"
+
+      return "#{team_zero} bots on team #{Teams.name(0)}, #{team_one} bots on team #{Teams.name(1)}#{request_note}"
+    end
+
     return "#{(@last_bot_count / 2.0).round} bots per team" unless @coop_started
 
     "#{PluginManager.blackboard(:team_0_bot_count).to_i} bots on team #{Teams.name(0)}, #{PluginManager.blackboard(:team_1_bot_count).to_i} bots on team #{Teams.name(1)}"
@@ -236,7 +232,7 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
       else
         log("No one is in game after 5 seconds, disabling co-op until a player joins.")
 
-        RenRem.cmd("botcount 0")
+        ParticipantData.set_bot_population(0)
         @coop_started = false
       end
     end
@@ -304,12 +300,12 @@ mobius_plugin(name: "AutoCoop", database_name: "auto_coop", version: "0.0.1") do
     page_player(
       command.issuer,
       "[AutoCoop] PvP: #{@versus_started}, PvE: #{@coop_started}, "\
-      "Bots: #{@last_bot_count}/#{@max_bot_count} (hard cap: #{@hardcap_bot_count}), "\
+      "Bot target: #{@last_bot_count}/#{@max_bot_count} (hard cap: #{@hardcap_bot_count}), "\
       "Bot Diff: #{@bot_difficulty}/#{@max_bot_difficulty}, "\
       "Friendless Player Count: #{@friendless_player_count} (hard cap: #{@hardcap_friendless_player_count})")
   end
 
-  command(:botcount, aliases: [:bc], arguments: 0, help: "Reports number of bots configured") do |command|
+  command(:botcount, aliases: [:bc], arguments: 0, help: "Reports the current bot population") do |command|
     broadcast_message("[AutoCoop] There are #{bot_report}")
   end
 
