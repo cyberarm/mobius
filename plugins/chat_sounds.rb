@@ -41,7 +41,7 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
     cooldown = @chat_sound_cooldowns[player.name]
     return if cooldown && monotonic_time < cooldown
 
-    sound = config[:sounds].find { |msg, snd| msg == message.downcase.strip }
+    sound = config[:sounds].find { |hash| hash[:message] == message.downcase.strip }
 
     return unless sound
 
