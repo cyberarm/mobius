@@ -39,7 +39,7 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
 
   def try_send_chat_sound(player, message, teamed: false)
     cooldown = @chat_sound_cooldowns[player.name]
-    return if monotonic_time < cooldown
+    return if cooldown && monotonic_time < cooldown
 
     sound = config["sounds"].find { |msg, snd| msg == message.downcase.strip }
 
