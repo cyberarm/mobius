@@ -1,0 +1,31 @@
+{
+  "sounds": [
+    { "message":"beatyou", "sound":"beatyou.wav" },
+    { "message":"chaha", "sound":"chaha.wav" },
+    { "message":"dead", "sound":"dead.wav" },
+    { "message":"execution", "sound":"execution.wav" },
+    { "message":"guineapig", "sound":"guineapig.wav" },
+    { "message":"invincible", "sound":"invincible.wav" },
+    { "message":"kane1", "sound":"kane1.wav" },
+    { "message":"kane2", "sound":"kane2.wav" },
+    { "message":"kanelives", "sound":"kanelives.wav" },
+    { "message":"kickass", "sound":"kickass.wav" },
+    { "message":"lightsoff", "sound":"lightsoff.wav" },
+    { "message":"media", "sound":"media.wav" },
+    { "message":"messiah", "sound":"messiah.wav" },
+    { "message":"mutants", "sound":"mutants.wav" },
+    { "message":"nooo", "sound":"nooo.wav" },
+    { "message":"notbad", "sound":"notbad.wav" },
+    { "message":"notgod", "sound":"notgod.wav" },
+    { "message":"offbase", "sound":"offbase.wav" },
+    { "message":"ps", "sound":"ps.wav" },
+    { "message":"ps2", "sound":"ps2.wav" },
+    { "message":"rip", "sound":"rip.wav" },
+    { "message":"risen", "sound":"risen.wav" },
+    { "message":"smile", "sound":"smile.wav" },
+    { "message":"sob", "sound":"sob.wav" },
+    { "message":"surprise", "sound":"surprise.wav" },
+    { "message":"win", "sound":"win.wav" },
+    { "message":"wtf", "sound":"wtf.wav" }
+  ]
+}
