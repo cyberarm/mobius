@@ -22,7 +22,7 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
   command(:sounds, arguments: 0..1, help: "!sounds [on|off] - List available sounds or toggle sounds for yourself") do |command|
     argument = command.arguments.first.to_s.downcase.strip
     if argument.empty?
-      config["sounds"].map { |h| h["message"] }.each_slice(10) do |slice|
+      config[:sounds].map { |h| h[:message] }.each_slice(10) do |slice|
         message_player(command.issuer, slice.join(", "))
       end
 
@@ -41,11 +41,11 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
     cooldown = @chat_sound_cooldowns[player.name]
     return if cooldown && monotonic_time < cooldown
 
-    sound = config["sounds"].find { |msg, snd| msg == message.downcase.strip }
+    sound = config[:sounds].find { |msg, snd| msg == message.downcase.strip }
 
     return unless sound
 
-    send_chat_sound(sound: sound["sound"], team: teamed ? player.team.id : nil)
+    send_chat_sound(sound: sound[:sound], team: teamed ? player.team.id : nil)
     @chat_sound_cooldowns[player.name] = monotonic_time + @cooldown_interval
   end
 
