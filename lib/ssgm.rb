@@ -21,7 +21,7 @@ module Mobius
     end
 
     def self.cmd(data, delay = nil)
-      raise "RenRem not running!" unless @@instance
+      raise "SSGM not running!" unless @@instance
 
       if delay
         @@instance.cmd_delayed(data, delay)
@@ -63,6 +63,14 @@ module Mobius
       retrieve_server_rotation || parse_tt_rotation
 
       monitor_stream
+    end
+
+    def cmd(command)
+      @socket&.puts(command)
+    end
+
+    def cmd_delayed(command, delay)
+      raise NotImplementedError
     end
 
     def parse_tt_rotation

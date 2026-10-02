@@ -31,9 +31,9 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
 
     case argument
     when "on"
-      database_remove(player.name)
+      database_remove(command.issuer.name)
     when "off"
-      database_set(player.name, "disabled")
+      database_set(command.issuer.name, "disabled")
     end
   end
 
@@ -60,6 +60,6 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
             "snda"
           end
 
-    RenRem.cmd(format("%s %s", cmd, sound))
+    SSGM.cmd(format("%s %s", cmd, sound))
   end
 end
