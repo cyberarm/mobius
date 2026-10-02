@@ -45,7 +45,7 @@ mobius_plugin(name: "ChatSounds", database_name: "chat_sounds", version: "0.0.1"
 
     return unless sound
 
-    send_chat_sound(sound: sound[:sound], team: teamed ? player.team.id : nil)
+    send_chat_sound(sound: sound[:sound], team: teamed ? player.team : nil)
     @chat_sound_cooldowns[player.name] = monotonic_time + @cooldown_interval
   end
 
