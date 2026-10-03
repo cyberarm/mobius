@@ -20,6 +20,7 @@
     { "message":"offbase", "sound":"offbase.wav" },
     { "message":"ps", "sound":"ps.wav" },
     { "message":"ps2", "sound":"ps2.wav" },
+    { "message":"ps3", "sound":"ps3.wav" },
     { "message":"rip", "sound":"rip.wav" },
     { "message":"risen", "sound":"risen.wav" },
     { "message":"smile", "sound":"smile.wav" },
