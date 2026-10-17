@@ -406,7 +406,7 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
     end
   end
 
-  command(:remove_tempmod, aliases: [:rtm], arguments: 1, help: "!remove_tempmod <nickname>", groups: [:admin, :mod, :director]) do |command|
+  command(:remove_tempmod, aliases: [:rtm], arguments: 1, help: "!remove_tempmod <nickname>", groups: [:admin, :mod]) do |command|
     player = PlayerData.player(PlayerData.name_to_id(command.arguments.first, exact_match: false))
 
     if player
