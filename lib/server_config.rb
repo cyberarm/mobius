@@ -108,6 +108,8 @@ module Mobius
             @data[:renrem_port] = Integer(value)
           when "Port"
             @data[:server_port] = Integer(value)
+          when "Config"
+            @data[:config] = value
           end
         end
       end
@@ -119,7 +121,7 @@ module Mobius
       @data[:team_changing]    = false
       @data[:starting_credits] = false
 
-      File.open("#{Config.fds_path}/#{Config.server_settings_path}") do |f|
+      File.open("#{Config.fds_path}/Data/#{@data[:config]}") do |f|
         f.each_line do |line|
           line = line.strip
 

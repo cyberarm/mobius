@@ -79,10 +79,10 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     @infection = false
     @preset = nil
 
-    @team_0_ghost_preset = Config.tournament[:team_0_ghost_preset]
-    @team_1_ghost_preset = Config.tournament[:team_1_ghost_preset]
+    @team_0_ghost_preset = config[:team_0_ghost_preset]
+    @team_1_ghost_preset = config[:team_1_ghost_preset]
 
-    @infected_preset = Config.tournament[:infected_preset]
+    @infected_preset = config[:infected_preset]
 
     raise "team_0_ghost_preset is not set in config!" unless @team_0_ghost_preset
     raise "team_1_ghost_preset is not set in config!" unless @team_1_ghost_preset
@@ -178,7 +178,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
 
     presets = nil
     begin
-      presets = Config.tournament[:presets][@auto_game_mode][@auto_game_mode_round]
+      presets = config[:presets][@auto_game_mode][@auto_game_mode_round]
     rescue NoMethodError # Presets missing
     end
 
@@ -204,7 +204,7 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
     end
 
     if tournament_active? || tournament_scheduled?
-      presets_list = Config.tournament[:presets][@auto_game_mode]
+      presets_list = config[:presets][@auto_game_mode]
       broadcast_message("[Tournament] Auto #{active_game_mode.to_s.split("_").map(&:capitalize).join(' ')} starting round #{@auto_game_mode_round + 1} of #{presets_list.count}!", **@message_color)
 
       ensure_game_clock_time!
@@ -395,6 +395,13 @@ mobius_plugin(name: "Tournament", database_name: "tournament", version: "0.0.1")
   end
 
   on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
     reset_auto_game_mode
   end
 

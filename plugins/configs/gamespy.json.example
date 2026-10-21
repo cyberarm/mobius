@@ -1,0 +1,16 @@
+{
+  "master_servers":[
+    "renmaster.cncnet.org:27900",
+    "176.31.21.190:27900"
+  ],
+  "game_name":"ccrenegade",
+  "game_type":"AoW",
+  "custom_info":[
+    {
+      "website":"",
+      "irc":"",
+      "w3dhubgame":"apb",
+      "w3dhubchannel":"release"
+    }
+  ]
+}

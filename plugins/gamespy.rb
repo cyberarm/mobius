@@ -2,6 +2,13 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
   MasterServer = Struct.new(:socket)
 
   on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
     @query_id = 1
     @fragment_id = 1
     @query_address = nil
@@ -12,9 +19,9 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
 
     @master_servers = []
     @query_socket = UDPSocket.new
-    @query_port = Config.gamespy[:query_port]
-    @game_name = Config.gamespy[:game_name] || "ccrenegade"
-    @game_version = Config.gamespy[:game_version] || 838
+    @query_port = config[:query_port]
+    @game_name = config[:game_name] || "ccrenegade"
+    @game_version = config[:game_version] || 838
 
     # Manually track team total kills/deaths
     @team_0_kills = 0
@@ -38,7 +45,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
       end
 
       unless @failure
-        Config.gamespy[:master_servers].each do |address|
+        config[:master_servers].each do |address|
           host, port = address.split(":")
           socket = UDPSocket.new
 
@@ -185,7 +192,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
       "\\hostname\\#{ServerConfig.server_name}" \
       "\\hostport\\#{ServerConfig.server_port}" \
       "\\mapname\\#{ServerStatus.get(:current_map)}" \
-      "\\gametype\\#{Config.gamespy[:game_type]}" \
+      "\\gametype\\#{config[:game_type]}" \
       "\\numplayers\\#{ServerStatus.total_players}" \
       "\\maxplayers\\#{ServerStatus.get(:max_players)}"
     )
@@ -204,7 +211,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
       "\\timeleft\\#{ServerStatus.get(:time_remaining)}"
     )
 
-    Config.gamespy[:custom_info].each do |key, value|
+    config[:custom_info].each do |key, value|
       append_fragment("\\#{key}\\#{value}")
     end
   end

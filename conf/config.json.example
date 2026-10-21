@@ -1,77 +1,39 @@
 {
-  "mobius": {
-    "fds_path":"C:/GameServers/a-path-beyond-fds",
-    "server_settings_path": "data/APB_Public.ini",
-    "database_path":"./conf/database.db",
-    "banlist_path": "C:/GameServers/a-path-beyond-fds/W3D Hub/games/apb-release-server/banList.tsv",
-    "remix_teams_by_skill": false,
-    "limit_commands_to_staff_level": null,
-    "record_gamelog": false,
-    "gamespy":{
-      "master_servers":[
-        "renmaster.cncnet.org:27900",
-        "176.31.21.190:27900"
-      ],
-      "game_name":"ccrenegade",
-      "game_type":"AoW",
-      "custom_info":[
-        {
-          "website":"",
-          "irc":"",
-          "w3dhubgame":"apb",
-          "w3dhubchannel":"release"
-        }
-      ]
-    },
-    "staff":{
-      "admin": [
-        {
-          "name":"player",
-          "server_owner": true, // Receives DM's from bot in case of server issues
-          "hostnames":[
-            "192.168.1.117"
-          ]
-        },
-        {
-          "name":"player2",
-          "hostnames":[
-            "192.168.1.117"
-          ]
-        }
-      ]
-    },
-    "messages": {
-      "staff": true,
-      "crate": true,
-      "player_lost_connection":true,
-      "soldier_killed": true,
-      "soldier_purchase": true,
-      "building_killed": true,
-      "vehicle_killed": true,
-      "vehicle_purchase": true,
-      "vehicle_stolen": true
-    },
-    "discord_bot": {
-      "server_short_name": "APB COOP",
-      "token":"",
-      "server_admins": [], // Array of Discord user IDs to page if the fds is detected offline.
-      "restrict_to_servers": [],
-      "restrict_to_channels": []
-    },
-    "discord_bridge": {
-      "url": null,
-      "uuid": "<TOKEN>",
-      "server_color": null,
-      "battleview_url": null,
-      "server_short_name": "APB",
-      "announce_voice_channel_changes":true // Announce when a player joins/changes/leaves discord voice channel
-    },
-    "tournament": {
-      "team_0_ghost_preset": "Allied_Ghost",
-      "team_1_ghost_preset": "Soviet_Ghost",
-      "infected_preset": "Ant_Scout"
-    },
-    "enabled_plugins": [],
-    "disabled_plugins": []
-  }
+  "fds_path":"C:/GameServers/a-path-beyond-fds",
+  "server_settings_path": "data/APB_Public.ini",
+  "database_path":"./conf/database.db",
+  "banlist_path": "C:/GameServers/a-path-beyond-fds/W3D Hub/games/apb-release-server/banList.tsv",
+  "remix_teams_by_skill": false,
+  "limit_commands_to_staff_level": null,
+  "record_gamelog": false,
+  "staff":{
+    "admin": [
+      {
+        "name":"player",
+        "server_owner": true, // Receives DM's from bot in case of server issues
+        "hostnames":[
+          "192.168.1.117"
+        ]
+      },
+      {
+        "name":"player2",
+        "hostnames":[
+          "192.168.1.117"
+        ]
+      }
+    ]
+  },
+  "messages": {
+    "staff": true,
+    "crate": true,
+    "player_lost_connection":true,
+    "soldier_killed": true,
+    "soldier_purchase": true,
+    "building_killed": true,
+    "vehicle_killed": true,
+    "vehicle_purchase": true,
+    "vehicle_stolen": true
+  },
+  "enabled_plugins": [],
+  "disabled_plugins": []
 }

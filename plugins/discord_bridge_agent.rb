@@ -26,7 +26,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       team_1_bot_count: PluginManager.blackboard(:team_1_bot_count).to_i
     }
 
-    server_color = Config.discord_bridge[:server_color]
+    server_color = config[:server_color]
     server_color = server_color.to_i(16) if server_color
 
     status = {
@@ -34,7 +34,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       data: {
         server_name: ServerConfig.server_name,
         server_color: server_color,
-        battleview_url: Config.discord_bridge[:battleview_url],
+        battleview_url: config[:battleview_url],
         map_name: ServerStatus.get(:current_map),
         time_left: ServerStatus.get(:time_remaining),
         player_count: PlayerData.player_list.count,
@@ -147,7 +147,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
       next unless (discord_id = hash[:discord_id])
       next unless hash[:server_owner]
 
-      server_name = ServerConfig.server_name || Config.discord_bridge[:server_short_name].upcase
+      server_name = ServerConfig.server_name || config[:server_short_name].upcase
 
       if @fds_responding
         deliver(message_discord_id(discord_id, "**OKAY**: Communication with FDS restored!", :admin))
@@ -167,7 +167,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     Thread.new do
       begin
-        WebSocket::Client::Simple.connect("#{Config.discord_bridge[:url]}/api/v1/websocket") do |ws|
+        WebSocket::Client::Simple.connect("#{config[:url]}/api/v1/websocket") do |ws|
           this.websocket = ws
 
           ws.on(:open) do
@@ -361,7 +361,7 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
   end
 
   on(:start) do
-    unless Config.discord_bridge && !Config.discord_bridge[:url].to_s.empty?
+    unless config && !config[:url].to_s.empty?
       log "Missing configuration data or invalid url"
       PluginManager.disable_plugin(self)
 
@@ -370,13 +370,13 @@ mobius_plugin(name: "DiscordBridgeAgent", database_name: "discord_bridge_agent",
 
     @send_queue = []
 
-    @uuid = Config.discord_bridge[:uuid]
-    @announce_voice_channel_changes = Config.discord_bridge[:announce_voice_channel_changes]
+    @uuid = config[:uuid]
+    @announce_voice_channel_changes = config[:announce_voice_channel_changes]
     @suppress_voice_channel_changes = false
     @voice_channel_data = nil
     @voice_channel_data_updated = false
     @send_status = true
-    @auth_channel = Config.discord_bridge[:auth_channel]
+    @auth_channel = config[:auth_channel]
 
     @fds_responding = database_get("fds_responding") == "true"
     @staff_pending_verification = {}

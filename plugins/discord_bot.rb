@@ -56,7 +56,7 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
 
     @bot.update_status(
       bot_status,
-      "#{Config.discord_bot[:server_short_name].upcase}: #{ServerStatus.get(:fds_responding) ? total_players : 'OFFLINE'}",
+      "#{config[:server_short_name].upcase}: #{ServerStatus.get(:fds_responding) ? total_players : 'OFFLINE'}",
       nil,
       0,
       false,
@@ -73,9 +73,9 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
 
       if (channel = @bot.pm_channel(id))
         if @fds_responding
-          channel.send_message("**OKAY** #{Config.discord_bot[:server_short_name].upcase}: Communication with FDS restored!")
+          channel.send_message("**OKAY** #{config[:server_short_name].upcase}: Communication with FDS restored!")
         else
-          channel.send_message("**ERROR** #{Config.discord_bot[:server_short_name].upcase}: Unable to communicate with FDS!")
+          channel.send_message("**ERROR** #{config[:server_short_name].upcase}: Unable to communicate with FDS!")
         end
       end
     end
@@ -96,19 +96,26 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
   end
 
   on(:start) do
+    if config.nil? || config.empty?
+      log "Missing or invalid config"
+      PluginManager.disable_plugin(self)
+
+      next
+    end
+
     @schedule_status_update = false
     @fds_responding = true
     @staff_pending_verification = {}
     @verification_timeout = 65 # seconds
 
-    unless Config.discord_bot && Config.discord_bot[:token].length > 20
+    unless config && config[:token].length > 20
       log "Missing configuration data or invalid token"
       PluginManager.disable_plugin(self)
 
       next
     end
 
-    @bot = Discordrb::Bot.new(token: Config.discord_bot[:token])
+    @bot = Discordrb::Bot.new(token: config[:token])
 
     @bot.message do |event|
       discord_id = event.message.author.id
@@ -132,13 +139,13 @@ mobius_plugin(name: "DiscordBot", database_name: "discord_bot", version: "0.1.0"
         next
       end
 
-      if (servers = Config.discord_bot[:restrict_to_servers])
+      if (servers = config[:restrict_to_servers])
         if !servers.empty? && event.server
           next unless servers.include?(event&.server&.id)
         end
       end
 
-      if (channels = Config.discord_bot[:restrict_to_channels])
+      if (channels = config[:restrict_to_channels])
         if !channels.empty? && event.channel
           next unless channels.include?(event&.channel&.id)
         end
