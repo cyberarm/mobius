@@ -22,8 +22,8 @@ module Mobius
     end
 
     attr_reader :fds_path, :server_settings_path, :database_path, :banlist_path, :remix_teams_by_skill, :renrem_address, :renrem_port, :renrem_password,
-                :ssgm_address, :ssgm_port, :gamespy, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level,
-                :record_gamelog, :discord_bot, :discord_bridge, :tournament, :enabled_plugins, :disabled_plugins
+                :ssgm_address, :ssgm_port, :staff, :debug_verbose, :messages, :limit_commands_to_staff_level,
+                :record_gamelog, :enabled_plugins, :disabled_plugins
 
     def initialize(path: "#{ROOT_PATH}/conf/config.json")
       @@instance = self
@@ -35,12 +35,12 @@ module Mobius
     def reload_config(reload: true)
       @data = JSON.parse(File.read(@path), symbolize_names: true)
 
-      @fds_path = @data.dig(:mobius, :fds_path)
-      @server_settings_path = @data.dig(:mobius, :server_settings_path)
-      @database_path = @data.dig(:mobius, :database_path)
-      @banlist_path = @data.dig(:mobius, :banlist_path)
+      @fds_path = @data[:fds_path]
+      @server_settings_path = @data[:server_settings_path]
+      @database_path = @data[:database_path]
+      @banlist_path = @data[:banlist_path]
       raise "'banlist_path' is not specified in config!" unless @banlist_path
-      @remix_teams_by_skill = @data.dig(:mobius, :remix_teams_by_skill)
+      @remix_teams_by_skill = @data[:remix_teams_by_skill]
 
       ServerConfig.read_server_config
       ServerConfig.read_server_settings
@@ -53,30 +53,18 @@ module Mobius
       @ssgm_address = "127.0.0.1"
       @ssgm_port = ServerConfig.ssgm_port
 
-      @gamespy = @data.dig(:mobius, :gamespy)
-
-      @staff = @data.dig(:mobius, :staff)
+      @staff = @data[:staff]
 
       @debug_verbose = false
 
-      @messages = @data.dig(:mobius, :messages) || {}
+      @messages = @data[:messages] || {}
 
-      @limit_commands_to_staff_level = @data.dig(:mobius, :limit_commands_to_staff_level) || nil
+      @limit_commands_to_staff_level = @data[:limit_commands_to_staff_level] || nil
 
-      @record_gamelog = @data.dig(:mobius, :record_gamelog) || false
+      @record_gamelog = @data[:record_gamelog] || false
 
-      @discord_bot = @data.dig(:mobius, :discord_bot)
-
-      @discord_bridge = @data.dig(:mobius, :discord_bridge)
-
-      @tournament = @data.dig(:mobius, :tournament) || {
-        team_0_ghost_preset: "Allied_Ghost",
-        team_1_ghost_preset: "Soviet_Ghost",
-        infected_preset: "Ant_Scout"
-      }
-
-      @enabled_plugins = @data.dig(:mobius, :enabled_plugins)
-      @disabled_plugins = @data.dig(:mobius, :disabled_plugins)
+      @enabled_plugins = @data[:enabled_plugins]
+      @disabled_plugins = @data[:disabled_plugins]
 
       MapSettings.new
 

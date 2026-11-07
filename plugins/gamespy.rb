@@ -103,7 +103,7 @@ mobius_plugin(name: "GameSpy", database_name: "gamespy", version: "0.0.1") do
 
     @query_socket&.close
 
-    @master_servers.each do |s|
+    @master_servers&.each do |s|
       send_heartbeat_stop_to_master(s)
       s&.close
     end
