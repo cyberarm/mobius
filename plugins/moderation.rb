@@ -7,7 +7,9 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
   end
 
   def untrusted_ip?(test_ip)
-    @untrusted_ips&.find { |ip, line| ip.include?(test_ip) }
+    ipaddr = IPAddr.new(test_ip)
+
+    @untrusted_ips&.find { |address, _| address.include?(ipaddr) }
   end
 
   on(:start) do
@@ -22,6 +24,8 @@ mobius_plugin(name: "Moderation", database_name: "moderation", version: "0.0.1")
 
         @untrusted_ips << [IPAddr.new(line), line]
       end
+
+      @untrusted_ips.sort!
     else
       log("Warning: Untrusted IP list is missing! (#{file_path})")
     end
