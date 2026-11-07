@@ -79,10 +79,6 @@ module Mobius
         @data.delete(:manual_team)
       end
 
-      def remote_moderation?
-        @origin == :mobius_moderation_tool
-      end
-
       def discord?
         @origin == :discord
       end
