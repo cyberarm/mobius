@@ -15,6 +15,8 @@ module Mobius
     end
 
     def self.learn(preset:, name:)
+      return unless preset.is_a?(String) && name.is_a?(String)
+
       # Soldiers that are human players also have their *current* weapon name included, we drop that
       @presets[preset.to_sym] = name.split("/", 2).first
     end
