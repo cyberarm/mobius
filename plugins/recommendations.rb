@@ -146,9 +146,11 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     unless messages.empty?
       after(45) do
         broadcast_message("[MOBIUS] Best players from last match:", red: 255, green: 127, blue: 0)
-        messages.each do |player, message|
+        messages.each do |player, list|
           broadcast_message("[MOBIUS]     #{player.name}", red: 255, green: 127, blue: 0)
-          broadcast_message("[MOBIUS]         #{message}", red: 255, green: 127, blue: 0)
+          list.each do |msg|
+            broadcast_message("[MOBIUS]         #{msg}", red: 255, green: 127, blue: 0)
+          end
         end
       end
     end
