@@ -112,34 +112,45 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     ribbons[:engineer] = max_building_repairs_player if max_building_repairs_player && config[:autorec][:most_building_repairs] && max_building_repairs_player.data[:stats_building_repairs] >= config[:autorec][:most_building_repairs].to_i
 
     i = 0
+    messages = {}
     ribbons.each do |ribbon, player|
       # pp [ribbon, player]
+      messages[player] ||= []
 
       message = case ribbon
                 when :mvp
-                  "MVP: #{player.name} had #{player.data[:stats_score].round} score last round."
+                  "MVP: Most score with #{player.data[:stats_score].round} total."
                 when :ace
-                  "Ace: #{player.name} had #{player.data[:stats_kills].round} kills last round."
+                  "Ace: Most kills with #{player.data[:stats_kills].round} total."
                 when :medic
-                  "Medic: #{player.name} did #{player.data[:stats_healed].round} healing last round."
+                  "Medic: Most healing with #{player.data[:stats_healed].round} total."
                 when :tank_destroyer
-                  "Tank Destroyer: #{player.name} did #{player.data[:stats_vehicle_damage].round} damage to vehicles last round."
+                  "Tank Destroyer: Most vehicle damage with #{player.data[:stats_vehicle_damage].round} total."
                 when :saboteur
-                  "Saboteur: #{player.name} did #{player.data[:stats_building_damage].round} damage to buildings last round."
+                  "Saboteur: Most building damage with #{player.data[:stats_building_damage].round} total."
                 when :mechanic
-                  "Mechanic: #{player.name} did #{player.data[:stats_vehicle_repairs].round} repairs to vehicles last round."
+                  "Mechanic: Most vehicle repairs with #{player.data[:stats_vehicle_repairs].round} total."
                 when :engineer
-                  "Engineer: #{player.name} did #{player.data[:stats_building_repairs].round} repairs to buildings last round."
+                  "Engineer: Most building repairs with #{player.data[:stats_building_repairs].round} total."
                 end
 
+      messages[player] << message
+
       autorec_name = config[:autorec][:commanders][:"team_#{player.team}"].sample
+      # auto rec player immediately (it'll be hidden by the intermission screen)
+      # and we'll show a pretty message after the next round starts.
+      recommend_player(autorec_name, player, message, false, true)
+    end
 
-
-      after(45 + i) do
-        recommend_player(autorec_name, player, message, false, true)
+    # Wait 45 seconds for next match to start and players to load in
+    unless messages.empty?
+      after(45) do
+        broadcast_message("[MOBIUS] Best players from last match:", red: 255, green: 127, blue: 0)
+        messages.each do |player, message|
+          broadcast_message("[MOBIUS]     #{player.name}", red: 255, green: 127, blue: 0)
+          broadcast_message("[MOBIUS]         #{message}", red: 255, green: 127, blue: 0)
+        end
       end
-
-      i += 1
     end
   end
 
