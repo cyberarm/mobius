@@ -77,6 +77,69 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     end
   end
 
+  on(:win) do
+    next unless allow_auto_recs?
+
+    ribbons = {}
+    players = PlayerData.players_list
+
+    # MVP
+    ribbons[:mvp] = players.max { |player| player.data[:stats_score] } if players.count >= 5
+
+    # Most kills # Ace
+    max_kills = players.max { |player| player.data[:stats_kills] }
+    ribbons[:ace] = max_kills if config[:autorec][:most_infantry_kills] && max_kills >= config[:autorec][:most_infantry_kills].to_i
+
+    # Most healing # Medic
+    max_heals = players.max { |player| player.data[:stats_healed] }
+    ribbons[:medic] = max_heals if config[:autorec][:most_infantry_heals] && max_heals >= config[:autorec][:most_infantry_heals].to_i
+
+    # Most vehicle damage # Tank Destroyer
+    max_damage = players.max { |player| player.data[:stats_vehicle_damage] }
+    ribbons[:tank_destroyer] = max_damage if config[:autorec][:most_vehicle_damage] && max_damage >= config[:autorec][:most_vehicle_damage].to_i
+
+    # Most building damage # Saboteur
+    max_building_damage = players.max { |player| player.data[:stats_building_damage] }
+    ribbons[:saboteur] = max_building_damage if config[:autorec][:most_building_damage] && max_building_damage >= config[:autorec][:most_building_damage].to_i
+
+    # Most vehicle repairs # Mechanic
+    max_vehicle_repairs = players.max { |player| player.data[:stats_vehicle_repairs] }
+    ribbons[:mechanic] = max_vehicle_repairs if config[:autorec][:most_vehicle_repairs] && max_vehicle_repairs >= config[:autorec][:most_vehicle_repairs].to_i
+
+    # Most building repairs # Engineer
+    max_building_repairs = players.max { |player| player.data[:stats_building_repairs] }
+    ribbons[:engineer] = max_building_repairs if config[:autorec][:most_building_repairs] && max_building_repairs >= config[:autorec][:most_building_repairs].to_i
+
+    i = 0
+    ribbons.each do |ribbon, player|
+      message = case ribbon
+                when :mvp
+                  "MVP: #{player.name} had #{player.data[:stats_score].round} score last round."
+                when :ace
+                  "Ace: #{player.name} had #{player.data[:stats_stats_kills].round} kills last round."
+                when :medic
+                  "Medic: #{player.name} did #{player.data[:stats_healed].round} healing last round."
+                when :tank_destroyer
+                  "Tank Destroyer: #{player.name} did #{player.data[:stats_vehicle_damage].round} damage to vehicles last round."
+                when :saboteur
+                  "Saboteur: #{player.name} did #{player.data[:stats_building_damage].round} damage to buildings last round."
+                when :mechanic
+                  "Mechanic: #{player.name} did #{player.data[:stats_vehicle_repairs].round} repairs to vehicles last round."
+                when :engineer
+                  "Engineer: #{player.name} did #{player.data[:stats_building_repairs].round} repairs to buildings last round."
+                end
+
+      autorec_name = config[:autorec][:commanders][:"team_#{player.team}"].sample
+
+
+      after(45 + i) do
+        recommend_player(autorec_name, player, message, false, true)
+      end
+
+      i += 1
+    end
+  end
+
   command(:recommend, aliases: [:rec], arguments: 2, help: "!rec <nickname> <comment> - Recommend another player for good teamplay, etc.") do |command|
     recommend(:rec, command)
   end

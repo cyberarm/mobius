@@ -27,6 +27,14 @@
 
     "building_damage": 20000,
     "vehicle_damage": 10000,
-    "infantry_damage": 5000
+    "infantry_damage": 5000,
+
+    "mvp_min_score": 2000,
+    "most_infantry_kills": 20,
+    "most_infantry_heals": 200,
+    "most_vehicle_damage": 200,
+    "most_building_damage": 200,
+    "most_vehicle_repairs": 200,
+    "most_building_repairs": 200
   }
 }
