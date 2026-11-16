@@ -81,42 +81,45 @@ mobius_plugin(name: "Recommendations", database_name: "recommendations", version
     next unless allow_auto_recs?
 
     ribbons = {}
-    players = PlayerData.players_list
+    players = PlayerData.player_list
 
     # MVP
-    ribbons[:mvp] = players.max { |player| player.data[:stats_score] } if players.count >= 5
+    mvp_player = players.max { |player| player.data[:stats_score] }
+    ribbons[:mvp] = mvp_player if mvp_player && players.count >= 5
 
     # Most kills # Ace
-    max_kills = players.max { |player| player.data[:stats_kills] }
-    ribbons[:ace] = max_kills if config[:autorec][:most_infantry_kills] && max_kills >= config[:autorec][:most_infantry_kills].to_i
+    max_kills_player = players.max { |player| player.data[:stats_kills] }
+    ribbons[:ace] = max_kills_player if max_kills_player && config[:autorec][:most_infantry_kills] && max_kills_player.data[:stats_kills] >= config[:autorec][:most_infantry_kills].to_i
 
     # Most healing # Medic
-    max_heals = players.max { |player| player.data[:stats_healed] }
-    ribbons[:medic] = max_heals if config[:autorec][:most_infantry_heals] && max_heals >= config[:autorec][:most_infantry_heals].to_i
+    max_heals_player = players.max { |player| player.data[:stats_healed] }
+    ribbons[:medic] = max_heals_player if max_heals_player && config[:autorec][:most_infantry_heals] && max_heals_player.data[:stats_healed] >= config[:autorec][:most_infantry_heals].to_i
 
     # Most vehicle damage # Tank Destroyer
-    max_damage = players.max { |player| player.data[:stats_vehicle_damage] }
-    ribbons[:tank_destroyer] = max_damage if config[:autorec][:most_vehicle_damage] && max_damage >= config[:autorec][:most_vehicle_damage].to_i
+    max_damage_player = players.max { |player| player.data[:stats_vehicle_damage] }
+    ribbons[:tank_destroyer] = max_damage_player if max_damage_player && config[:autorec][:most_vehicle_damage] && max_damage_player.data[:stats_vehicle_damage] >= config[:autorec][:most_vehicle_damage].to_i
 
     # Most building damage # Saboteur
-    max_building_damage = players.max { |player| player.data[:stats_building_damage] }
-    ribbons[:saboteur] = max_building_damage if config[:autorec][:most_building_damage] && max_building_damage >= config[:autorec][:most_building_damage].to_i
+    max_building_damage_player = players.max { |player| player.data[:stats_building_damage] }
+    ribbons[:saboteur] = max_building_damage_player if max_building_damage_player && config[:autorec][:most_building_damage] && max_building_damage_player.data[:stats_building_damage] >= config[:autorec][:most_building_damage].to_i
 
     # Most vehicle repairs # Mechanic
-    max_vehicle_repairs = players.max { |player| player.data[:stats_vehicle_repairs] }
-    ribbons[:mechanic] = max_vehicle_repairs if config[:autorec][:most_vehicle_repairs] && max_vehicle_repairs >= config[:autorec][:most_vehicle_repairs].to_i
+    max_vehicle_repairs_player = players.max { |player| player.data[:stats_vehicle_repairs] }
+    ribbons[:mechanic] = max_vehicle_repairs_player if max_vehicle_repairs_player && config[:autorec][:most_vehicle_repairs] && max_vehicle_repairs_player.data[:stats_vehicle_repairs] >= config[:autorec][:most_vehicle_repairs].to_i
 
     # Most building repairs # Engineer
-    max_building_repairs = players.max { |player| player.data[:stats_building_repairs] }
-    ribbons[:engineer] = max_building_repairs if config[:autorec][:most_building_repairs] && max_building_repairs >= config[:autorec][:most_building_repairs].to_i
+    max_building_repairs_player = players.max { |player| player.data[:stats_building_repairs] }
+    ribbons[:engineer] = max_building_repairs_player if max_building_repairs_player && config[:autorec][:most_building_repairs] && max_building_repairs_player.data[:stats_building_repairs] >= config[:autorec][:most_building_repairs].to_i
 
     i = 0
     ribbons.each do |ribbon, player|
+      # pp [ribbon, player]
+
       message = case ribbon
                 when :mvp
                   "MVP: #{player.name} had #{player.data[:stats_score].round} score last round."
                 when :ace
-                  "Ace: #{player.name} had #{player.data[:stats_stats_kills].round} kills last round."
+                  "Ace: #{player.name} had #{player.data[:stats_kills].round} kills last round."
                 when :medic
                   "Medic: #{player.name} did #{player.data[:stats_healed].round} healing last round."
                 when :tank_destroyer
