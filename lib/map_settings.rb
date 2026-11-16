@@ -46,7 +46,7 @@ module Mobius
       default_setting = @@instance.data.dig(:defaults, setting)
       map_setting = @@instance.data.dig(:maps, map.to_sym, setting)
 
-      map_setting ? map_setting : default_setting
+      map_setting || default_setting || default_value
     end
 
     attr_reader :data
